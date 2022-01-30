@@ -9,6 +9,7 @@ Vagrant.configure("2") do |config|
   config.vm.network "private_network", ip: ENV["HOST_ONLY_IP"]
   config.vm.network "public_network"
   config.vm.provider "virtualbox" do |vb|
+    vb.name = ENV["VM_NAME"]
     vb.memory = ENV["RAM"]
     vb.cpus = ENV["CPU"]
   end

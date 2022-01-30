@@ -40,7 +40,10 @@ setEnvVar() {
   export OS_IMAGE;
   export SCRIPT;
   export HOST_ONLY_IP;
+
+  # not set by User
   export SYNC_FOLDER;
+  export VM_NAME;
 }
 
 reset() {
@@ -50,15 +53,18 @@ reset() {
   unset OS_IMAGE;
   unset SCRIPT;
   unset HOST_ONLY_IP;
+
+  #not set by User
   unset SYNC_FOLDER;
+  unset VM_NAME;
 }
 
 syncFolder() {
   if [ ! -d "~/.machines" ]; then
-    echo "Creating folder..."
     mkdir -p "$HOME/.machines"
   fi
-  UUID="$(uuidgen)" 
+  UUID="$(xxd -pu <<< uuidgen)" 
+  VM_NAME="${HOST_ONLY_IP}_${UUID}"
   mkdir -p -- "$HOME/.machines/$UUID"
   SYNC_FOLDER="$HOME/.machines/$UUID"
 }
@@ -102,13 +108,15 @@ main() {
     # ineraction 
     syncFolder;
     validateInput && setEnvVar;
-    initVM && mv "./.vagrant" "$SYNC_FOLDER"
+    initVM;
+    mv "./.vagrant" "$SYNC_FOLDER";
   elif [[ -s $CONFIG_FILE && $CONFIG_FILE == *.config ]]; then
     # file
-    syncFolder;
     sourceConfigFile;
+    syncFolder;
     validateInput && setEnvVar;
-    initVM && mv "./.vagrant" "$SYNC_FOLDER"
+    initVM;
+    mv "./.vagrant" "$SYNC_FOLDER";
   else 
     # error
     echo "Error: Not enough Arguments or *.config file not given."
