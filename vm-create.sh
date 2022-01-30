@@ -40,6 +40,7 @@ setEnvVar() {
   export OS_IMAGE;
   export SCRIPT;
   export HOST_ONLY_IP;
+  export SYNC_FOLDER;
 }
 
 reset() {
@@ -49,6 +50,7 @@ reset() {
   unset OS_IMAGE;
   unset SCRIPT;
   unset HOST_ONLY_IP;
+  unset SYNC_FOLDER;
 }
 
 syncFolder() {
@@ -100,16 +102,13 @@ main() {
     # ineraction 
     syncFolder;
     validateInput && setEnvVar;
-    initVM;
-    mv "./.vagrant" "$SYNC_FOLDER"
-    reset;
+    initVM && mv "./.vagrant" "$SYNC_FOLDER"
   elif [[ -s $CONFIG_FILE && $CONFIG_FILE == *.config ]]; then
     # file
     syncFolder;
     sourceConfigFile;
     validateInput && setEnvVar;
-    initVM;
-    mv "./.vagrant" "$SYNC_FOLDER"
+    initVM && mv "./.vagrant" "$SYNC_FOLDER"
   else 
     # error
     echo "Error: Not enough Arguments or *.config file not given."
