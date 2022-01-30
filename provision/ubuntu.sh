@@ -1,5 +1,5 @@
-USERNAME=ubuntu
-PASSWORD=ubuntu
+USERNAME=default
+PASSWORD=default
 # upgrade ubuntu
 sudo -i apt-get upgrade -y && sudo -i apt-get update
 
@@ -10,6 +10,7 @@ adduser --gecos "" "$USERNAME"
 usermod -aG sudo "$USERNAME"
 
 echo "$USERNAME:$PASSWORD" | sudo chpasswd
+passwd --expire "$USERNAME";
 
 cat << EOF > "/etc/sudoers.d/$USERNAME"
 $USERNAME ALL = (ALL) NOPASSWD:ALL

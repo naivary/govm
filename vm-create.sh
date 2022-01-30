@@ -1,3 +1,5 @@
+MACHINES=/mnt/c/users/mh0071/
+
 usage() {
   echo "-c [integer] is setting the count of CPUs"
   echo "-m [integer] is setting the RAM"
@@ -40,33 +42,20 @@ setEnvVar() {
   export OS_IMAGE;
   export SCRIPT;
   export HOST_ONLY_IP;
-
   # not set by User
   export SYNC_FOLDER;
   export VM_NAME;
 }
 
-reset() {
-  echo "Cleaning up...";
-  unset CPU;
-  unset RAM;
-  unset OS_IMAGE;
-  unset SCRIPT;
-  unset HOST_ONLY_IP;
-
-  #not set by User
-  unset SYNC_FOLDER;
-  unset VM_NAME;
-}
 
 syncFolder() {
-  if [ ! -d "~/.machines" ]; then
-    mkdir -p "$HOME/.machines"
+  if [ ! -d "$MACHINES/.machines" ]; then
+    mkdir -p "$MACHINES/.machines"
   fi
-  UUID="$(xxd -pu <<< uuidgen)" 
-  VM_NAME="${HOST_ONLY_IP}_${UUID}"
-  mkdir -p -- "$HOME/.machines/$UUID"
-  SYNC_FOLDER="$HOME/.machines/$UUID"
+  ID="$(openssl rand -hex 5)" 
+  VM_NAME="${HOST_ONLY_IP}_${ID}"
+  mkdir -p -- "$MACHINES/.machines/$ID"
+  SYNC_FOLDER="$MACHINES/.machines/$ID"
 }
 
 sourceConfigFile() {
@@ -75,7 +64,7 @@ sourceConfigFile() {
 }
 
 initVM() {
-  echo "Creating Virtual-Machine with the ID: $UUID"
+  echo "Creating Virtual-Machine with the ID: $ID"
   vagrant up;
 }
 
