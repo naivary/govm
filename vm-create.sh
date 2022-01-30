@@ -67,7 +67,7 @@ sourceConfigFile() {
 }
 
 initVM() {
-  echo "Creating Virtual-Machine..."
+  echo "Creating Virtual-Machine with the ID: $UUID"
   vagrant up;
 }
 
