@@ -5,7 +5,7 @@
 Vagrant.configure("2") do |config|
   config.vm.box = ENV["OS_IMAGE"] 
   config.vm.provision "shell", path: ENV["SCRIPT"]
-  config.vm.synced_folder ENV["SYNC_FOLDER"], "/home/default/sync_folder", disabled:false
+  config.vm.synced_folder ENV["SYNC_FOLDER"], "/home/gov/sync_folder", disabled:false
   config.vm.synced_folder ".", "/vagrant", disabled:true
   config.vm.network "private_network", ip: ENV["HOST_ONLY_IP"]
   config.vm.network "public_network"

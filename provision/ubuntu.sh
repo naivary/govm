@@ -1,10 +1,10 @@
-USERNAME=default
-PASSWORD=default
+USERNAME=gov
+PASSWORD=gov
 # upgrade ubuntu
 sudo -i apt-get upgrade -y && sudo -i apt-get update
 
 # adding user "$USERNAME" with root-priviliges
-# with the password 20Himmel20, without typing
+# with the password $PASSWORD, without typing
 # the password every type running a sudo
 adduser --gecos "" "$USERNAME"
 usermod -aG sudo "$USERNAME"
@@ -41,7 +41,11 @@ cat << EOF > "/home/$USERNAME/.git-credentials"
 https://No1Lik3U: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@github.com
 EOF
 
-#create git-config
+#? warum muss ich root rechte geben zu bearbeiten?
+#create .gitconfig 
+touch "/home/$USERNAME/.gitconfig"
+sudo chmod -R 777 "/home/$USERNAME/"
+
 sudo -i -u "$USERNAME" git config --global credential.helper "store --file ~/.git-credentials"
 sudo -i -u "$USERNAME" git config --global alias.aa "add --all"
 sudo -i -u "$USERNAME" git config --global alias.bv "branch -v"
