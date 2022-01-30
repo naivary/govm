@@ -72,40 +72,43 @@ validateInput() {
   echo "Validating Paramaters..."
   if [[ -n ${CPU//[0-9]/} || $CPU -lt 1 ]]; then
     echo "CPU may only contain numbers and shall be bigger than 1";
-    reset;
-    return 1;
+    exit 1;
   elif [[ -n ${RAM//[0-9]/} || $RAM -lt 4 ]]; then
     echo "Memory may only contain numbers and shall be bigger than 4";
-    reset;
-    return 1;
+    exit 1;
   elif ! [[ -s $SCRIPT ]]; then
     echo "Shell-script not found or empty";
-    reset;
-    return 1;
+    exit 1;
   elif ! [[ $HOST_ONLY_IP =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
     echo "Invalid IP-Adress";
-    reset;
-    return 1;
+    exit 1;
+  elif grep -q "$HOST_ONLY_IP" "used_ip"; then
+    echo "IP: ${HOST_ONLY_IP} already in use"
+    exit 1
   else 
     echo "Everthing fine!" 
-    return 0;
   fi
 }
 
+
+finishing() {
+  mv "./.vagrant" "$SYNC_FOLDER";
+  echo "$HOST_ONLY_IP" >> used_ip;
+}
+
 main() {
+
   if [[ ( $CPU && $RAM && $OS_IMAGE && $SCRIPT && $HOST_ONLY_IP ) && ( -z $CONFIG_FILE) ]]; then
     # ineraction 
-    syncFolder;
-    validateInput && setEnvVar;
-    initVM;
-    mv "./.vagrant" "$SYNC_FOLDER";
+    validateInput && syncFolder;
+    setEnvVar;
+    initVM && finishing;
   elif [[ -s $CONFIG_FILE && $CONFIG_FILE == *.config ]]; then
     # file
     sourceConfigFile;
-    syncFolder;
-    validateInput && setEnvVar;
-    initVM;
-    mv "./.vagrant" "$SYNC_FOLDER";
+    validateInput && syncFolder;
+    setEnvVar;
+    initVM && finishing;
   else 
     # error
     echo "Error: Not enough Arguments or *.config file not given."
