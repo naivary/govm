@@ -25,7 +25,7 @@ init() {
   export LANG=C.UTF-8
 }
 
-while getopts "c:m:i:f:s:h:connect:" OPT; do
+while getopts "c:m:i:f:s:h:" OPT; do
   case "${OPT}" in
     c)
       CPU="${OPTARG}"
@@ -44,9 +44,6 @@ while getopts "c:m:i:f:s:h:connect:" OPT; do
       ;;
     h)
       HOST_ONLY_IP=${OPTARG}
-      ;;
-    connect)
-      CONNECT_TO=${OPTARG}
       ;;
     ?)
       usage
@@ -151,21 +148,18 @@ validateUsedIPFileState() {
 
 main() {
   setDefaultValues
-  if [[ ( "${CPU}" && "${RAM}" && "${OS_IMAGE}" && "${SCRIPT}" && "${HOST_ONLY_IP}" ) && ( -z "${CONFIG_FILE}") && ( -z "${CONNECT_TO}") ]]; then
+  if [[ ( "${CPU}" && "${RAM}" && "${OS_IMAGE}" && "${SCRIPT}" && "${HOST_ONLY_IP}" ) && ( -z "${CONFIG_FILE}") ]]; then
     # ineraction 
     init;
     validateInput && createSyncFolder;
     setVagrantENV;
     createVM && successExit;
-  elif [[ -s "${CONFIG_FILE}" && "${CONFIG_FILE}" == *.config && ( -z "${CONNECT_TO}" ) ]]; then
+  elif [[ -s "${CONFIG_FILE}" && "${CONFIG_FILE}" == *.config ]]; then
     # file
     sourceConfigFile;
     validateInput && createSyncFolder;
     setVagrantENV;
     createVM && successExit;
-  elif [ "${CONNECT_TO}" ]; then
-    echo "getting here"
-    ssh gov@"${CONNECT_TO}"
   else 
     # error
     echo "Error: Not enough Arguments or *.config file not given."
