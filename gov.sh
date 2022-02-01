@@ -1,7 +1,7 @@
 #!/bin/bash
-trap trapExit INT
-MACHINES=/mnt/c/users/mh0071/
 
+MANUAL_GROUP=("-c" "-m" "-i" "-s" "-h" "-v")
+FILE_GROUP=("-f" "-v")
 
 usage() {
   echo "-c [integer] is setting the count of CPUs"
@@ -10,11 +10,15 @@ usage() {
   echo "-s [path] is setting the path to the provision-shell-script"
   echo "-h [ipv4] is setting the ip-adress for host-only of the type 192.168.56.0/24"
   echo "-f [path] is specifing the path to a *.config file with the parameters CPU, RAM, OS_IMAGE, IP and SCRIPT"
+  echo "-v [string] is setting the vagrant commadn you want to run"
 }
 
 # init is settin gall standard needed for
 # the shell-script to run smooth
 init() {
+  MACHINES=/mnt/c/users/mh0071/
+  export PATH="${PATH}"
+  export LANG=C.UTF-8
   # -e any error means to exit the script
   # -u treat unset variables and paramters as an error
   # -x what is getting executed
@@ -22,10 +26,9 @@ init() {
   # set -x
   set -u
   # UTF-8 as standard in the shell-Environment
-  export LANG=C.UTF-8
 }
 
-while getopts "c:m:i:f:s:h:" OPT; do
+while getopts "c:m:i:f:s:h:v:" OPT; do
   case "${OPT}" in
     c)
       CPU="${OPTARG}"
@@ -44,6 +47,9 @@ while getopts "c:m:i:f:s:h:" OPT; do
       ;;
     h)
       HOST_ONLY_IP=${OPTARG}
+      ;;
+    v)
+      VAGRANT_CMD=${OPTARG}
       ;;
     ?)
       usage
