@@ -8,7 +8,7 @@ Vagrant.configure("2") do |config|
   config.vm.synced_folder ENV["SYNC_FOLDER"], "/home/gov/sync_folder", disabled:false
   config.vm.synced_folder ".", "/vagrant", disabled:true
   config.vm.network "private_network", ip: ENV["HOST_ONLY_IP"]
-  config.vm.network "public_network"
+  config.vm.network "public_network", bridge: "Realtek PCIe GbE Family Controller"
   config.vm.provider "virtualbox" do |vb|
     vb.name = ENV["VM_NAME"]
     vb.memory = ENV["RAM"]

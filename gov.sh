@@ -1,7 +1,6 @@
 #!/bin/bash
 
-MANUAL_GROUP=("-c" "-m" "-i" "-s" "-h" "-v")
-FILE_GROUP=("-f" "-v")
+trap trapExit INT;
 
 usage() {
   echo "-c [integer] is setting the count of CPUs"
@@ -10,9 +9,17 @@ usage() {
   echo "-s [path] is setting the path to the provision-shell-script"
   echo "-h [ipv4] is setting the ip-adress for host-only of the type 192.168.56.0/24"
   echo "-f [path] is specifing the path to a *.config file with the parameters CPU, RAM, OS_IMAGE, IP and SCRIPT"
-  echo "-v [string] is setting the vagrant commadn you want to run"
+  echo "-v [string] is setting the vagrant command you want to run"
 }
-
+MANUAL_GROUP=("-c" "-m" "-i" "-s" "-h" "-v")
+FILE_GROUP=("-f" "-v")
+OPTIONS=(
+    "CPU"
+    "RAM"
+    "OS_IMAGE"
+    "SCRIPT"
+    "HOST_ONLY_IP"
+)
 # init is settin gall standard needed for
 # the shell-script to run smooth
 init() {
@@ -28,7 +35,7 @@ init() {
   # UTF-8 as standard in the shell-Environment
 }
 
-while getopts "c:m:i:f:s:h:v:" OPT; do
+while getopts "c:m:i:s:h:f:v:" OPT; do
   case "${OPT}" in
     c)
       CPU="${OPTARG}"
@@ -115,19 +122,38 @@ createVM() {
 # sourcing 
 
 sourceConfigFile() {
-  echo "Loading ${CONFIG_FILE}...";
-  . "$CONFIG_FILE";
+  . "${CONFIG_FILE}"
 }
 
 # validation
+validateAndSourceConfigFile() {
+  echo "Loading ${CONFIG_FILE}...";
+
+  while read LINE
+  do
+    VALUE="$(echo -e "${LINE}" | tr -d '[:space:]')"
+    if ! [[ "${VALUE}" =~ ^([^'#']+)=(.+) ]]; then
+      echo "DID not match ${VALUE}"
+      exit 1
+    else
+      NAME="${BASH_REMATCH[1]}"
+      if ! [[ "${OPTIONS[*]}" =~ "${NAME}" ]]; then
+        echo "Unexpected KEY: ${NAME}"
+        exit 1
+      fi
+    fi
+  done < .config
+  sourceConfigFile;
+}
+
 
 validateInput() {
   echo "Validating Paramaters..."
   
-  if ! [[ "${CPU}" =~ ^[0-9]+$ && "${CPU}" -ge 1 ]]; then
+  if ! [[ "${CPU}" =~ ^[0-9]+$ && "${CPU}" -ge 1 && "${CPU}" -le 100 ]]; then
     echo "CPU (${CPU}) may only contain numbers and shall be bigger than 1";
     exit 1;
-  elif ! [[ "${RAM}" =~ ^[0-9]+$ && "${RAM}" -ge 4 ]]; then
+  elif ! [[ "${RAM}" =~ ^[0-9]+$ && "${RAM}" -ge 4  && "${RAM}" -le 16000 ]]; then
     echo "Memory may only contain numbers and shall be bigger than 4";
     exit 1;
   elif ! [[ -s "${SCRIPT}" ]]; then
@@ -162,10 +188,14 @@ main() {
     createVM && successExit;
   elif [[ -s "${CONFIG_FILE}" && "${CONFIG_FILE}" == *.config ]]; then
     # file
-    sourceConfigFile;
+    init;
+    validateAndSourceConfigFile;
     validateInput && createSyncFolder;
     setVagrantENV;
     createVM && successExit;
+  elif [[ -n "${VAGRANT_CMD}" ]]; then 
+    init;
+
   else 
     # error
     echo "Error: Not enough Arguments or *.config file not given."

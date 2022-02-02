@@ -6,10 +6,12 @@ sudo -i apt-get upgrade -y && sudo -i apt-get update
 # adding user "${USERNAME}" with root-priviliges
 # with the password $PASSWORD, without typing
 # the password every type running a sudo
-adduser --gecos "" "${USERNAME}"
+# adduseradduser --gecos "" "${USERNAME}"
+useradd -m -p ${PASSWORD} -s /bin/bash ${USERNAME}
+sudo chown gov:gov /home/${USERNAME}
 usermod -aG sudo "${USERNAME}"
 
-echo "${USERNAME}:$PASSWORD" | sudo chpasswd
+echo "${USERNAME}:${PASSWORD}" | sudo chpasswd
 passwd --expire "${USERNAME}";
 
 cat << EOF > "/etc/sudoers.d/${USERNAME}"
@@ -37,13 +39,15 @@ cat << EOF > "/home/${USERNAME}/.bash_profile"
 export PS1="<\!>\u@\h:\w>"
 EOF
 
-cat << EOF > "/home/${USERNAME}/.git-credentials"
+sudo -u gov cat << EOF > "/home/${USERNAME}/.git-credentials"
 https://No1Lik3U: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@github.com
 EOF
 
 #create .gitconfig 
 touch /home/${USERNAME}/.gitconfig
 sudo chown gov:gov /home/${USERNAME}/.gitconfig
+sudo -i -u "${USERNAME}" git config --global user.email "SayedMustafaHussaini@outlook.de"
+sudo -i -u "${USERNAME}" git config --global user.name "Hussaini"
 sudo -i -u "${USERNAME}" git config --global credential.helper "store --file ~/.git-credentials"
 sudo -i -u "${USERNAME}" git config --global alias.aa "add --all"
 sudo -i -u "${USERNAME}" git config --global alias.bv "branch -v"
@@ -64,3 +68,18 @@ sudo -i -u "${USERNAME}" git config --global alias.uh "reset --hard HEAD"
 sudo -i -u "${USERNAME}" git config --global alias.ll "log --pretty=format:\"%C\(yellow\)%h%Cred%d\\ %Creset%s%Cblue\\ [%cn\]\" --decorate --numstat"
 sudo -i -u "${USERNAME}" git config --global alias.ld "log --pretty=format:\"%C(yellow)%h\\ %C(green)%ad%Cred%d\\ %Creset%s%Cblue\\ [%cn]\" --decorate --date=short --graph"
 sudo -i -u "${USERNAME}" git config --global alias.ls "log --pretty=format:\"%C(green)%h\\ %C(yellow)[%ad]%Cred%d\\ %Creset%s%Cblue\\ [%cn]\" --decorate --date=relative"
+
+sudo -i -u gov git clone https://github.com/No1Lik3U/Testing.git /home/${USERNAME}/testing;
+cat << EOF > "/home/${USERNAME}/testing/README.md"
+success!
+EOF
+sudo -i -u gov git -C /home/${USERNAME}/testing add .;
+sudo -i -u gov git -C /home/${USERNAME}/testing commit -m "it worked";
+sudo -i -u gov git -C /home/${USERNAME}/testing push -u origin master;
+
+if [ "$?" -ne 0 ]; then
+  echo "Git credentials are wrong!"
+fi
+
+sudo -i -u gov rm -r /home/${USERNAME}/testing
+
