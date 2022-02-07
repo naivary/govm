@@ -9,12 +9,14 @@ usage() {
   echo "-s [path] is setting the path to the provision-shell-script"
   echo "-h [ipv4] is setting the ip-adress for host-only of the type 192.168.56.0/24"
   echo "-f [path] is specifing the path to a *.config file with the parameters CPU, RAM, OS_IMAGE, IP and SCRIPT"
-  echo "-v [up/halt/start/ssh/destroy] is setting the vagrant command you want to run"
+  echo "-v [up/halt/start/ssh/destroy] is setting the vagrant command you want to run (has to be present with every command )"
+  echo "-d if this is present it will force destroy and replacing if there is a virtual machine registered but noch reachable"
 }
 
-MANUAL_GROUP=("-c" "-m" "-i" "-s" "-h" "-v")
+MANUAL_GROUP=("-c" "-r" "-i" "-s" "-h" "-v")
 FILE_GROUP=("-f" "-v")
-VAGRANT_COMMANDS=("-v" "-vm")
+VAGRANT_COMMANDS=("-v" "-m")
+LIST_GROUP=("-l")
 OPTIONS=(
     "CPU"
     "RAM"
@@ -27,6 +29,8 @@ OPTIONS=(
 # the shell-script to run smooth
 init() {
   MACHINES=/mnt/c/Users/mh0071
+  VM_LIST=${VM_LIST:-""}
+  FORCE_DESTROY=${FORCE_DESTROY:-""}
   export PATH="${PATH}"
   export LANG=C.UTF-8
   export LC_NUMERIC="en_US.UTF-8"
@@ -39,7 +43,7 @@ init() {
   # UTF-8 as standard in the shell-Environment
 }
 
-while getopts "c:r:i:s:h:f:v:m:l" OPT; do
+while getopts "c:r:i:s:h:f:v:m:ld" OPT; do
   case "${OPT}" in
     c)
       CPU="${OPTARG}"
@@ -68,6 +72,9 @@ while getopts "c:r:i:s:h:f:v:m:l" OPT; do
     l)
       VM_LIST="show"
       ;;
+    d)
+      FORCE_DESTROY="force"
+      ;;
     ?)
       usage
       exit 1
@@ -85,39 +92,44 @@ rmSyncFolder() {
 
 
 clean() {
+  echo "Cleaning up..."
   rmSyncFolder;
-  removeIP;
+  removeIPFromFile;
+  removeVagrantDir
 }
 
-IPtoID() {
-  IP_TO_ID="$(grep ${1} used_ip.txt && cut -d '=' -f 1 used_ip.txt)"
+IPID() {
+  IP_TO_ID="$(grep ${1} used_ip.txt | cut -d '=' -f 1)"
 }
 
 IDtoIP() {
-  ID_TO_IP="$(grep ${1} used_ip.txt && cut -d '=' -f 2 used_ip.txt)"
+  IDIP="$(grep ${1} used_ip.txt | cut -d '=' -f 2)"
 }
 
-removeIP() {
-  IDtoIP "${VIRTUAL_MACHINE}";
-  if grep -q "${HOST_ONLY_IP}" "used_ip.txt"; then
-    sed -i "/${HOST_ONLY_IP}/d" "used_ip.txt";
+removeIPFromFile() {
+  if grep -q "${HOST_ONLY_IP}" "./used_ip.txt"; then
+    sed -i "/${HOST_ONLY_IP}/d" "./used_ip.txt";
   fi
 }
 
+removeVagrantDir() {
+  if [[ -d "./.vagrant" ]]; then
+    rm -r "./.vagrant"
+  fi
+}
 
 # exits
-
 trapExit() {
   echo "Graceful exiting..."
   rmSyncFolder;
-  validateUsedIPFileState;
+  removeVagrantDir
 }
 
 successExitAfterCreation() {
   cd ${MACHINES}/vagrant-ptb
   createConfigFile;
-  validateUsedIPFileState; 
-  echo ${HOST_ONLY_IP} >> "used_ip.txt";
+  removeVagrantDir;
+  echo "${ID}=${HOST_ONLY_IP}" >> "used_ip.txt";
 }
 
 # setter
@@ -127,6 +139,9 @@ setDefaultValues() {
   RAM="${RAM:-1048}"
   OS_IMAGE=${OS_IMAGE:-"ubuntu/trusty64"}
   SCRIPT=${SCRIPT:-"provision/default.sh"}
+  VIRTUAL_MACHINE=${VIRTUAL_MACHINE:-""}
+  CONFIG_FILE=${CONFIG_FILE:-""}
+  ID=${ID:-0}
 }
 
 setVagrantENV() {
@@ -174,7 +189,7 @@ EOF
 
 createNeededFilesForVagrant() {
   setVagrantENV;
-  cp "./Vagrantfile" "${MACHINES}/.machines/${ID}/Vagrantfile"
+  cp "Vagrantfile" "${MACHINES}/.machines/${ID}/Vagrantfile"
   mkdir "${MACHINES}/.machines/${ID}/provision"
   cp "${SCRIPT}" "${MACHINES}/.machines/${ID}/${SCRIPT}"
 }
@@ -196,7 +211,7 @@ validateAndSourceConfigFile() {
   while read LINE
   do
     VALUE="$(echo -e "${LINE}" | tr -d '[:space:]')"
-    if ! [[ "${VALUE}" =~ ^([^'#']+)=(.+) ]]; then
+    if ! [[ "${VALUE}" =~ ^([^'#']+)=([^\#$%&*^]+$) ]]; then
       echo "DID not match ${VALUE}"
       exit 1
     else
@@ -225,8 +240,7 @@ validateInput() {
   elif ! [[ "${HOST_ONLY_IP}" =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
     echo "Invalid IP-Adress";
     exit 1;
-  elif ping -w 1 "${HOST_ONLY_IP}" &> /dev/null; then
-    echo "IP:${HOST_ONLY_IP} already in use. Choose another IP-Adress"
+  elif ! validateIP;then
     exit 1
   else 
     echo "Everthing fine!" 
@@ -235,8 +249,76 @@ validateInput() {
 }
 
 
+# 
+validateIP() {
+  # check if ip is used in any way
+  ping -w 1 "${HOST_ONLY_IP}" &> /dev/null;
 
-validateUsedIPFileState() {
+  if [[ "$?" -eq 0  && -z "${FORCE_DESTROY}" ]]; then
+    echo "Machine with the IP: ${HOST_ONLY_IP} exists. Choose an other IP-Adress."
+    exit 1
+  fi
+
+  # check if ip exist within machine-ecosystem
+  grep -q "${HOST_ONLY_IP}" used_ip.txt  
+
+  if [[ "$?" -eq 0 && -z "${FORCE_DESTROY}" ]]; then
+    IPID ${HOST_ONLY_IP}
+    echo "Machine still existing in our system ID: ${IP_TO_ID}"    
+    exit 1
+  fi
+
+  if [ ${FORCE_DESTROY} ]; then
+    IPID ${HOST_ONLY_IP}
+    VIRTUAL_MACHINE=${IP_TO_ID}
+    destroy
+    if [ "${CONFIG_FILE}" ]; then
+      sourceConfigFile
+    fi
+  fi
+
+}
+
+validateArgs() {
+  CHECK_MANUAL=()
+  CHECK_FILE=()
+  CHECK_VAGRANT=()
+  CHECK_LIST=()
+  VAGRANT_COMMAND_GIVEN="false"
+
+  for ARG in "$@"
+  do
+    if [[ "${ARG}" =~ ^-.$ ]]; then
+      if [[ "${MANUAL_GROUP[*]}" =~ "${ARG}" && "${ARG}" != "-v" ]]; then
+        CHECK_MANUAL+=("${ARG}")
+      elif [[ "${FILE_GROUP[*]}" =~ "${ARG}" && "${ARG}" != "-v" ]]; then
+        CHECK_FILE+=("${ARG}")
+      elif [[ "${VAGRANT_COMMANDS[*]}" =~ "${ARG}" && "${ARG}" != "-v" ]]; then
+        CHECK_VAGRANT=("${ARG}")
+      elif [[ "${ARG}" == "-v" ]]; then
+        VAGRANT_COMMAND_GIVEN="true"
+      elif [[ "${LIST_GROUP[*]}" =~ "${ARG}" && "${ARG}" != "-v" ]]; then
+        CHECK_LIST+=("${ARG}")
+      fi
+    fi
+  done
+
+  if [[ "${#CHECK_MANUAL[@]}" -eq 5 && "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq 0 && "${VAGRANT_COMMAND_GIVEN}" == "true" ]]; then
+    echo "Manual interaction started!"
+    echo "Going forward..."
+  elif [[ "${#CHECK_MANUAL[@]}" -eq 0 && "${#CHECK_FILE[@]}" -eq 1 && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq 0 && "${VAGRANT_COMMAND_GIVEN}" == "true" ]]; then
+    echo "Config file interaction started!"
+    echo "Going forward..."
+  elif [[ "${#CHECK_MANUAL[@]}" -eq 0 && "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq 1 && "${#CHECK_LIST[@]}" -eq 0 && "${VAGRANT_COMMAND_GIVEN}" == "true" ]]; then
+    echo "Going foward..."
+  elif [[ "${#CHECK_MANUAL[@]}" -eq 0 && "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq 1 && "${VAGRANT_COMMAND_GIVEN}" == "false" ]]; then
+    echo "Listing all virtual machines..."
+  else
+    echo "Too Many or not enough arguments"
+    exit 1
+  fi
+
+
 }
 
 # commands
@@ -251,8 +333,9 @@ createVagrantENV() {
 destroy() {
   echo "Destroying ${VIRTUAL_MACHINE}.."
   createVagrantENV;
-  cd "${MACHINES}/.machines/${VIRTUAL_MACHINE}/"
-  vagrant destroy --force && clean; 
+  vagrant destroy --force;
+  cd ${MACHINES}/vagrant-ptb; 
+  clean;
 }
 
 fileUp() {
@@ -281,18 +364,18 @@ up() {
     fileUp;
   else 
     echo "Error"
-    usage
+    usage;
   fi
 }
 
 halt() {
-  echo "Shutting down ${VIRTUAL_MACHINE}"
+  echo "Stopping ${VIRTUAL_MACHINE}..."
   createVagrantENV;
   vagrant halt
 }
 
 vssh() {
-  echo "SSH into the virtual machine ${VIRTUAL_MACHINE}"
+  echo "SSH into ${VIRTUAL_MACHINE}"
   createVagrantENV;
   vagrant ssh;
 }
@@ -304,13 +387,11 @@ start() {
 }
 
 list() {
-  
-  if [ ! -d ${MACHINES}/.machines/* ]; then
+  init 
+  if [ -z "$(ls -A ${MACHINES}/.machines)" ]; then
     echo "No Machines have been created yet!"
     exit 1
   fi
-     
-  init;
 
   divider===============================;
   divider=$divider$divider$divider;
@@ -333,6 +414,7 @@ list() {
 #entering point
 main() {
   setDefaultValues
+  validateArgs "$@"
   if [[ "${VAGRANT_CMD}" == "destroy" && "${VIRTUAL_MACHINE}" ]]; then 
     destroy;
   elif [[ "${VAGRANT_CMD}" == "halt" && "${VIRTUAL_MACHINE}" ]]; then
@@ -352,4 +434,4 @@ main() {
   fi
 }
 
-main;
+main "$@"
