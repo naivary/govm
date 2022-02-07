@@ -40,7 +40,7 @@ export PS1="<\!>\u@\h:\w>"
 EOF
 
 sudo -u gov cat << EOF > "/home/${USERNAME}/.git-credentials"
-https://No1Lik3U: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@github.com
+https://<git-username>:<your-access-token>@github.com
 EOF
 
 #create .gitconfig 
