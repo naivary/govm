@@ -147,6 +147,7 @@ setDefaultValues() {
   VIRTUAL_MACHINE=${VIRTUAL_MACHINE:-""}
   CONFIG_FILE=${CONFIG_FILE:-""}
   ID=${ID:-0}
+  VM_NAME=${VM_NAME:-""}
 }
 
 setVagrantENV() {
@@ -214,7 +215,7 @@ sourceConfigFile() {
 # validation
 validateAndSourceConfigFile() {
   echo "Loading ${CONFIG_FILE}...";
-  if [[  -s "${CONFIG_FILE}" && "${CONFIG_FILE}" == *.config ]]; then
+  if [[  -s "${CONFIG_FILE}" ]]; then
     while read LINE
     do
       VALUE="$(echo -e "${LINE}" | tr -d '[:space:]')"
@@ -260,7 +261,8 @@ validateInput() {
 }
 
 
-# 
+# validateIP is validating the given ip
+# if its already in use or not 
 validateIP() {
   # check if ip is used in any way
   ping -w 1 "${HOST_ONLY_IP}" &> /dev/null;
@@ -279,7 +281,11 @@ validateIP() {
     exit 1
   fi
 
-  if [ ${FORCE_DESTROY} ]; then
+  grep -w ${HOST_ONLY_IP} used_ip.txt
+
+  IS_SUCCESS=${?}
+
+  if [[ ${FORCE_DESTROY}  && "${IS_SUCCESS}" -eq 0 ]]; then
     IPID ${HOST_ONLY_IP}
     VIRTUAL_MACHINE=${IP_TO_ID}
     destroy
@@ -287,7 +293,6 @@ validateIP() {
       sourceConfigFile
     fi
   fi
-
 }
 
 validateArgs() {
@@ -328,6 +333,7 @@ validateArgs() {
     echo "Listing all virtual machines..."
   else
     echo "Too Many or not enough arguments"
+    usage;
     exit 1
   fi
 
@@ -408,21 +414,22 @@ list() {
 
   divider===============================;
   divider=$divider$divider$divider;
-  header="\n %-10s %11s %14s %21s %8s\n";
-  format="%11s %15s %17s %3d %17d\n";
-  width=70;
+  header="\n %-10s %10s %13s %14s %21s %8s\n";
+  format="%11s %12s %15s %17s %3d %17d\n";
+  width=85;
 
-  printf "$header" "VM-ID" "IP-Adress" "OS-Image" "Processor(s)" "Memory";
+  printf "$header" "VM-ID" "VM-Name" "IP-Adress" "OS-Image" "Processor(s)" "Memory";
   printf "%$width.${width}s\n" "$divider";
 
   for DIR in ${MACHINES}/.machines/*; do
     cd ${DIR}
     . .config
     printf "$format" \
-    "${ID}" "${HOST_ONLY_IP}" "${OS_IMAGE}" "${CPU}" "${RAM}" 
+    "${ID}" "${VM_NAME}" "${HOST_ONLY_IP}" "${OS_IMAGE}" "${CPU}" "${RAM}" 
   done
 
 }
+
 
 #entering point
 main() {
