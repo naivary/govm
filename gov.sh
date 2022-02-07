@@ -13,7 +13,7 @@ usage() {
   echo "-d if this is present it will force destroy and replacing if there is a virtual machine registered but noch reachable"
 }
 
-MANUAL_GROUP=("-c" "-r" "-i" "-s" "-h" "-v")
+MANUAL_GROUP=("-c" "-r" "-i" "-s" "-h" "-v" "-n")
 FILE_GROUP=("-f" "-v")
 VAGRANT_COMMANDS=("-v" "-m")
 LIST_GROUP=("-l")
@@ -23,8 +23,10 @@ OPTIONS=(
     "OS_IMAGE"
     "SCRIPT"
     "HOST_ONLY_IP"
+    "VM_NAME"
 )
-
+IS_MANUAL="false"
+IS_FILE="false"
 # init is settin gall standard needed for
 # the shell-script to run smooth
 init() {
@@ -43,7 +45,7 @@ init() {
   # UTF-8 as standard in the shell-Environment
 }
 
-while getopts "c:r:i:s:h:f:v:m:ld" OPT; do
+while getopts "c:r:i:s:h:f:v:n:m:ld" OPT; do
   case "${OPT}" in
     c)
       CPU="${OPTARG}"
@@ -74,6 +76,9 @@ while getopts "c:r:i:s:h:f:v:m:ld" OPT; do
       ;;
     d)
       FORCE_DESTROY="force"
+      ;;
+    n)
+      VM_NAME=${OPTARG}
       ;;
     ?)
       usage
@@ -150,9 +155,9 @@ setVagrantENV() {
   export OS_IMAGE;
   export SCRIPT;
   export HOST_ONLY_IP;
+  export VM_NAME;
   # not set by User
   export SYNC_FOLDER;
-  export VM_NAME;
 }
 
 
@@ -163,7 +168,9 @@ createSyncFolder() {
     mkdir -p "${MACHINES}/.machines"
   fi
   ID="$(openssl rand -hex 5)" 
-  VM_NAME="${HOST_ONLY_IP}_${ID}"
+  if [[ -z ${VM_NAME} ]]; then
+    VM_NAME="${HOST_ONLY_IP}_${ID}" 
+  fi
   mkdir -p -- "${MACHINES}/.machines/${ID}"
   SYNC_FOLDER="${MACHINES}/.machines/${ID}"
 }
@@ -207,22 +214,26 @@ sourceConfigFile() {
 # validation
 validateAndSourceConfigFile() {
   echo "Loading ${CONFIG_FILE}...";
-
-  while read LINE
-  do
-    VALUE="$(echo -e "${LINE}" | tr -d '[:space:]')"
-    if ! [[ "${VALUE}" =~ ^([^'#']+)=([^\#$%&*^]+$) ]]; then
-      echo "DID not match ${VALUE}"
-      exit 1
-    else
-      NAME="${BASH_REMATCH[1]}"
-      if ! [[ "${OPTIONS[*]}" =~ "${NAME}" ]]; then
-        echo "Unexpected KEY: ${NAME}"
+  if [[  -s "${CONFIG_FILE}" && "${CONFIG_FILE}" == *.config ]]; then
+    while read LINE
+    do
+      VALUE="$(echo -e "${LINE}" | tr -d '[:space:]')"
+      if ! [[ "${VALUE}" =~ ^([^'#']+)=([^\#$%&*^]+$) ]]; then
+        echo "DID not match ${VALUE}"
         exit 1
+      else
+        NAME="${BASH_REMATCH[1]}"
+        if ! [[ "${OPTIONS[*]}" =~ "${NAME}" ]]; then
+          echo "Unexpected KEY: ${NAME}"
+          exit 1
+        fi
       fi
-    fi
-  done < .config
-  sourceConfigFile;
+    done < .config
+    sourceConfigFile;
+  else 
+    echo ".config is not existing or is empty or has the wrong extension (expected: .config)"
+    exit 1
+  fi
 }
 
 
@@ -306,11 +317,13 @@ validateArgs() {
   if [[ "${#CHECK_MANUAL[@]}" -eq 5 && "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq 0 && "${VAGRANT_COMMAND_GIVEN}" == "true" ]]; then
     echo "Manual interaction started!"
     echo "Going forward..."
+    IS_MANUAL="true"
   elif [[ "${#CHECK_MANUAL[@]}" -eq 0 && "${#CHECK_FILE[@]}" -eq 1 && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq 0 && "${VAGRANT_COMMAND_GIVEN}" == "true" ]]; then
     echo "Config file interaction started!"
     echo "Going forward..."
+    IS_FILE="true"
   elif [[ "${#CHECK_MANUAL[@]}" -eq 0 && "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq 1 && "${#CHECK_LIST[@]}" -eq 0 && "${VAGRANT_COMMAND_GIVEN}" == "true" ]]; then
-    echo "Going foward..."
+    echo "Running vagrant command..."
   elif [[ "${#CHECK_MANUAL[@]}" -eq 0 && "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq 1 && "${VAGRANT_COMMAND_GIVEN}" == "false" ]]; then
     echo "Listing all virtual machines..."
   else
@@ -358,9 +371,9 @@ manualUp() {
 
 
 up() {
-  if [[ ( "${CPU}" && "${RAM}" && "${OS_IMAGE}" && "${SCRIPT}" && "${HOST_ONLY_IP}" ) && ( -z "${CONFIG_FILE}") ]]; then
-    manualUp
-  elif [[ -s "${CONFIG_FILE}" && "${CONFIG_FILE}" == *.config ]]; then
+  if [[ ${IS_MANUAL} == "true" ]]; then
+     manualUp
+  elif [[ ${IS_FILE} == "true" ]]; then
     fileUp;
   else 
     echo "Error"
