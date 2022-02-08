@@ -69,17 +69,17 @@ sudo -i -u "${USERNAME}" git config --global alias.ll "log --pretty=format:\"%C\
 sudo -i -u "${USERNAME}" git config --global alias.ld "log --pretty=format:\"%C(yellow)%h\\ %C(green)%ad%Cred%d\\ %Creset%s%Cblue\\ [%cn]\" --decorate --date=short --graph"
 sudo -i -u "${USERNAME}" git config --global alias.ls "log --pretty=format:\"%C(green)%h\\ %C(yellow)[%ad]%Cred%d\\ %Creset%s%Cblue\\ [%cn]\" --decorate --date=relative"
 
-sudo -i -u gov git clone https://github.com/No1Lik3U/Testing.git /home/${USERNAME}/testing;
+sudo -i -u ${USERNAME} git clone https://github.com/No1Lik3U/Testing.git /home/${USERNAME}/testing;
 cat << EOF > "/home/${USERNAME}/testing/README.md"
 success!
 EOF
-sudo -i -u gov git -C /home/${USERNAME}/testing add .;
-sudo -i -u gov git -C /home/${USERNAME}/testing commit -m "it worked";
-sudo -i -u gov git -C /home/${USERNAME}/testing push -u origin master;
+sudo -i -u ${USERNAME} git -C /home/${USERNAME}/testing add .;
+sudo -i -u ${USERNAME} git -C /home/${USERNAME}/testing commit -m "it worked";
+sudo -i -u ${USERNAME} git -C /home/${USERNAME}/testing push -u origin master;
 
 if [ "$?" -ne 0 ]; then
   echo "Git credentials are wrong!"
 fi
 
-sudo -i -u gov rm -r /home/${USERNAME}/testing
+sudo -i -u ${USERNAME} rm -r /home/${USERNAME}/testing
 

@@ -15,9 +15,9 @@ usage() {
 
 MANUAL_GROUP=("-c" "-r" "-i" "-s" "-h" "-v" "-n")
 FILE_GROUP=("-f" "-v")
-VAGRANT_COMMANDS=("-v" "-m")
+VAGRANT_GROUP=("-v" "-m")
 LIST_GROUP=("-l")
-OPTIONS=(
+VALID_CONFIG_PARAMS_VM=(
     "CPU"
     "RAM"
     "OS_IMAGE"
@@ -25,12 +25,25 @@ OPTIONS=(
     "HOST_ONLY_IP"
     "VM_NAME"
 )
+VALID_CONFIG_PARAMS_APP=(
+  "OS_USERNAME"
+  "OS_PASSWORD"
+  "GIT_USERNAME"
+  "GIT_PASSWORD"
+  "MACHINE_PATH"
+  "LOG_PATH"
+)
 IS_MANUAL="false"
 IS_FILE="false"
-# init is settin gall standard needed for
-# the shell-script to run smooth
+
+# init is setting all best-practice-standards 
+# needed for the shell-script to run without
+# any problems
 init() {
-  MACHINES=/mnt/c/Users/mh0071
+  # MACHINE_PATH is specifizing where
+  # the created virtual-machines exist
+  MACHINE_PATH=/mnt/c/Users/mh0071
+  BASE_FOLDER=.machines
   VM_LIST=${VM_LIST:-""}
   FORCE_DESTROY=${FORCE_DESTROY:-""}
   export PATH="${PATH}"
@@ -90,8 +103,8 @@ done
 # remove
 
 rmSyncFolder() {
-  if [[ -d "${MACHINES}/.machines/${ID}" ]]; then
-    sudo rm -r "${MACHINES}/.machines/${ID}";
+  if [[ -d "${MACHINE_PATH}/${BASE_FOLDER}/${ID}" ]]; then
+    sudo rm -r "${MACHINE_PATH}/${BASE_FOLDER}/${ID}";
   fi 
 }
 
@@ -101,6 +114,7 @@ clean() {
   rmSyncFolder;
   removeIPFromFile;
   removeVagrantDir
+  echo "Finished!"
 }
 
 IPID() {
@@ -131,10 +145,11 @@ trapExit() {
 }
 
 successExitAfterCreation() {
-  cd ${MACHINES}/vagrant-wrapper
+  cd ${MACHINE_PATH}/vagrant-wrapper
   createConfigFile;
   removeVagrantDir;
   echo "${ID}=${HOST_ONLY_IP}" >> "used_ip.txt";
+  echo "VM ${ID} is up and running!"
 }
 
 # setter
@@ -164,25 +179,36 @@ setVagrantENV() {
 
 # creation of X
 
+# createSyncFolder is creating the
+# syncFolder for the VM and also
+# the log folder to log to
 createSyncFolder() {
-  if [ ! -d "${MACHINES}/.machines" ]; then
-    mkdir -p "${MACHINES}/.machines"
+  # needed to create the base folder if running 
+  # for the first time
+  if [ ! -d "${MACHINE_PATH}/${BASE_FOLDER}" ]; then
+    mkdir -p "${MACHINE_PATH}/${BASE_FOLDER}"
   fi
+
   ID="$(openssl rand -hex 5)" 
   if [[ -z ${VM_NAME} ]]; then
     VM_NAME="${HOST_ONLY_IP}_${ID}" 
   fi
-  mkdir -p -- "${MACHINES}/.machines/${ID}"
-  SYNC_FOLDER="${MACHINES}/.machines/${ID}"
+  mkdir -p -- "${MACHINE_PATH}/${BASE_FOLDER}/${ID}/logs"
+
+  SYNC_FOLDER="${MACHINE_PATH}/${BASE_FOLDER}/${ID}"
+
+  # LOG_PATH is setting the path to log to
+  LOG_PATH=${MACHINE_PATH}/${BASE_FOLDER}/${ID}/logs
+
 }
 
 createVM() {
-  echo "Creating Virtual-Machine with the ID: $ID"
-  vagrant up;
+  echo "Creating Virtual-Machine $ID. This may take a while..."
+  vagrant up &> ${LOG_PATH}/vagrant_up.log 
 }
 
 createConfigFile() {
-cat << EOF > ${MACHINES}/.machines/${ID}/.config
+cat << EOF > ${MACHINE_PATH}/${BASE_FOLDER}/${ID}/.config
 CPU=${CPU}
 RAM=${RAM}
 OS_IMAGE=${OS_IMAGE}
@@ -197,9 +223,9 @@ EOF
 
 createNeededFilesForVagrant() {
   setVagrantENV;
-  cp "Vagrantfile" "${MACHINES}/.machines/${ID}/Vagrantfile"
-  mkdir "${MACHINES}/.machines/${ID}/provision"
-  cp "${SCRIPT}" "${MACHINES}/.machines/${ID}/${SCRIPT}"
+  cp "Vagrantfile" "${MACHINE_PATH}/${BASE_FOLDER}/${ID}/Vagrantfile"
+  mkdir "${MACHINE_PATH}/${BASE_FOLDER}/${ID}/provision"
+  cp "${SCRIPT}" "${MACHINE_PATH}/${BASE_FOLDER}/${ID}/${SCRIPT}"
 }
 
 
@@ -209,13 +235,13 @@ createNeededFilesForVagrant() {
 # given config-file into the current
 # shell-ENV
 sourceConfigFile() {
-  . "${CONFIG_FILE}"
+  . "${1}"
 }
 
 # validation
 validateAndSourceConfigFile() {
-  echo "Loading ${CONFIG_FILE}...";
-  if [[  -s "${CONFIG_FILE}" ]]; then
+  echo "Loading ${1}...";
+  if [[  -s "${1}" ]]; then
     while read LINE
     do
       VALUE="$(echo -e "${LINE}" | tr -d '[:space:]')"
@@ -229,8 +255,8 @@ validateAndSourceConfigFile() {
           exit 1
         fi
       fi
-    done < .config
-    sourceConfigFile;
+    done < ${1}
+    sourceConfigFile ${1}
   else 
     echo ".config is not existing or is empty or has the wrong extension (expected: .config)"
     exit 1
@@ -277,11 +303,11 @@ validateIP() {
 
   if [[ "$?" -eq 0 && -z "${FORCE_DESTROY}" ]]; then
     IPID ${HOST_ONLY_IP}
-    echo "Machine still existing in our system ID: ${IP_TO_ID}"    
+    echo "Machine still existing in our system ID: ${IP_TO_ID}. Run Command with -d to force recreation."    
     exit 1
   fi
 
-  grep -w ${HOST_ONLY_IP} used_ip.txt
+  grep -q -w ${HOST_ONLY_IP} used_ip.txt
 
   IS_SUCCESS=${?}
 
@@ -309,7 +335,7 @@ validateArgs() {
         CHECK_MANUAL+=("${ARG}")
       elif [[ "${FILE_GROUP[*]}" =~ "${ARG}" && "${ARG}" != "-v" ]]; then
         CHECK_FILE+=("${ARG}")
-      elif [[ "${VAGRANT_COMMANDS[*]}" =~ "${ARG}" && "${ARG}" != "-v" ]]; then
+      elif [[ "${VAGRANT_GROUP[*]}" =~ "${ARG}" && "${ARG}" != "-v" ]]; then
         CHECK_VAGRANT=("${ARG}")
       elif [[ "${ARG}" == "-v" ]]; then
         VAGRANT_COMMAND_GIVEN="true"
@@ -341,10 +367,9 @@ validateArgs() {
 }
 
 # commands
-
 createVagrantENV() {
   init;
-  cd ${MACHINES}/.machines/${VIRTUAL_MACHINE}
+  cd ${MACHINE_PATH}/${BASE_FOLDER}/${VIRTUAL_MACHINE}
   . .config;
   setVagrantENV;
 }
@@ -352,17 +377,17 @@ createVagrantENV() {
 destroy() {
   echo "Destroying ${VIRTUAL_MACHINE}.."
   createVagrantENV;
-  vagrant destroy --force;
-  cd ${MACHINES}/vagrant-wrapper; 
+  vagrant destroy --force &> /dev/null
+  cd ${MACHINE_PATH}/vagrant-wrapper; 
   clean;
 }
 
 fileUp() {
  init;
- validateAndSourceConfigFile;
+ validateAndSourceConfigFile ${CONFIG_FILE};
  validateInput && createSyncFolder;
  createNeededFilesForVagrant
- cd ${MACHINES}/.machines/${ID};
+ cd ${MACHINE_PATH}/${BASE_FOLDER}/${ID};
  createVM && successExitAfterCreation;
 
 }
@@ -371,7 +396,7 @@ manualUp() {
   init;
   validateInput && createSyncFolder;
   createNeededFilesForVagrant;
-  cd ${MACHINES}/.machines/${ID};
+  cd ${MACHINE_PATH}/${BASE_FOLDER}/${ID};
   createVM && successExitAfterCreation;
 }
 
@@ -390,7 +415,7 @@ up() {
 halt() {
   echo "Stopping ${VIRTUAL_MACHINE}..."
   createVagrantENV;
-  vagrant halt
+  vagrant halt;
 }
 
 vssh() {
@@ -402,12 +427,12 @@ vssh() {
 start() {
   echo "Starting ${VIRTUAL_MACHINE}..."
   createVagrantENV;
-  vagrant up;
+  vagrant up &> ${LOG_PATH}/start.log
 }
 
 list() {
   init 
-  if [ -z "$(ls -A ${MACHINES}/.machines)" ]; then
+  if [ -z "$(ls -A ${MACHINE_PATH}/${BASE_FOLDER})" ]; then
     echo "No Machines have been created yet!"
     exit 1
   fi
@@ -421,7 +446,7 @@ list() {
   printf "$header" "VM-ID" "VM-Name" "IP-Adress" "OS-Image" "Processor(s)" "Memory";
   printf "%$width.${width}s\n" "$divider";
 
-  for DIR in ${MACHINES}/.machines/*; do
+  for DIR in ${MACHINE_PATH}/${BASE_FOLDER}/*; do
     cd ${DIR}
     . .config
     printf "$format" \
