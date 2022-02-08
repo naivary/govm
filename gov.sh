@@ -131,7 +131,7 @@ trapExit() {
 }
 
 successExitAfterCreation() {
-  cd ${MACHINES}/vagrant-ptb
+  cd ${MACHINES}/vagrant-wrapper
   createConfigFile;
   removeVagrantDir;
   echo "${ID}=${HOST_ONLY_IP}" >> "used_ip.txt";
@@ -353,7 +353,7 @@ destroy() {
   echo "Destroying ${VIRTUAL_MACHINE}.."
   createVagrantENV;
   vagrant destroy --force;
-  cd ${MACHINES}/vagrant-ptb; 
+  cd ${MACHINES}/vagrant-wrapper; 
   clean;
 }
 
