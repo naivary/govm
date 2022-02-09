@@ -11,9 +11,10 @@ usage() {
   echo "-f [path] is specifing the path to a *.config file with the parameters CPU, RAM, OS_IMAGE, IP and SCRIPT"
   echo "-v [up/halt/start/ssh/destroy] is setting the vagrant command you want to run (has to be present with every command )"
   echo "-d if this is present it will force destroy and replacing if there is a virtual machine registered but noch reachable"
+  echo "-g is setting the path to tje gov.cfg file (default ./gov.cfg)"
 }
 
-MANUAL_GROUP=("-c" "-r" "-i" "-s" "-h" "-v" "-n")
+MANUAL_GROUP=("-c" "-r" "-i" "-s" "-h" "-v" "-n" "-g")
 FILE_GROUP=("-f" "-v")
 VAGRANT_GROUP=("-v" "-m")
 LIST_GROUP=("-l")
@@ -24,13 +25,14 @@ VALID_CONFIG_PARAMS_VM=(
     "SCRIPT"
     "HOST_ONLY_IP"
     "VM_NAME"
+    "GOV_CONFIG"
 )
 VALID_CONFIG_PARAMS_APP=(
   "OS_USERNAME"
   "OS_PASSWORD"
   "GIT_USERNAME"
   "GIT_PASSWORD"
-  "MACHINE_PATH"
+  "VMSTORE_PATH"
   "LOG_PATH"
 )
 IS_MANUAL="false"
@@ -58,7 +60,7 @@ init() {
   # UTF-8 as standard in the shell-Environment
 }
 
-while getopts "c:r:i:s:h:f:v:n:m:ld" OPT; do
+while getopts "c:r:i:s:h:f:g:v:n:m:ld" OPT; do
   case "${OPT}" in
     c)
       CPU="${OPTARG}"
@@ -70,7 +72,7 @@ while getopts "c:r:i:s:h:f:v:n:m:ld" OPT; do
       OS_IMAGE=${OPTARG}
       ;;
     f)
-      CONFIG_FILE=${OPTARG}
+      VM_CONFIG=${OPTARG}
       ;;
     s)
       SCRIPT=${OPTARG}
@@ -93,6 +95,9 @@ while getopts "c:r:i:s:h:f:v:n:m:ld" OPT; do
     n)
       VM_NAME=${OPTARG}
       ;;
+    g)
+      GOV_CONFIG=${OPTARG}
+      ;;
     ?)
       usage
       exit 1
@@ -103,8 +108,8 @@ done
 # remove
 
 rmSyncFolder() {
-  if [[ -d "${MACHINE_PATH}/${BASE_FOLDER}/${ID}" ]]; then
-    sudo rm -r "${MACHINE_PATH}/${BASE_FOLDER}/${ID}";
+  if [[ -d "${MACHINE_PATH}/${ID}" ]]; then
+    sudo rm -r "${MACHINE_PATH}/${ID}";
   fi 
 }
 
@@ -160,9 +165,10 @@ setDefaultValues() {
   OS_IMAGE=${OS_IMAGE:-"ubuntu/trusty64"}
   SCRIPT=${SCRIPT:-"provision/default.sh"}
   VIRTUAL_MACHINE=${VIRTUAL_MACHINE:-""}
-  CONFIG_FILE=${CONFIG_FILE:-""}
+  VM_CONFIG=${VM_CONFIG:-""}
   ID=${ID:-0}
   VM_NAME=${VM_NAME:-""}
+  GOV_CONFIG=${GOV_CONFIG:-"./gov.cfg"}
 }
 
 setVagrantENV() {
@@ -185,21 +191,17 @@ setVagrantENV() {
 createSyncFolder() {
   # needed to create the base folder if running 
   # for the first time
-  if [ ! -d "${MACHINE_PATH}/${BASE_FOLDER}" ]; then
-    mkdir -p "${MACHINE_PATH}/${BASE_FOLDER}"
+  if [ ! -d "${MACHINE_PATH}" ]; then
+    mkdir -p "${MACHINE_PATH}"
   fi
 
   ID="$(openssl rand -hex 5)" 
   if [[ -z ${VM_NAME} ]]; then
     VM_NAME="${HOST_ONLY_IP}_${ID}" 
   fi
-  mkdir -p -- "${MACHINE_PATH}/${BASE_FOLDER}/${ID}/logs"
+  mkdir -p -- "${MACHINE_PATH}/${ID}/logs"
 
-  SYNC_FOLDER="${MACHINE_PATH}/${BASE_FOLDER}/${ID}"
-
-  # LOG_PATH is setting the path to log to
-  LOG_PATH=${MACHINE_PATH}/${BASE_FOLDER}/${ID}/logs
-
+  SYNC_FOLDER="${MACHINE_PATH}/${ID}"
 }
 
 createVM() {
@@ -208,7 +210,7 @@ createVM() {
 }
 
 createConfigFile() {
-cat << EOF > ${MACHINE_PATH}/${BASE_FOLDER}/${ID}/.config
+cat << EOF > ${MACHINE_PATH}/${ID}/.config
 CPU=${CPU}
 RAM=${RAM}
 OS_IMAGE=${OS_IMAGE}
@@ -217,15 +219,17 @@ SYNC_FOLDER=${SYNC_FOLDER}
 VM_NAME=${VM_NAME}
 HOST_ONLY_IP=${HOST_ONLY_IP}
 ID=${ID}
+LOG_PATH=${LOG_PATH}
+GOV_CONFIG=${GOV_CONFIG}
 EOF
 }
 
 
 createNeededFilesForVagrant() {
   setVagrantENV;
-  cp "Vagrantfile" "${MACHINE_PATH}/${BASE_FOLDER}/${ID}/Vagrantfile"
-  mkdir "${MACHINE_PATH}/${BASE_FOLDER}/${ID}/provision"
-  cp "${SCRIPT}" "${MACHINE_PATH}/${BASE_FOLDER}/${ID}/${SCRIPT}"
+  cp "Vagrantfile" "${MACHINE_PATH}/${ID}/Vagrantfile"
+  mkdir "${MACHINE_PATH}/${ID}/provision"
+  cp "${SCRIPT}" "${MACHINE_PATH}/${ID}/${SCRIPT}"
 }
 
 
@@ -239,29 +243,82 @@ sourceConfigFile() {
 }
 
 # validation
-validateAndSourceConfigFile() {
-  echo "Loading ${1}...";
-  if [[  -s "${1}" ]]; then
+validateAndSourceVMConfig() {
+  GIVEN_PARAMS=()
+  echo "Loading ${VM_CONFIG}...";
+  if [[  -s "${VM_CONFIG}" && "${VM_CONFIG}" == *.cfg ]]; then
     while read LINE
     do
       VALUE="$(echo -e "${LINE}" | tr -d '[:space:]')"
-      if ! [[ "${VALUE}" =~ ^([^'#']+)=([^\#$%&*^]+$) ]]; then
+      if ! [[ "${VALUE}" =~ ^([A-Za-z0-9_]+)=([^'#'$%'&''*'^]+$) ]]; then
+        [[ "${LINE}" =~ ^\#.*$ || -z "${LINE}" ]] && continue
         echo "DID not match ${VALUE}"
         exit 1
       else
         NAME="${BASH_REMATCH[1]}"
-        if ! [[ "${OPTIONS[*]}" =~ "${NAME}" ]]; then
+        if ! [[ "${VALID_CONFIG_PARAMS_VM[*]}" =~ "${NAME}" || "${GIVEN_PARAMS[*]}" =~ ${NAME} ]]; then
           echo "Unexpected KEY: ${NAME}"
           exit 1
+        else 
+          GIVEN_PARAMS+=("${NAME}")
         fi
       fi
-    done < ${1}
-    sourceConfigFile ${1}
+    done < ${VM_CONFIG}
+
+  if [[ ${#GIVEN_PARAMS[@]} -eq ${#VALID_CONFIG_PARAMS_VM[@]} ]]; then
+    echo "Everthing fine! Sourcing ${VM_CONFIG}"
+    sourceConfigFile ${VM_CONFIG}
+  else 
+    echo "Not Enough Arguments"
+    echo "Expected: ${VALID_CONFIG_PARAMS_VM[@]}"
+    exit 1
+  fi
+
+
   else 
     echo ".config is not existing or is empty or has the wrong extension (expected: .config)"
     exit 1
   fi
 }
+
+# validation
+validateAndSourceAppConfig() {
+  GIVEN_PARAMS=()
+  echo "Loading ${GOV_CONFIG}...";
+  if [[  -s "${GOV_CONFIG}" && "${GOV_CONFIG}" == *.cfg ]]; then
+    while read LINE
+    do
+      VALUE="$(echo -e "${LINE}" | tr -d '[:space:]')"
+      if ! [[ "${VALUE}" =~ ^([^'#']+)=([^'#'$%'&''*'^]+$) ]]; then
+        [[ "${LINE}" =~ ^\#.*$ || -z "${LINE}" ]] && continue
+        echo "DID not match ${VALUE}"
+        exit 1
+      else
+        NAME="${BASH_REMATCH[1]}"
+        if ! [[ "${VALID_CONFIG_PARAMS_APP[*]}" =~ "${NAME}" || "${GIVEN_PARAMS[*]}" =~ ${NAME} ]]; then
+          echo "Unexpected KEY: ${NAME}"
+          exit 1
+        else 
+          GIVEN_PARAMS+=("${NAME}")
+        fi
+      fi
+    done < ${GOV_CONFIG}
+
+    if [[ ${#GIVEN_PARAMS[@]} -eq ${#VALID_CONFIG_PARAMS_APP[@]} ]]; then
+      echo "Everthing fine! Sourcing ${GOV_CONFIG}"
+      sourceConfigFile ${GOV_CONFIG}
+    else 
+      echo "Not Enough Arguments"
+      echo "Expected: ${VALID_CONFIG_PARAMS_APP[@]}"
+      exit 1
+    fi
+
+  else 
+    echo ".config is not existing or is empty or has the wrong extension (expected: .config)"
+    exit 1
+  fi
+}
+
 
 
 validateInput() {
@@ -315,7 +372,7 @@ validateIP() {
     IPID ${HOST_ONLY_IP}
     VIRTUAL_MACHINE=${IP_TO_ID}
     destroy
-    if [ "${CONFIG_FILE}" ]; then
+    if [ "${VM_CONFIG}" ]; then
       sourceConfigFile
     fi
   fi
@@ -346,12 +403,10 @@ validateArgs() {
   done
 
   if [[ "${#CHECK_MANUAL[@]}" -eq 5 && "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq 0 && "${VAGRANT_COMMAND_GIVEN}" == "true" ]]; then
-    echo "Manual interaction started!"
-    echo "Going forward..."
+    echo "Everthing fine! Going forward..."
     IS_MANUAL="true"
   elif [[ "${#CHECK_MANUAL[@]}" -eq 0 && "${#CHECK_FILE[@]}" -eq 1 && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq 0 && "${VAGRANT_COMMAND_GIVEN}" == "true" ]]; then
-    echo "Config file interaction started!"
-    echo "Going forward..."
+    echo "Everthing fine! Going forward..."
     IS_FILE="true"
   elif [[ "${#CHECK_MANUAL[@]}" -eq 0 && "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq 1 && "${#CHECK_LIST[@]}" -eq 0 && "${VAGRANT_COMMAND_GIVEN}" == "true" ]]; then
     echo "Running vagrant command..."
@@ -369,8 +424,8 @@ validateArgs() {
 # commands
 createVagrantENV() {
   init;
-  cd ${MACHINE_PATH}/${BASE_FOLDER}/${VIRTUAL_MACHINE}
-  . .config;
+  cd ${MACHINE_PATH}/${VIRTUAL_MACHINE}
+  . vm.cfg;
   setVagrantENV;
 }
 
@@ -382,21 +437,22 @@ destroy() {
   clean;
 }
 
-fileUp() {
- init;
- validateAndSourceConfigFile ${CONFIG_FILE};
- validateInput && createSyncFolder;
- createNeededFilesForVagrant
- cd ${MACHINE_PATH}/${BASE_FOLDER}/${ID};
- createVM && successExitAfterCreation;
-
+fileUp() {  
+  init;
+  validateAndSourceVMConfig;
+  validateAndSourceAppConfig;
+  validateInput && createSyncFolder;
+  createNeededFilesForVagrant
+  cd ${MACHINE_PATH}/${ID};
+  createVM && successExitAfterCreation;
 }
 
 manualUp() {
   init;
+  validateAndSourceConfigFile ${GOV_CONFIG};
   validateInput && createSyncFolder;
   createNeededFilesForVagrant;
-  cd ${MACHINE_PATH}/${BASE_FOLDER}/${ID};
+  cd ${MACHINE_PATH}/${ID};
   createVM && successExitAfterCreation;
 }
 
@@ -432,7 +488,7 @@ start() {
 
 list() {
   init 
-  if [ -z "$(ls -A ${MACHINE_PATH}/${BASE_FOLDER})" ]; then
+  if [ -z "$(ls -A ${MACHINE_PATH})" ]; then
     echo "No Machines have been created yet!"
     exit 1
   fi
@@ -446,7 +502,7 @@ list() {
   printf "$header" "VM-ID" "VM-Name" "IP-Adress" "OS-Image" "Processor(s)" "Memory";
   printf "%$width.${width}s\n" "$divider";
 
-  for DIR in ${MACHINE_PATH}/${BASE_FOLDER}/*; do
+  for DIR in ${MACHINE_PATH}/*; do
     cd ${DIR}
     . .config
     printf "$format" \
