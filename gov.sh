@@ -2,17 +2,49 @@
 
 trap trapExit INT;
 
-usage() {
-  echo "-c [integer] is setting the count of CPUs"
-  echo "-m [integer] is setting the RAM"
-  echo "-i [integer] is setting the OS-Image"
-  echo "-s [path] is setting the path to the provision-shell-script"
-  echo "-h [ipv4] is setting the ip-adress for host-only of the type 192.168.56.0/24"
-  echo "-f [path] is specifing the path to a *.config file with the parameters CPU, RAM, OS_IMAGE, IP and SCRIPT"
-  echo "-v [up/halt/start/ssh/destroy] is setting the vagrant command you want to run (has to be present with every command )"
-  echo "-d if this is present it will force destroy and replacing if there is a virtual machine registered but noch reachable"
-  echo "-g is setting the path to tje gov.cfg file (default ./gov.cfg)"
-}
+while getopts "c:r:i:s:h:f:g:v:n:m:ld" OPT; do
+  case "${OPT}" in
+    c)
+      CPU="${OPTARG}"
+      ;;
+    r)
+      RAM=${OPTARG}
+      ;;
+    i)
+      OS_IMAGE=${OPTARG}
+      ;;
+    f)
+      VM_CONFIG=${OPTARG}
+      ;;
+    s)
+      SCRIPT=${OPTARG}
+      ;;
+    h)
+      HOST_ONLY_IP=${OPTARG}
+      ;;
+    v)
+      VAGRANT_CMD=${OPTARG}
+      ;;
+    m)
+      VIRTUAL_MACHINE=${OPTARG}
+      ;;
+    l)
+      VM_LIST="show"
+      ;;
+    d)
+      FORCE_DESTROY="force"
+      ;;
+    n)
+      VM_NAME=${OPTARG}
+      ;;
+    ?)
+      usage
+      exit 1
+      ;;
+  esac
+done
+
+
 
 MANUAL_GROUP=("-c" "-r" "-i" "-s" "-h" "-v" "-n")
 FILE_GROUP=("-f" "-v")
@@ -57,47 +89,37 @@ init() {
   # UTF-8 as standard in the shell-Environment
 }
 
-while getopts "c:r:i:s:h:f:g:v:n:m:ld" OPT; do
-  case "${OPT}" in
-    c)
-      CPU="${OPTARG}"
-      ;;
-    r)
-      RAM=${OPTARG}
-      ;;
-    i)
-      OS_IMAGE=${OPTARG}
-      ;;
-    f)
-      VM_CONFIG=${OPTARG}
-      ;;
-    s)
-      SCRIPT=${OPTARG}
-      ;;
-    h)
-      HOST_ONLY_IP=${OPTARG}
-      ;;
-    v)
-      VAGRANT_CMD=${OPTARG}
-      ;;
-    m)
-      VIRTUAL_MACHINE=${OPTARG}
-      ;;
-    l)
-      VM_LIST="show"
-      ;;
-    d)
-      FORCE_DESTROY="force"
-      ;;
-    n)
-      VM_NAME=${OPTARG}
-      ;;
-    ?)
-      usage
-      exit 1
-      ;;
-  esac
-done
+usage() {
+  echo "-c [integer] is setting the count of CPUs"
+  echo "-m [integer] is setting the RAM"
+  echo "-i [integer] is setting the OS-Image"
+  echo "-s [path] is setting the path to the provision-shell-script"
+  echo "-h [ipv4] is setting the ip-adress for host-only of the type 192.168.56.0/24"
+  echo "-f [path] is specifing the path to a *.config file with the parameters CPU, RAM, OS_IMAGE, IP and SCRIPT"
+  echo "-v [up/halt/start/ssh/destroy] is setting the vagrant command you want to run (has to be present with every command )"
+  echo "-d if this is present it will force destroy and replacing if there is a virtual machine registered but noch reachable"
+  echo "-g is setting the path to tje gov.cfg file (default ./gov.cfg)"
+}
+
+tips() {
+  echo "tips"  
+}
+
+error() {
+  printf "\u274c\033[1m\033[31m ${1}\n\033[0m"
+}
+
+infoBold() {
+  printf "\033[1m\033[34m${1}\n\033[0m"
+}
+
+info() {
+  printf "\033[34m${1}\n\033[0m"
+}
+
+success() {
+  printf "\033[1m\033[32m${1} \xE2\x9C\x94\n\033[0m"
+}
 
 # remove
 
@@ -109,10 +131,10 @@ rmSyncFolder() {
 
 
 clean() {
-  printf "\033[1m\033[31mCleaning up..."
+  infoBold "Cleaning up..."
   rmSyncFolder;
   removeIPFromFile;
-  printf "\033[1m\033[32mFinished! \xE2\x9C\x94\n"
+  success "Destroyed ${ID}!"
 }
 
 IPID() {
@@ -131,15 +153,15 @@ removeIPFromFile() {
 
 # exits
 trapExit() {
-  printf "\033[1m\033[31mGraceful exiting...\n"
+  infoBold "Graceful exiting..."
   rmSyncFolder;
 }
 
 successExitAfterCreation() {
-  printf "\033[1m\033[34mFinishing touches...\n"
+  infoBold "Finishing touches..."
   createConfigFile;
   echo "${ID}=${HOST_ONLY_IP}" >> "${BASEDIR}/used_ip.txt";
-  printf "\033[1m\033[32mVM ${ID} is set and ready to go :) \xE2\x9C\x94\n"
+  success "VM ${ID} is set and ready to go :)"
 }
 
 
@@ -168,10 +190,8 @@ setVagrantENV() {
   export SYNC_FOLDER;
 }
 
-
-
 createVM() {
-  printf "\033[1m\033[34mCreating Virtual-Machine $ID. This may take a while...\n"
+  infoBold "Creating Virtual-Machine $ID. This may take a while..."
   vagrant up &> ${LOG}/vagrant_up.log 
 }
 
@@ -196,13 +216,14 @@ EOF
 preVagrantENV() {
   ID="$(openssl rand -hex 5)" 
   mkdir -p -- "${VMSTORE}/${ID}/${BASE_DIR}"
-  
+  mkdir -p -- "${VMSTORE}/${ID}/sync_folder"
+
   if [[ ${LOG} == "/log" ]]; then
     mkdir -p -- ${VMSTORE}/${ID}/${BASE_DIR}/logs
   fi
 
   LOG=${VMSTORE}/${ID}/${BASE_DIR}/logs
-  SYNC_FOLDER="${VMSTORE}/${ID}"
+  SYNC_FOLDER="${VMSTORE}/${ID}/sync_folder"
   SCRIPT_NAME=$(basename ${SCRIPT})
 }
 
@@ -235,19 +256,19 @@ sourceFile() {
 # it is getting sourced.
 validateAndSourceVMConfig() {
   GIVEN_PARAMS=()
-  printf "\033[0m\033[34mLoading ${VM_CONFIG}...\n";
+  info "Loading ${VM_CONFIG}...";
   if [[  -s "${VM_CONFIG}" && "${VM_CONFIG}" == *.cfg ]]; then
     while read LINE
     do
       VALUE="$(echo -e "${LINE}" | tr -d '[:space:]')"
       if ! [[ "${VALUE}" =~ ^([A-Za-z0-9_]+)=([^'#'$%'&''*'^]+$) ]]; then
         [[ "${LINE}" =~ ^\#.*$ || -z "${LINE}" ]] && continue
-        printf "\u274c DID not match ${VALUE}\n"
+        error "DID not match ${VALUE}"
         exit 1
       else
         NAME="${BASH_REMATCH[1]}"
         if ! [[ "${VALID_CONFIG_PARAMS_VM[*]}" =~ "${NAME}" || "${GIVEN_PARAMS[*]}" =~ ${NAME} ]]; then
-          printf "\u274c Unexpected Key ${NAME}\n"
+          error "Unexpected Key ${NAME}"
           exit 1
         else 
           GIVEN_PARAMS+=("${NAME}")
@@ -256,17 +277,17 @@ validateAndSourceVMConfig() {
     done < ${VM_CONFIG}
 
   if [[ ${#GIVEN_PARAMS[@]} -eq ${#VALID_CONFIG_PARAMS_VM[@]} ]]; then
-    printf "\033[1m\033[32mValid! Sourcing ${VM_CONFIG} \xE2\x9C\x94\n" 
+    success "Valid! Sourcing ${VM_CONFIG}" 
     sourceFile ${VM_CONFIG}
   else 
-    printf "\033[1m\033[31mNot Enough Arguments\n\033[0m"
+    error "Not Enough Arguments"
     echo "Expected: ${VALID_CONFIG_PARAMS_VM[@]}"
     exit 1
   fi
 
   else 
 
-    printf "\u274c .config is not existing or is empty or has the wrong extension (expected: .config)"
+    error ".config is not existing or is empty or has the wrong extension (expected: .config)"
     exit 1
   fi
 }
@@ -278,19 +299,19 @@ validateAndSourceVMConfig() {
 # it is getting sourced.
 validateAndSourceAppConfig() {
   GIVEN_PARAMS=()
-  printf "\033[0m\033[34mLoading ${GOV_CONFIG}...\n";
+  printf "\033[0m\033[34mLoading ${GOV_CONFIG}...\n\033[0m";
   if [[  -s "${GOV_CONFIG}" ]]; then
     while read LINE
     do
       VALUE="$(echo -e "${LINE}" | tr -d '[:space:]')"
       if ! [[ "${VALUE}" =~ ^([^'#']+)=([^'#'$%'&''*'^]+$) ]]; then
         [[ "${LINE}" =~ ^\#.*$ || -z "${LINE}" ]] && continue
-        printf "\u274c Did not match ${NAME}\n"
+        error "Did not match ${NAME}"
         exit 1
       else
         NAME="${BASH_REMATCH[1]}"
         if ! [[ "${VALID_CONFIG_PARAMS_APP[*]}" =~ "${NAME}" || "${GIVEN_PARAMS[*]}" =~ ${NAME} ]]; then
-          printf "\u274c Unexpected Key ${NAME}\n"
+          error "Unexpected Key ${NAME}"
           exit 1
         else 
           GIVEN_PARAMS+=("${NAME}")
@@ -299,16 +320,16 @@ validateAndSourceAppConfig() {
     done < ${GOV_CONFIG}
 
     if [[ ${#GIVEN_PARAMS[@]} -eq ${#VALID_CONFIG_PARAMS_APP[@]} ]]; then
-      printf "\033[1m\033[32mValid! Sourcing ${GOV_CONFIG} \xE2\x9C\x94\n" 
+      success "Valid! Sourcing ${GOV_CONFIG}" 
       sourceFile ${GOV_CONFIG}
     else 
-      printf "\033[1m\033[31mNot Enough Arguments\n\033[0m"
+      error "Not Enough Arguments"
       echo "Expected: ${VALID_CONFIG_PARAMS_APP[@]}"
       exit 1
     fi
 
   else 
-    printf " \u274c gov.cfg is not existing or is empty or has the wrong extension (expected: .cfg)\n"
+    error "gov.cfg is not existing or is empty or has the wrong extension (expected: .cfg)"
     exit 1
   fi
 }
@@ -320,25 +341,25 @@ validateAndSourceAppConfig() {
 # CPU should be an integer not 
 # a word etc.
 validateVMInput() {
-  printf "\033[0m\033[34mValidating Virtual-Machine parameters...\n"
+  printf "\033[0m\033[34mValidating Virtual-Machine parameters...\033[0m\n"
   if ! [[ "${CPU}" =~ ^[0-9]+$ && "${CPU}" -ge 1 && "${CPU}" -le 100 ]]; then
-    printf "\u274c CPU (${CPU}) may only contain numbers and shall be bigger than 1\n";
+    error "CPU may only contain numbers and shall be bigger than 1";
     exit 1;
   elif ! [[ "${RAM}" =~ ^[0-9]+$ && "${RAM}" -ge 512  && "${RAM}" -le 16000 ]]; then
-    printf "\u274c Memory may only contain numbers and shall be bigger than 4\n";
+    error "Memory may only contain numbers and shall be bigger than 4";
     exit 1;
   elif ! [[ -s "${SCRIPT}" ]]; then
-    printf "\u274c Shell-script not found or empty\n";
+    error "Shell-script not found or empty";
     exit 1;
   elif ! [[ "${HOST_ONLY_IP}" =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
-    printf "\u274c Invalid IP-Adress\n";
+    error "Invalid IP-Adress";
     exit 1;
   elif ! validateIP;then
     exit 1
   elif ! [[ ${GIT_PASSWORD} =~ ^(ghp_)([A-Za-z0-9]{36})$ ]];then
-    printf "\u274c Invalid Git-Password\n"
+    error "Invalid Git-Password"
   else 
-    printf "\033[1m\033[32mValid VM-Values!\xE2\x9C\x94\n" 
+    success "Valid VM-Values!" 
     return 0
   fi
 }
@@ -347,13 +368,13 @@ validateVMInput() {
 # the given values are valid and is setting 
 # defaults if needed
 validateAppInput() {
-  printf "\033[34mValidating App-Configuration parameters..."
+  info "Validating App-Configuration parameters..."
   if ! [[ -d ${VMSTORE} ]]; then
     mkdir -p -- ${VMSTORE}
-  elif ! [[ ${LOG} == "/log" && -d ${LOG} ]]; then
-    mkdir -p -- ${LOG}
+  elif ! [[ ${LOG} == "/log" ]]; then
+    mkdir -p -- ${LOG}/log
   else
-    printf "\033[1m\033[31mInvalid Input!\n"
+    success "Valid GOV-Values!"
   fi
 }
 
@@ -371,16 +392,16 @@ validateIP() {
   ping -w 1 "${HOST_ONLY_IP}" &> /dev/null;
 
   if [[ "$?" -eq 0  && -z "${FORCE_DESTROY}" ]]; then
-    printf "\033[1m\033[31m\u274c Machine with the IP: ${HOST_ONLY_IP} exists. Choose an other IP-Adress. (Ping successfull)\n"
+    error "Machine with the IP: ${HOST_ONLY_IP} exists. Choose an other IP-Adress. (Ping successfull)"
     exit 1
   fi
 
   # check if ip exist within machine-ecosystem
-  grep -q "${HOST_ONLY_IP}" used_ip.txt  
+  grep -q -w "${HOST_ONLY_IP}" used_ip.txt  
 
   if [[ "$?" -eq 0 && -z "${FORCE_DESTROY}" ]]; then
     IPID ${HOST_ONLY_IP}
-    printf "\033[1m\033[31m\u274c Machine still existing in our system ID: ${IP_TO_ID}. Run Command with -d to force recreation.\n"    
+    error "Machine still existing in our system ID: ${IP_TO_ID}. Run Command with -d to force recreation."    
     exit 1
   fi
 
@@ -400,7 +421,7 @@ validateIP() {
 
 # validateArgs is validatin
 # all given flags but not the values
-# of the given flags. These are validate in
+# of the given flags. These are validated in
 # validateInput. Here we validate the given flags
 # and if they can be used together 
 # using groups.
@@ -429,17 +450,18 @@ validateArgs() {
   done
 
   if [[ "${#CHECK_MANUAL[@]}" -eq $(( ${#MANUAL_GROUP[@]} -1 )) && "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq 0 && "${VAGRANT_COMMAND_GIVEN}" == "true" ]]; then
-    printf "\033[1m\033[34m Starting creation process...\n" 
+    infoBold "Starting creation process..."
     IS_MANUAL="true"
   elif [[ "${#CHECK_MANUAL[@]}" -eq 0 && "${#CHECK_FILE[@]}" -eq $(( ${#FILE_GROUP[@]} -1 )) && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq 0 && "${VAGRANT_COMMAND_GIVEN}" == "true" ]]; then
-    printf "\033[1m\033[34mStarting creation process...\n" 
+    infoBold "Starting creation process"
+    #printf "\033[1m\033[34mStarting creation process...\033[0m\n" 
     IS_FILE="true"
   elif [[ "${#CHECK_MANUAL[@]}" -eq 0 && "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq $(( ${#VAGRANT_GROUP[@]} -1 )) && "${#CHECK_LIST[@]}" -eq 0 && "${VAGRANT_COMMAND_GIVEN}" == "true" ]]; then
-    echo "\n"
+    infoBold "Running command..."
   elif [[ "${#CHECK_MANUAL[@]}" -eq 0 && "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq ${#LIST_GROUP[@]} && "${VAGRANT_COMMAND_GIVEN}" == "false" ]]; then
-    printf "\033[34m\033[34mListing all virtual machines..._\n"
+    infoBold "Listing all virtual-machines..."
   else
-    printf "\033[1m\033[31mToo Many or not enough arguments\033[0m\n"
+    error "Too many or not enough arguments"
     usage;
     exit 1
   fi
@@ -452,17 +474,26 @@ validateArgs() {
 # in the ${VMSTORE}/${ID}
 # and is running the given command afterwards
 createVagrantENV() {
+
+  grep -q -w "${VIRTUAL_MACHINE}" used_ip.txt  
+
+  if [[ "${?}" -ne 0 ]]; then
+    error "${VIRTUAL_MACHINE} does not exist!"
+    infoBold "run gov -l for a listing of all virtual-machines"
+    exit 1
+  fi
+
   init;
-  cd ${VMSTORE}/${VIRTUAL_MACHINE}
+  cd ${VMSTORE}/${VIRTUAL_MACHINE}/${BASE_DIR}
   . vm.cfg;
   setVagrantENV;
 }
 
 destroy() {
-  echo "Destroying ${VIRTUAL_MACHINE}.."
+  infoBold "Destroying ${VIRTUAL_MACHINE}..."
   createVagrantENV;
-  vagrant destroy --force &> /dev/null
-  cd ${VMSTORE}/vagrant-wrapper; 
+  vagrant destroy --force &> /dev/null;
+  cd ${BASEDIR}; 
   clean;
 }
 
@@ -480,13 +511,13 @@ manualUp() {
   validateVMInput && preVagrantENV;
   postVagrantENV;
   cd ${VMSTORE}/${ID}/${BASE_DIR};
-  createVM && successExitAfterCreation;
+  createVM && successExitAfterCreation || error "Something went wrong. Debbuging information can be found at ${LOG_PATH}"
 }
 
 
 up() {
   if [[ ${IS_MANUAL} == "true" ]]; then
-     manualUp
+    manualUp
   elif [[ ${IS_FILE} == "true" ]]; then
     fileUp;
   else 
@@ -496,19 +527,19 @@ up() {
 }
 
 halt() {
-  printf "\033[34m\033[34mStopping ${VIRTUAL_MACHINE}..."
+  info "Stopping ${VIRTUAL_MACHINE}...\n"
   createVagrantENV;
-  vagrant halt;
+  vagrant halt &> /dev/null
 }
 
 vssh() {
-  printf "\033[34m\033[34mecho SSH into ${VIRTUAL_MACHINE}"
+  info "SSH into ${VIRTUAL_MACHINE}"
   createVagrantENV;
   vagrant ssh;
 }
 
 start() {
-  printf "\033[34m\033[34mStarting ${VIRTUAL_MACHINE}..."
+  info "Starting ${VIRTUAL_MACHINE}..."
   createVagrantENV;
   vagrant up &> ${LOG}/start.log
 }
@@ -544,7 +575,8 @@ list() {
 main() {
   setDefaultValues
   validateArgs "$@"
-  validateAndSourceAppConfig
+  validateAndSourceAppConfig;
+  validateAppInput;
   if [[ "${VAGRANT_CMD}" == "destroy" && "${VIRTUAL_MACHINE}" ]]; then 
     destroy;
   elif [[ "${VAGRANT_CMD}" == "halt" && "${VIRTUAL_MACHINE}" ]]; then

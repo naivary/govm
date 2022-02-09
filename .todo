@@ -1,8 +1,5 @@
-gov.config mit integrieren (applikation)
-logging richtig machen
 git credentials anpassen
-rang status von system überprüfen
+provision env varibales
+
 bin folder erstellen
 regeln am ende zeigen was man machen darf und nicht 
-
-app validation rein machen

@@ -4,7 +4,7 @@
 
 Vagrant.configure("2") do |config|
   config.vm.box = ENV["OS_IMAGE"] 
-  config.vm.provision "shell", path: ENV["SCRIPT"], env: {"OS_USERNAME" => ENV["OS_USERNAME"], "OS_PASSWORD" => ENV["OS_PASSWORD"], "GIT_USERNAME" => ENV["GIT_USERNAME"], "GIT_PASSWORD" => ENV["GIT_PASSWORD"]}
+  config.vm.provision "shell", path: ENV["SCRIPT"], env: {"OS_USERNAME" => "musti", "OS_PASSWORD" => ENV["OS_PASSWORD"], "GIT_USERNAME" => ENV["GIT_USERNAME"], "GIT_PASSWORD" => ENV["GIT_PASSWORD"]}
   config.vm.synced_folder ENV["SYNC_FOLDER"], "/home/gov/sync_folder", disabled:false
   config.vm.synced_folder ".", "/vagrant", disabled:true
   config.vm.network "private_network", ip: ENV["HOST_ONLY_IP"]
