@@ -417,6 +417,7 @@ validateIP() {
       sourceFile
     fi
   fi 
+
 }
 
 # validateArgs is validatin
@@ -465,7 +466,6 @@ validateArgs() {
     usage;
     exit 1
   fi
-
 
 }
 
