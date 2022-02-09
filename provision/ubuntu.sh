@@ -1,5 +1,3 @@
-. 
-
 # upgrade ubuntu
 sudo -i apt-get upgrade -y && sudo -i apt-get update
 
