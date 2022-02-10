@@ -1,3 +1,3 @@
 .vagrant/
-.config
-.token
+vm.cfg
+.todo

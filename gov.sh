@@ -75,10 +75,6 @@ IS_FILE="false"
 # needed for the shell-script to run without
 # any problems
 init() {
-  BASE_DIR=".govm"
-  VMSTORE=${VMSTORE:-""}
-  VM_LIST=${VM_LIST:-""}
-  FORCE_DESTROY=${FORCE_DESTROY:-""}
   export PATH="${PATH}"
   export LANG=C.UTF-8
   export LC_NUMERIC="en_US.UTF-8"
@@ -115,26 +111,30 @@ tips() {
 }
 
 error() {
-  printf "\u274c\033[1m\033[31m ${1}\n\033[0m"
+  printf "\u274c\033[1m\033[31m ${1}\033[0m\n"
 }
 
 infoBold() {
-  printf "\033[1m\033[34m${1}\n\033[0m"
+  printf "\033[1m\033[34m${1}\033[0m\n"
 }
 
 info() {
-  printf "\033[34m${1}\n\033[0m"
+  printf "\033[34m${1}\033[0m\n"
 }
 
 success() {
-  printf "\033[1m\033[32m${1} \xE2\x9C\x94\n\033[0m"
+  printf "\033[1m\033[32m${1} \xE2\x9C\x94\033[0m\n"
 }
 
 whiteBold() { 
-  printf "\033[1m\033[37m${1}\n\033[0m"
+  printf "\033[1m\033[37m${1}\033[0m\n"
 }
 
 setDefaultValues() {
+  BASE_DIR=".govm"
+  VMSTORE=${VMSTORE:-""}
+  VM_LIST=${VM_LIST:-""}
+  FORCE_DESTROY=${FORCE_DESTROY:-""}
   REALPATH=$(realpath ${0})
   BASEDIR=$(dirname ${REALPATH})
   CPU="${CPU:-1}"
@@ -146,8 +146,8 @@ setDefaultValues() {
   ID=${ID:-0}
   VM_NAME=${VM_NAME:-""}
   GOV_CONFIG=${BASEDIR}/${BASE_DIR}/gov.cfg
+  IP_FILE=${BASEDIR}/${BASE_DIR}/used_ip.txt
 }
-# remove
 
 rmSyncFolder() {
   if [[ -d "${VMSTORE}/${ID}" ]]; then
@@ -164,16 +164,16 @@ clean() {
 }
 
 IPID() {
-  IP_TO_ID="$(grep ${1} used_ip.txt | cut -d '=' -f 1)"
+  IP_TO_ID="$(grep ${1} ${IP_FILE} | cut -d '=' -f 1)"
 }
 
 IDtoIP() {
-  IDIP="$(grep ${1} used_ip.txt | cut -d '=' -f 2)"
+  IDIP="$(grep ${1} ${IP_FILE} | cut -d '=' -f 2)"
 }
 
 removeIPFromFile() {
-  if grep -q -w "${HOST_ONLY_IP}" "./used_ip.txt"; then
-    sed -i "/${HOST_ONLY_IP}/d" "./used_ip.txt";
+  if grep -q -w "${HOST_ONLY_IP}" "./${IP_FILE}"; then
+    sed -i "/${HOST_ONLY_IP}/d" "./${IP_FILE}";
   fi
 }
 
@@ -186,7 +186,7 @@ trapExit() {
 successExitAfterCreation() {
   infoBold "Finishing touches...";
   createConfigFile;
-  echo "${ID}=${HOST_ONLY_IP}" >> "${BASEDIR}/${BASE_DIR}/used_ip.txt";
+  echo "${ID}=${HOST_ONLY_IP}" >> "${IP_FILE}";
   success "VM ${ID} is set and ready to go :)"
   tips;
 }
@@ -319,7 +319,7 @@ validateAndSourceVMConfig() {
 # it is getting sourced.
 validateAndSourceAppConfig() {
   GIVEN_PARAMS=()
-  printf "\033[0m\033[34mLoading ${GOV_CONFIG}...\n\033[0m";
+  info "Loading ${GOV_CONFIG}...";
   if [[  -s "${GOV_CONFIG}" ]]; then
     while read LINE
     do
@@ -417,7 +417,7 @@ validateIP() {
   fi
 
   # check if ip exist within machine-ecosystem
-  grep -q -w "${HOST_ONLY_IP}" used_ip.txt  
+  grep -q -w "${HOST_ONLY_IP}" ${IP_FILE}  
 
   if [[ "$?" -eq 0 && -z "${FORCE_DESTROY}" ]]; then
     IPID ${HOST_ONLY_IP}
@@ -425,7 +425,7 @@ validateIP() {
     exit 1
   fi
 
-  grep -q -w ${HOST_ONLY_IP} used_ip.txt
+  grep -q -w ${HOST_ONLY_IP} ${IP_FILE}
 
   IS_SUCCESS=${?}
 
@@ -493,9 +493,10 @@ validateArgs() {
 # sourcing the config file
 # in the ${VMSTORE}/${ID}
 # and is running the given command afterwards
+# otherwise the Vagrantfile cannot pull
+# the ENV-Variables
 createVagrantENV() {
-
-  grep -q -w "${VIRTUAL_MACHINE}" used_ip.txt  
+  grep -q -w "${VIRTUAL_MACHINE}" ${IP_FILE}  
 
   if [[ "${?}" -ne 0 ]]; then
     error "${VIRTUAL_MACHINE} does not exist!"
@@ -509,6 +510,7 @@ createVagrantENV() {
   setVagrantENV;
 }
 
+# alias to vagrant destroy
 destroy() {
   infoBold "Destroying ${VIRTUAL_MACHINE}..."
   createVagrantENV;
@@ -560,9 +562,10 @@ up() {
 }
 
 halt() {
-  info "Stopping ${VIRTUAL_MACHINE}...\n"
+  info "Stopping ${VIRTUAL_MACHINE}..."
   createVagrantENV;
-  vagrant halt &> /dev/null
+  vagrant halt &> /dev/null;
+  success "Stopped ${VIRTUAL_MACHINE}!"
 }
 
 vssh() {
@@ -572,9 +575,10 @@ vssh() {
 }
 
 start() {
-  info "Starting ${VIRTUAL_MACHINE}..."
+  info "Starting ${VIRTUAL_MACHINE}. This may take some time..."
   createVagrantENV;
   vagrant up &> ${LOG}/start.log
+  success "${VIRTUAL_MACHINE} up and running!"
 }
 
 list() {

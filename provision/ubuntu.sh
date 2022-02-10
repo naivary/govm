@@ -75,7 +75,7 @@ sudo -i -u ${OS_USERNAME} git -C /home/${OS_USERNAME}/testing add .;
 sudo -i -u ${OS_USERNAME} git -C /home/${OS_USERNAME}/testing commit -m "it worked";
 sudo -i -u ${OS_USERNAME} git -C /home/${OS_USERNAME}/testing push -u origin master;
 
-if [ "$?" -ne 1 ]; then
+if [ "$?" -ne 0 ]; then
   echo "Git credentials are wrong!"
 fi
 
