@@ -23,7 +23,6 @@ apt install git -y;
 apt install net-stat -y;
 apt install traceroute;
 
-
 # setup firewall
 sudo ufw default deny incoming;
 sudo ufw default allow outgoing;

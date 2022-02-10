@@ -75,10 +75,6 @@ IS_FILE="false"
 # needed for the shell-script to run without
 # any problems
 init() {
-  BASE_DIR=".govm"
-  VMSTORE=${VMSTORE:-""}
-  VM_LIST=${VM_LIST:-""}
-  FORCE_DESTROY=${FORCE_DESTROY:-""}
   export PATH="${PATH}"
   export LANG=C.UTF-8
   export LC_NUMERIC="en_US.UTF-8"
@@ -91,16 +87,35 @@ init() {
   # UTF-8 as standard in the shell-Environment
 }
 
+setDefaultValues() {
+  VMSTORE=${VMSTORE:-""}
+  VM_LIST=${VM_LIST:-""}
+  FORCE_DESTROY=${FORCE_DESTROY:-""}
+  BASE_DIR=".govm"
+  REALPATH=$(realpath ${0})
+  BASEDIR=$(dirname ${REALPATH})
+  BASEDIR=${BASEDIR}/..
+  CPU="${CPU:-1}"
+  RAM="${RAM:-1048}"
+  OS_IMAGE=${OS_IMAGE:-"ubuntu/trusty64"}
+  SCRIPT=${SCRIPT:-"provision/default.sh"}
+  VIRTUAL_MACHINE=${VIRTUAL_MACHINE:-""}
+  VM_CONFIG=${VM_CONFIG:-""}
+  ID=${ID:-0}
+  VM_NAME=${VM_NAME:-""}
+  GOV_CONFIG=${BASEDIR}/${BASE_DIR}/gov.cfg
+  IPFILE=${BASEDIR}/${BASE_DIR}/used_ip.txt
+}
+
 usage() {
   echo "-c [integer] is setting the count of CPUs"
-  echo "-m [integer] is setting the RAM"
+  echo "-r [integer] is setting the RAM"
   echo "-i [integer] is setting the OS-Image"
   echo "-s [path] is setting the path to the provision-shell-script"
   echo "-h [ipv4] is setting the ip-adress for host-only of the type 192.168.56.0/24"
   echo "-f [path] is specifing the path to a *.config file with the parameters CPU, RAM, OS_IMAGE, IP and SCRIPT"
   echo "-v [up/halt/start/ssh/destroy] is setting the vagrant command you want to run (has to be present with every command )"
   echo "-d if this is present it will force destroy and replacing if there is a virtual machine registered but noch reachable"
-  echo "-g is setting the path to tje gov.cfg file (default ./gov.cfg)"
 }
 
 tips() {
@@ -134,19 +149,6 @@ whiteBold() {
   printf "\033[1m\033[37m${1}\n\033[0m"
 }
 
-setDefaultValues() {
-  REALPATH=$(realpath ${0})
-  BASEDIR=$(dirname ${REALPATH})
-  CPU="${CPU:-1}"
-  RAM="${RAM:-1048}"
-  OS_IMAGE=${OS_IMAGE:-"ubuntu/trusty64"}
-  SCRIPT=${SCRIPT:-"provision/default.sh"}
-  VIRTUAL_MACHINE=${VIRTUAL_MACHINE:-""}
-  VM_CONFIG=${VM_CONFIG:-""}
-  ID=${ID:-0}
-  VM_NAME=${VM_NAME:-""}
-  GOV_CONFIG=${GOV_CONFIG:-"./gov.cfg"}
-}
 # remove
 
 rmSyncFolder() {
@@ -164,16 +166,16 @@ clean() {
 }
 
 IPID() {
-  IP_TO_ID="$(grep ${1} used_ip.txt | cut -d '=' -f 1)"
+  IP_TO_ID="$(grep ${1} ${IPFILE} | cut -d '=' -f 1)"
 }
 
 IDtoIP() {
-  IDIP="$(grep ${1} used_ip.txt | cut -d '=' -f 2)"
+  IDIP="$(grep ${1} ${IPFILE} | cut -d '=' -f 2)"
 }
 
 removeIPFromFile() {
-  if grep -q -w "${HOST_ONLY_IP}" "./used_ip.txt"; then
-    sed -i "/${HOST_ONLY_IP}/d" "./used_ip.txt";
+  if grep -q -w "${HOST_ONLY_IP}" "./${IPFILE}"; then
+    sed -i "/${HOST_ONLY_IP}/d" "./${IPFILE}";
   fi
 }
 
@@ -186,12 +188,10 @@ trapExit() {
 successExitAfterCreation() {
   infoBold "Finishing touches...";
   createConfigFile;
-  echo "${ID}=${HOST_ONLY_IP}" >> "${BASEDIR}/used_ip.txt";
+  echo "${ID}=${HOST_ONLY_IP}" >> "${BASEDIR}/${BASE_DIR}/${IPFILE}";
   success "VM ${ID} is set and ready to go :)"
   tips;
 }
-
-
 
 setVagrantENV() {
   export CPU;
@@ -254,7 +254,7 @@ preVagrantENV() {
 # newly created directory
 postVagrantENV() {
   setVagrantENV;
-  cp "Vagrantfile" "${VMSTORE}/${ID}/${BASE_DIR}/Vagrantfile"
+  cp "${BASEDIR}/${BASE_DIR}/Vagrantfile" "${VMSTORE}/${ID}/${BASE_DIR}/Vagrantfile"
   mkdir "${VMSTORE}/${ID}/${BASE_DIR}/provision"
   cp "${SCRIPT}" "${VMSTORE}/${ID}/${BASE_DIR}/provision/${SCRIPT_NAME}"
 }
@@ -361,7 +361,7 @@ validateAndSourceAppConfig() {
 # CPU should be an integer not 
 # a word etc.
 validateVMInput() {
-  printf "\033[0m\033[34mValidating Virtual-Machine parameters...\033[0m\n"
+  info "Validating Virtual-Machine parameters..."
   if ! [[ "${CPU}" =~ ^[0-9]+$ && "${CPU}" -ge 1 && "${CPU}" -le 100 ]]; then
     error "CPU may only contain numbers and shall be bigger than 1";
     exit 1;
@@ -417,7 +417,7 @@ validateIP() {
   fi
 
   # check if ip exist within machine-ecosystem
-  grep -q -w "${HOST_ONLY_IP}" used_ip.txt  
+  grep -q -w "${HOST_ONLY_IP}" ${IPFILE}  
 
   if [[ "$?" -eq 0 && -z "${FORCE_DESTROY}" ]]; then
     IPID ${HOST_ONLY_IP}
@@ -425,7 +425,7 @@ validateIP() {
     exit 1
   fi
 
-  grep -q -w ${HOST_ONLY_IP} used_ip.txt
+  grep -q -w ${HOST_ONLY_IP} ${IPFILE}
 
   IS_SUCCESS=${?}
 
@@ -495,7 +495,7 @@ validateArgs() {
 # and is running the given command afterwards
 createVagrantENV() {
 
-  grep -q -w "${VIRTUAL_MACHINE}" used_ip.txt  
+  grep -q -w "${VIRTUAL_MACHINE}" ${IPFILE}  
 
   if [[ "${?}" -ne 0 ]]; then
     error "${VIRTUAL_MACHINE} does not exist!"
@@ -509,6 +509,7 @@ createVagrantENV() {
   setVagrantENV;
 }
 
+# alias for vagrant destroy
 destroy() {
   infoBold "Destroying ${VIRTUAL_MACHINE}..."
   createVagrantENV;
@@ -528,7 +529,7 @@ fileUp() {
   validateVMInput && preVagrantENV;
   postVagrantENV;
   cd ${VMSTORE}/${ID}/${BASE_DIR};
-  createVM && successExitAfterCreation || error "Something went wrong. Debbuging information can be found at ${LOG}"
+  createVM && successExitAfterCreation;
 }
 
 # manualUp is creating
@@ -544,10 +545,12 @@ manualUp() {
   validateVMInput && preVagrantENV;
   postVagrantENV;
   cd ${VMSTORE}/${ID}/${BASE_DIR};
-  createVM && successExitAfterCreation || error "Something went wrong. Debbuging information can be found at ${LOG}"
+  createVM && successExitAfterCreation || error "Something went wrong. Debbuging information can be found at ${LOG_PATH}"
 }
 
-
+# just checking 
+# look for do manulaUp
+# and fileUp
 up() {
   if [[ ${IS_MANUAL} == "true" ]]; then
     manualUp
@@ -559,24 +562,28 @@ up() {
   fi
 }
 
+# alias for vagrant halt
 halt() {
   info "Stopping ${VIRTUAL_MACHINE}...\n"
   createVagrantENV;
-  vagrant halt &> /dev/null;
+  vagrant halt &> /dev/null
 }
 
+# alis for vagrant ssh
 vssh() {
   info "SSH into ${VIRTUAL_MACHINE}"
   createVagrantENV;
   vagrant ssh;
 }
 
+# alias for vagrant start
 start() {
   info "Starting ${VIRTUAL_MACHINE}..."
   createVagrantENV;
   vagrant up &> ${LOG}/start.log
 }
 
+# listing all 
 list() {
   init; 
   if [ -z "$(ls -A ${VMSTORE})" ]; then
