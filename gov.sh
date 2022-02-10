@@ -59,6 +59,8 @@ VALID_CONFIG_PARAMS_VM=(
     "VM_NAME"
     "GIT_USERNAME"
     "GIT_PASSWORD"
+    "GIT_EMAIL"
+    "GIT_NAME"
     "OS_USERNAME"
     "OS_PASSWORD"
 )
@@ -102,7 +104,14 @@ usage() {
 }
 
 tips() {
-  echo "tips"  
+  whiteBold "Thank you for using gov!"  
+  whiteBold "Just a tip for the usage of gov:"
+  whiteBold "If you would like to interact with a machine run gov -l"
+  whiteBold "get the machine-id and run the wished command with -v and the machine id -m"
+  whiteBold "it is highly recommende to run any command you want via gov"
+  whiteBold "and dont do it manualy so that the data is always consistent"
+  whiteBold "with your current status."
+  whiteBold "If you do anything manually gov can recover some but not all."
 }
 
 error() {
@@ -121,6 +130,23 @@ success() {
   printf "\033[1m\033[32m${1} \xE2\x9C\x94\n\033[0m"
 }
 
+whiteBold() { 
+  printf "\033[1m\033[37m${1}\n\033[0m"
+}
+
+setDefaultValues() {
+  REALPATH=$(realpath ${0})
+  BASEDIR=$(dirname ${REALPATH})
+  CPU="${CPU:-1}"
+  RAM="${RAM:-1048}"
+  OS_IMAGE=${OS_IMAGE:-"ubuntu/trusty64"}
+  SCRIPT=${SCRIPT:-"provision/default.sh"}
+  VIRTUAL_MACHINE=${VIRTUAL_MACHINE:-""}
+  VM_CONFIG=${VM_CONFIG:-""}
+  ID=${ID:-0}
+  VM_NAME=${VM_NAME:-""}
+  GOV_CONFIG=${GOV_CONFIG:-"./gov.cfg"}
+}
 # remove
 
 rmSyncFolder() {
@@ -153,31 +179,19 @@ removeIPFromFile() {
 
 # exits
 trapExit() {
-  infoBold "Graceful exiting..."
+  infoBold "Graceful exiting...";
   rmSyncFolder;
 }
 
 successExitAfterCreation() {
-  infoBold "Finishing touches..."
+  infoBold "Finishing touches...";
   createConfigFile;
   echo "${ID}=${HOST_ONLY_IP}" >> "${BASEDIR}/used_ip.txt";
   success "VM ${ID} is set and ready to go :)"
+  tips;
 }
 
 
-setDefaultValues() {
-  REALPATH=$(realpath ${0})
-  BASEDIR=$(dirname ${REALPATH})
-  CPU="${CPU:-1}"
-  RAM="${RAM:-1048}"
-  OS_IMAGE=${OS_IMAGE:-"ubuntu/trusty64"}
-  SCRIPT=${SCRIPT:-"provision/default.sh"}
-  VIRTUAL_MACHINE=${VIRTUAL_MACHINE:-""}
-  VM_CONFIG=${VM_CONFIG:-""}
-  ID=${ID:-0}
-  VM_NAME=${VM_NAME:-""}
-  GOV_CONFIG=${GOV_CONFIG:-"./gov.cfg"}
-}
 
 setVagrantENV() {
   export CPU;
@@ -186,6 +200,12 @@ setVagrantENV() {
   export SCRIPT;
   export HOST_ONLY_IP;
   export VM_NAME;
+  export GIT_USERNAME;
+  export GIT_PASSWORD;
+  export GIT_NAME;
+  export GIT_EMAIL;
+  export OS_USERNAME;
+  export OS_PASSWORD;
   # not set by User
   export SYNC_FOLDER;
 }
@@ -497,6 +517,11 @@ destroy() {
   clean;
 }
 
+
+# fileUp is creating
+# a virtual-machine based
+# on a given config file
+# and the values 
 fileUp() {  
   init;
   validateAndSourceVMConfig;
@@ -506,6 +531,14 @@ fileUp() {
   createVM && successExitAfterCreation;
 }
 
+# manualUp is creating
+# a virtual-machine based
+# on the arguments given
+# in the command-line
+# NOTE: this is not recommended 
+# because the commands will get 
+# really big. fileUp is the recommend 
+# way
 manualUp() {
   init;
   validateVMInput && preVagrantENV;
@@ -545,9 +578,9 @@ start() {
 }
 
 list() {
-  init 
+  init; 
   if [ -z "$(ls -A ${VMSTORE})" ]; then
-    echo "No Machines have been created yet!"
+    infoBold "No Machines have been created yet!"
     exit 1
   fi
 
@@ -568,7 +601,6 @@ list() {
   done
 
 }
-
 
 # main is the entering point
 # of the application
