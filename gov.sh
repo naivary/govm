@@ -101,12 +101,11 @@ usage() {
 
 tips() {
   whiteBold "Thank you for using gov!"  
-  whiteBold "Just a tip for the usage of gov:"
-  whiteBold "If you would like to interact with a machine run gov -l"
-  whiteBold "get the machine-id and run the wished command with -v and the machine id -m"
-  whiteBold "it is highly recommende to run any command you want via gov"
-  whiteBold "and dont do it manualy so that the data is always consistent"
-  whiteBold "with your current status."
+  whiteBold "Just a tip for the usage of gov: If you would like to interact"
+  whiteBold "with a machine run gov -l get the machine-id and run the wished"
+  whiteBold "command with -v and the machine id -m it is highly recommende to"
+  whiteBold "run any command you want via gov and dont do it manualy so that"
+  whiteBold "the data is always consistent with your current status."
   whiteBold "If you do anything manually gov can recover some but not all."
 }
 
@@ -155,7 +154,6 @@ rmSyncFolder() {
   fi 
 }
 
-
 clean() {
   infoBold "Cleaning up..."
   rmSyncFolder;
@@ -177,7 +175,6 @@ removeIPFromFile() {
   fi
 }
 
-# exits
 trapExit() {
   infoBold "Graceful exiting...";
   rmSyncFolder;
@@ -530,7 +527,8 @@ fileUp() {
   validateVMInput && preVagrantENV;
   postVagrantENV;
   cd ${VMSTORE}/${ID}/${BASE_DIR};
-  createVM && successExitAfterCreation;
+  createVM && successExitAfterCreation || error "Something went wrong. Debbuging information can be found at ${LOG}"
+
 }
 
 # manualUp is creating
@@ -546,7 +544,7 @@ manualUp() {
   validateVMInput && preVagrantENV;
   postVagrantENV;
   cd ${VMSTORE}/${ID}/${BASE_DIR};
-  createVM && successExitAfterCreation || error "Something went wrong. Debbuging information can be found at ${LOG_PATH}"
+  createVM && successExitAfterCreation || error "Something went wrong. Debbuging information can be found at ${LOG}"
 }
 
 
