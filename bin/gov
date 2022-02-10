@@ -100,7 +100,7 @@ usage() {
   echo "-f [path] is specifing the path to a *.config file with the parameters CPU, RAM, OS_IMAGE, IP and SCRIPT"
   echo "-v [up/halt/start/ssh/destroy] is setting the vagrant command you want to run (has to be present with every command )"
   echo "-d if this is present it will force destroy and replacing if there is a virtual machine registered but noch reachable"
-  echo "-g is setting the path to the gov.cfg file (default ./gov.cfg)"
+  echo "-g is setting the path to tje gov.cfg file (default ./gov.cfg)"
 }
 
 tips() {
@@ -145,7 +145,7 @@ setDefaultValues() {
   VM_CONFIG=${VM_CONFIG:-""}
   ID=${ID:-0}
   VM_NAME=${VM_NAME:-""}
-  GOV_CONFIG=${BASEDIR}/${BASE_DIR}/gov.cfg
+  GOV_CONFIG=${GOV_CONFIG:-"./gov.cfg"}
 }
 # remove
 
@@ -186,7 +186,7 @@ trapExit() {
 successExitAfterCreation() {
   infoBold "Finishing touches...";
   createConfigFile;
-  echo "${ID}=${HOST_ONLY_IP}" >> "${BASEDIR}/${BASE_DIR}/used_ip.txt";
+  echo "${ID}=${HOST_ONLY_IP}" >> "${BASEDIR}/used_ip.txt";
   success "VM ${ID} is set and ready to go :)"
   tips;
 }
@@ -254,7 +254,7 @@ preVagrantENV() {
 # newly created directory
 postVagrantENV() {
   setVagrantENV;
-  cp "${BASEDIR}/${BASE_DIR}/Vagrantfile" "${VMSTORE}/${ID}/${BASE_DIR}/Vagrantfile"
+  cp "Vagrantfile" "${VMSTORE}/${ID}/${BASE_DIR}/Vagrantfile"
   mkdir "${VMSTORE}/${ID}/${BASE_DIR}/provision"
   cp "${SCRIPT}" "${VMSTORE}/${ID}/${BASE_DIR}/provision/${SCRIPT_NAME}"
 }
@@ -528,7 +528,7 @@ fileUp() {
   validateVMInput && preVagrantENV;
   postVagrantENV;
   cd ${VMSTORE}/${ID}/${BASE_DIR};
-  createVM && successExitAfterCreation;
+  createVM && successExitAfterCreation || error "Something went wrong. Debbuging information can be found at ${LOG}"
 }
 
 # manualUp is creating
@@ -544,7 +544,7 @@ manualUp() {
   validateVMInput && preVagrantENV;
   postVagrantENV;
   cd ${VMSTORE}/${ID}/${BASE_DIR};
-  createVM && successExitAfterCreation || error "Something went wrong. Debbuging information can be found at ${LOG_PATH}"
+  createVM && successExitAfterCreation || error "Something went wrong. Debbuging information can be found at ${LOG}"
 }
 
 
@@ -562,7 +562,7 @@ up() {
 halt() {
   info "Stopping ${VIRTUAL_MACHINE}...\n"
   createVagrantENV;
-  vagrant halt &> /dev/null
+  vagrant halt &> /dev/null;
 }
 
 vssh() {
