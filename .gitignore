@@ -1,3 +1,4 @@
 .vagrant/
 vm.cfg
 .todo
+configs/
