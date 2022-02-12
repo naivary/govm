@@ -14,4 +14,13 @@ Vagrant.configure("2") do |config|
     vb.memory = ENV["RAM"]
     vb.cpus = ENV["CPU"]
   end
+
+  if ENV["DISK_SIZE_PRIMARY"] != ""
+    config.vm.disk :disk, size: ENV["DISK_SIZE_PRIMARY"], primary: true
+  end
+
+  if ENV["DISK_SIZE_ATTACH"] != ""
+    config.vm.disk :disk, size: ENV["DISK_SIZE_ATTACH"], name: "sdb"
+  end
+
 end
