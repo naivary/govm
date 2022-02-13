@@ -2,7 +2,3 @@
 .todo
 govm.sh
 *.cfg
-!configs/
-configs/*
-
-
