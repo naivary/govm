@@ -1,4 +1,5 @@
 # upgrade ubuntu
+echo 'Acquire::ForceIPv4 "true";' > /etc/apt/apt.conf.d/90force-ipv4
 sudo -i apt-get upgrade -y && sudo -i apt-get update
 
 # adding user "${OS_USERNAME}" with root-priviliges
