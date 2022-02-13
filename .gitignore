@@ -2,3 +2,4 @@
 vm.cfg
 .todo
 configs/
+govm.sh
