@@ -1,6 +1,6 @@
 .vagrant/
 .todo
-configs/*
+configs/**/
 govm.sh
 *.cfg
 
