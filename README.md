@@ -1,7 +1,7 @@
 # vagrant-wrapper
 Vagrant-Wrapper is a shell script for creating dynamic VM automatically.
 
-# DOCUMENTATION
+# Documentation
 
 The usage is pretty straight forward. You can create a virtual machine manually using the flags.
 This practice is not recommended because it is not really effective but if your are just interest in
