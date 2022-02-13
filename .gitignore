@@ -1,4 +1,6 @@
 .vagrant/
-vm.cfg
 .todo
-configs/
+configs/*
+!configs/
+govm.sh
+
