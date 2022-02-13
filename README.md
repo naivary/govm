@@ -3,7 +3,7 @@ Vagrant-Wrapper is a shell script for creating dynamic VM automatically.
 
 # Documentation
 
-** Usage ** 
+## Usage ##
 -c [integer] is setting the count of CPUs"
 -m [integer] is setting the RAM"
 -i [integer] is setting the OS-Image"
