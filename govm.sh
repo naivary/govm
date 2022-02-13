@@ -148,9 +148,8 @@ setDefaultValues() {
   VMSTORE=${VMSTORE:-""}
   VM_LIST=${VM_LIST:-""}
   FORCE_DESTROY=${FORCE_DESTROY:-""}
-  REALPATH=$(realpath -q ${0})
+  REALPATH=$(realpath ${0})
   BASEDIR=$(dirname ${REALPATH})
-  echo "${BASEDIR}"
   CPU="${CPU:-1}"
   RAM="${RAM:-1048}"
   OS_IMAGE=${OS_IMAGE:-"ubuntu/trusty64"}
@@ -493,7 +492,7 @@ validateIP() {
     VIRTUAL_MACHINE=${IP_TO_ID}
     destroy
     if [ "${VM_CONFIG}" ]; then
-      sourceFile ${VM_CONFIG}
+      sourceFile
     fi
   fi 
 
@@ -575,7 +574,7 @@ createVagrantENV() {
 
 createVM() {
   infoBold "Creating Virtual-Machine ${ID}. This may take a while..."
-  vagrant up &> "${LOG_PATH}/${TIMESTAMP}_up.log"
+  vagrant up &> ${LOG_PATH}/"${TIMESTAMP}_up.log" 
 }
 
 # fileUp is creating
@@ -722,10 +721,11 @@ gUp() {
 
   # checking if the values
   # of the given arguments
-  # are valid
+  # fare valid
   for CFG in ${GROUP}/*.cfg; 
   do
     VM_CONFIG=${CFG}
+    cd "${BASEDIR}"
     sourceFile "${CFG}"
     validateVMInput 
   done
@@ -740,7 +740,8 @@ gUp() {
     VM_CONFIG=${CFG}
     sourceFile "${CFG}";
     resetVagrantENV
-    cd ${BASEDIR}
+    info "Creating $(basename ${CFG})..."
+    cd "${BASEDIR}"
     groupUp
   done
 
