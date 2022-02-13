@@ -4,15 +4,15 @@ Vagrant-Wrapper is a shell script for creating dynamic VM automatically.
 # Documentation
 
 ## Usage ##
--c [integer] is setting the count of CPUs"
--m [integer] is setting the RAM"
--i [integer] is setting the OS-Image"
--s [path] is setting the path to the provision-shell-script"
--h [ipv4] is setting the ip-adress for host-only of the type 192.168.56.0/24"
--f [path] is specifing the path to a *.config file with the parameters CPU, RAM, OS_IMAGE, IP and SCRIPT"
--v [up/halt/start/ssh/destroy] is setting the vagrant command you want to run (has to be present with every command.) You can also prefix any command with g for exampe gdestroy to destroy a whole group (ssh is not possible)"
--d if this is present it will force a recreation of the vm if there is a virtual machine registered but not reachable"
--g [path] is setting the path to a directory with one or more *.cfg files to create a group of virtual-machines at once"
+-c [integer] is setting the count of CPUs
+-m [integer] is setting the RAM
+-i [integer] is setting the OS-Image
+-s [path] is setting the path to the provision-shell-script
+-h [ipv4] is setting the ip-adress for host-only of the type 192.168.56.0/24
+-f [path] is specifing the path to a *.config file with the parameters CPU, RAM, OS_IMAGE, IP and SCRIPT
+-v [up/halt/start/ssh/destroy] is setting the vagrant command you want to run (has to be present with every command.)
+-d if this is present it will force a recreation of the vm if there is a virtual machine registered but not reachable
+-g [path] is setting the path to a directory with one or more *.cfg files to create a group of virtual-machines at once
 
 
 The usage is pretty straight forward. You can create a virtual machine manually using the flags.
