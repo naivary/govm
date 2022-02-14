@@ -33,3 +33,8 @@ For every command you run you have to provide the -v flag, whtich stands for -va
 and is representing the vagrant command you would like to run e.g. up, halt, start, destroy.
 Prefixing the commands with a "g" for example -v gup will start the creation process in group
 creation meaning you can start, destroy, halt and create multiple machines at once.
+
+## Known Issues ## 
+
+https://github.com/hashicorp/vagrant/issues/6736
+FIX: chcp.com 1252
