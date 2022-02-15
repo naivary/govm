@@ -37,6 +37,6 @@ creation meaning you can start, destroy, halt and create multiple machines at on
 ## Known Issues ## 
 
 https://github.com/hashicorp/vagrant/issues/6736  
-FIX: chcp.com 1252
+FIX: chcp.com 1252  
 https://github.com/moby/moby/issues/24029  
 FIX: start every mounting path with a double slash in the config file
