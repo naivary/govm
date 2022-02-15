@@ -65,7 +65,7 @@ done
 # needed to run the group without any problems
 MANUAL_GROUP=("-c" "-r" "-i" "-s" "-h" "-v" "-n")
 FILE_GROUP=("-f" "-v")
-GROUPUP_GROUP=("-g" "-v")
+groupup_GROUP=("-g" "-v")
 VAGRANT_GROUP=("-v" "-m")
 LIST_GROUP=("-l")
 VALID_CONFIG_PARAMS_VM=(
@@ -117,6 +117,7 @@ UNSUPPORTED_MOUNTING_POINTS=(
   "/etc"
   "/var"
 )
+ALREADY_CREATED_VMS=()
 IS_MANUAL="false"
 IS_FILE="false"
 REQUIRED_PARAMS_CONFIG_VM=$(( ${#VALID_CONFIG_PARAMS_VM[@]} - ${#OPTIONAL_CONFIG_PARAMS_VM[@]} ))
@@ -138,10 +139,10 @@ init() {
 
 
 tips() {
-  whiteBold "Thank you for using gov!"  
-  whiteBold "For the usage read the README file."
-  whiteBold "If you would like to support me, star"
-  whiteBold "the repository!"
+  whitebold "Thank you for using govm!"  
+  whitebold "For the usage read the README file."
+  whitebold "If you would like to support me, star"
+  whitebold "the repository!"
 }
 
 
@@ -149,7 +150,7 @@ error() {
   printf "\u274c\033[1m\033[31m ${1}\033[0m\n"
 }
 
-infoBold() {
+infobold() {
   printf "\033[1m\033[34m${1}\033[0m\n"
 }
 
@@ -161,7 +162,7 @@ success() {
   printf "\033[1m\033[32m${1} \xE2\x9C\x94\033[0m\n"
 }
 
-whiteBold() { 
+whitebold() { 
   printf "\033[1m\033[37m${1}\033[0m\n"
 }
 
@@ -208,7 +209,7 @@ rmlogdir() {
 # handle interrupt
 # it is removing the 
 clean() {
-  infoBold "Cleaning up..."
+  infobold "Cleaning up..."
   rmgovm;
   rmip;
   rmlogdir;
@@ -222,6 +223,17 @@ iptoid() {
 idtoip() {
   HOST_ONLY_IP="$(grep ${1} ${IP_FILE} | cut -d '=' -f 2)"
 }
+
+leftcut() {
+  LEFTSIDE="$(cut -d ':' -f 1 <<< ${1})"
+}
+
+rightcut() {
+  RIGHTSIDE="$(cut -d ':' -f 2 <<< ${1})"
+}
+
+
+
 
 # rmip is removing the
 # ip-adress from the file
@@ -239,19 +251,35 @@ rmdirrf() {
   rm -rf "${1}"
 }
 
+trapexitup() {
+  vagrant destroy --force;
+  rmgovm;
+  rmip
+  rmlogdir;
+  infobold "Cleaned!"
+}
+
 trapexit() {
-  infoBold "Graceful exiting...";
-  if [[ "${VAGRANT_CMD}" == "up" || "${VAGRANT_CMD}" == "gup" ]]; then
-    sleep 2
-    vagrant destroy --force &> /dev/null;
-    rmgovm;
-    rmip
-    rmlogdir;
+  infobold "Graceful exiting...";
+  if [[ "${VAGRANT_CMD}" == "up" ]]; then
+    trapexitup
+  elif [[ "${VAGRANT_CMD}" == "gup" ]]; then
+    trapexitgroup
   fi
 }
 
 trapexitgroup() {
-  echo "lorem"
+  for CFG in ${ALREADY_CREATED_VMS[@]}
+  do
+    CONFIG="$(leftcut ${CFG})"
+    ID="$(rightcut ${CFG})"
+    infobold "Cleaning ${CONFIG}..."
+    echo "${ID}"
+    echo "${CONFIG}"
+    cd "${VMSTORE}/${ID}/${BASE_DIR}"
+    sourcefile vm.cfg;
+    trapexitup;
+  done
 }
 
 trapexitdestroy() {
@@ -259,15 +287,15 @@ trapexitdestroy() {
 }
 
 successexit() {
-  infoBold "Finishing touches...";
-  createcfg;
+  infobold "Finishing touches...";
+  # createcfg
   echo "${ID}=${HOST_ONLY_IP}" >> "${IP_FILE}";
   success "VM ${ID} is set and ready to go :)"
   tips;
 }
 
 gsuccessexit() {
-  infoBold "Finishing touches...";
+  infobold "Finishing touches...";
   createcfg;
   echo "${ID}=${HOST_ONLY_IP}" >> "${IP_FILE}";
   success "VM ${ID} is set and ready to go :)"
@@ -364,6 +392,7 @@ postvenv() {
   cp "${BASEDIR}/${BASE_DIR}/Vagrantfile" "${VMSTORE}/${ID}/${BASE_DIR}/Vagrantfile"
   makedir "${VMSTORE}/${ID}/${BASE_DIR}/provision"
   cp "${SCRIPT}" "${VMSTORE}/${ID}/${BASE_DIR}/provision/${SCRIPT_NAME}"
+  createcfg;
 }
 
 #sourcefile is sourcing the
@@ -518,10 +547,10 @@ validateappargs() {
   info "Validating App-Configuration arguments values..."
   if ! [[ -d ${VMSTORE} ]]; then
     makedir "${VMSTORE}"
-  elif ! [[ ${LOG} == "/log" ]]; then
+  elif ! [[ ${LOG} == "/log" && -d "${LOG}" ]]; then
     makedir "${LOG}"
   else
-    success "Valid GOV-Values!"
+    success "Valid GOVM-Values!"
   fi
 }
 
@@ -579,7 +608,7 @@ validateposixgroup() {
   CHECK_MANUAL=()
   CHECK_FILE=()
   CHECK_VAGRANT=()
-  CHECK_GROUPUP=()
+  CHECK_groupup=()
   CHECK_LIST=()
   VAGRANT_COMMAND_GIVEN="false"
 
@@ -592,8 +621,8 @@ validateposixgroup() {
         CHECK_FILE+=("${ARG}")
       elif [[ "${VAGRANT_GROUP[*]}" =~ "${ARG}" && "${ARG}" != "-v" ]]; then
         CHECK_VAGRANT=("${ARG}")
-      elif [[ "${GROUPUP_GROUP[*]}" =~ "${ARG}" && "${ARG}" != "-v" ]]; then
-        CHECK_GROUPUP=("${ARG}")
+      elif [[ "${groupup_GROUP[*]}" =~ "${ARG}" && "${ARG}" != "-v" ]]; then
+        CHECK_groupup=("${ARG}")
       elif [[ "${ARG}" == "-v" ]]; then
         VAGRANT_COMMAND_GIVEN="true"
       elif [[ "${LIST_GROUP[*]}" =~ "${ARG}" && "${ARG}" != "-v" ]]; then
@@ -603,17 +632,17 @@ validateposixgroup() {
   done
 
   if [[ "${#CHECK_MANUAL[@]}" -eq $(( ${#MANUAL_GROUP[@]} -1 )) && "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq 0 && "${VAGRANT_COMMAND_GIVEN}" == "true" ]]; then
-    infoBold "Starting creation process..."
+    infobold "Starting creation process..."
     IS_MANUAL="true"
   elif [[ "${#CHECK_MANUAL[@]}" -eq 0 && "${#CHECK_FILE[@]}" -eq $(( ${#FILE_GROUP[@]} -1 )) && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq 0 && "${VAGRANT_COMMAND_GIVEN}" == "true" ]]; then
-    infoBold "Starting creation process"
+    infobold "Starting creation process"
     IS_FILE="true"
   elif [[ "${#CHECK_MANUAL[@]}" -eq 0 && "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq $(( ${#VAGRANT_GROUP[@]} -1 )) && "${#CHECK_LIST[@]}" -eq 0 && "${VAGRANT_COMMAND_GIVEN}" == "true" ]]; then
-    infoBold "Running command..."
+    infobold "Running command..."
   elif [[ "${#CHECK_MANUAL[@]}" -eq 0 && "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq ${#LIST_GROUP[@]} && "${VAGRANT_COMMAND_GIVEN}" == "false" ]]; then
-    infoBold "Listing all virtual-machines..."
-  elif [[ "${#CHECK_MANUAL[@]}" -eq 0 && "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq 0 && "${VAGRANT_COMMAND_GIVEN}" == "true" && "${#CHECK_GROUPUP[@]}" -eq  $(( ${#GROUPUP_GROUP[@]} -1 )) ]]; then
-    infoBold "Running group command on all virtual-machines..."
+    infobold "Listing all virtual-machines..."
+  elif [[ "${#CHECK_MANUAL[@]}" -eq 0 && "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq 0 && "${VAGRANT_COMMAND_GIVEN}" == "true" && "${#CHECK_groupup[@]}" -eq  $(( ${#groupup_GROUP[@]} -1 )) ]]; then
+    infobold "Running group command on all virtual-machines..."
   else
     error "Too many or not enough arguments"
     usage;
@@ -633,7 +662,7 @@ createvenv() {
 
   if [[ "${?}" -ne 0 ]]; then
     error "${ID} does not exist!"
-    infoBold "run gov -l for a listing of all virtual-machines"
+    infobold "run gov -l for a listing of all virtual-machines"
     exit 1
   fi
 
@@ -644,8 +673,9 @@ createvenv() {
 }
 
 createvm() {
-  infoBold "Creating Virtual-Machine ${ID}. This may take a while..."
-  vagrant up &> ${LOG_PATH}/"${TIMESTAMP}_up.log" 
+  infobold "Creating Virtual-Machine ${ID}. This may take a while..."
+  # vagrant up &> ${LOG_PATH}/"${TIMESTAMP}_up.log" 
+  vagrant up
 }
 
 # fileup is creating
@@ -693,7 +723,7 @@ up() {
 
 # alias to vagrant destroy
 destroy() {
-  infoBold "Destroying ${ID}..."
+  infobold "Destroying ${ID}..."
   createvenv;
   vagrant destroy --force &> /dev/null;
   cd ${BASEDIR}; 
@@ -724,7 +754,7 @@ start() {
 list() {
   init; 
   if [ -z "$(ls -A ${VMSTORE})" ]; then
-    infoBold "No Machines have been created yet!"
+    infobold "No Machines have been created yet!"
     exit 1
   fi
 
@@ -746,14 +776,15 @@ list() {
 
 }
 
-# groupUp is just a helper for 
+# groupup is just a helper for 
 # starting the virtual machines
 # without the any validaton
 # before it
-groupUp() {
+groupup() {
   prepvenv;
   postvenv;
   cd ${VMSTORE}/${ID}/${BASE_DIR};
+  ALREADY_CREATED_VMS+=("${1}:${ID}")
   createvm && gsuccessexit || error "Something went wrong. Debbuging information can be found at ${LOG_PATH}"
 }
 
@@ -812,7 +843,7 @@ gup() {
     resetvenv
     info "Creating $(basename ${CFG})..."
     cd "${BASEDIR}"
-    groupUp
+    groupup "${CFG}"
   done
 
 }
