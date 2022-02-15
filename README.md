@@ -34,6 +34,13 @@ and is representing the vagrant command you would like to run e.g. up, halt, sta
 Prefixing the commands with a "g" for example -v gup will start the creation process in group
 creation meaning you can start, destroy, halt and create multiple machines at once.
 
+## Rules ##
+If you see anytime an error message with "nil" then this means
+that some option was not set which is required if you are using
+one other option for example: if you would like to have
+an additional disk with the option DISK_SIZE_SECOND but your are not
+setting the FILE_SYSTEM for it, then you will see that type of error message.
+
 ## Known Issues ## 
 
 https://github.com/hashicorp/vagrant/issues/6736  
