@@ -41,6 +41,7 @@ one other option for example: if you would like to have
 an additional disk with the option DISK_SIZE_SECOND but your are not
 setting the FILE_SYSTEM for it, then you will see that type of error message.
 
+
 ## Known Issues ## 
 
 https://github.com/hashicorp/vagrant/issues/6736  
