@@ -1,8 +1,21 @@
 #!/bin/bash
 
-trap trapExit INT;
+trap trapexit INT;
 
-while getopts "c:r:i:s:h:f:g:v:n:m:ld" OPT; do
+usage() {
+  echo "-c [integer] is setting the count of CPUs"
+  echo "-m [integer] is setting the RAM"
+  echo "-o [integer] is setting the OS-Image"
+  echo "-s [path] is setting the path to the provision-shell-script"
+  echo "-i [ipv4] is setting the ip-adress for host-only of the type 192.168.56.0/24"
+  echo "-f [path] is specifing the path to a *.config file with the parameters CPU, RAM, OS_IMAGE, IP and SCRIPT"
+  echo "-v [up/halt/start/ssh/destroy] is setting the vagrant command you want to run (has to be present with every command.)"
+  echo "You can also prefix any command with g for exampe gdestroy to destroy a whole group (ssh is not possible)"
+  echo "-d if this is present it will force a recreation of the vm if there is a virtual machine registered but not reachable"
+  echo "-g [path] is setting the path to a directory with one or more *.cfg files to create a group of virtual-machines at once"
+}
+
+while getopts "c:r:o:s:i:f:g:v:n:m:ld" OPT; do
   case "${OPT}" in
     c)
       CPU="${OPTARG}"
@@ -10,7 +23,7 @@ while getopts "c:r:i:s:h:f:g:v:n:m:ld" OPT; do
     r)
       RAM=${OPTARG}
       ;;
-    i)
+    o)
       OS_IMAGE=${OPTARG}
       ;;
     f)
@@ -19,14 +32,14 @@ while getopts "c:r:i:s:h:f:g:v:n:m:ld" OPT; do
     s)
       SCRIPT=${OPTARG}
       ;;
-    h)
+    i)
       HOST_ONLY_IP=${OPTARG}
       ;;
     v)
       VAGRANT_CMD=${OPTARG}
       ;;
     m)
-      VIRTUAL_MACHINE=${OPTARG}
+      ID=${OPTARG}
       ;;
     l)
       VM_LIST="show"
@@ -63,7 +76,9 @@ VALID_CONFIG_PARAMS_VM=(
     "HOST_ONLY_IP"
     "VM_NAME"
     "DISK_SIZE_PRIMARY"
-    "DISK_SIZE_ATTACH"
+    "DISK_SIZE_SECOND"
+    "MOUNTING_POINT"
+    "FILE_SYSTEM"
     "GIT_USERNAME"
     "GIT_PASSWORD"
     "GIT_EMAIL"
@@ -74,12 +89,33 @@ VALID_CONFIG_PARAMS_VM=(
 
 OPTIONAL_CONFIG_PARAMS_VM=(
   "DISK_SIZE_PRIMARY"
-  "DISK_SIZE_ATTACH"
+  "DISK_SIZE_SECOND"
+  "MOUNTING_POINT"
+  "FILE_SYSTEM"
+  "CPU"
+  "RAM"
+  "SCRIPT"
+  "OS_IMAGE"
 )
 
 VALID_CONFIG_PARAMS_APP=(
   "LOG"
   "VMSTORE"
+  "CPU"
+  "RAM"
+  "OS_IMAGE"
+  "SCRIPT"
+)
+SUPPORTED_FILE_SYSTEMS=(
+  "ext3"
+  "ext4"
+  "xfs"
+)
+UNSUPPORTED_MOUNTING_POINTS=(
+  "/"
+  "/root"
+  "/etc"
+  "/var"
 )
 IS_MANUAL="false"
 IS_FILE="false"
@@ -100,28 +136,14 @@ init() {
   # UTF-8 as standard in the shell-Environment
 }
 
-usage() {
-  echo "-c [integer] is setting the count of CPUs"
-  echo "-m [integer] is setting the RAM"
-  echo "-i [integer] is setting the OS-Image"
-  echo "-s [path] is setting the path to the provision-shell-script"
-  echo "-h [ipv4] is setting the ip-adress for host-only of the type 192.168.56.0/24"
-  echo "-f [path] is specifing the path to a *.config file with the parameters CPU, RAM, OS_IMAGE, IP and SCRIPT"
-  echo "-v [up/halt/start/ssh/destroy] is setting the vagrant command you want to run (has to be present with every command.)"
-  echo "You can also prefix any command with g for exampe gdestroy to destroy a whole group (ssh is not possible)"
-  echo "-d if this is present it will force a recreation of the vm if there is a virtual machine registered but not reachable"
-  echo "-g [path] is setting the path to a directory with one or more *.cfg files to create a group of virtual-machines at once"
-}
 
 tips() {
   whiteBold "Thank you for using gov!"  
-  whiteBold "Just a tip for the usage of gov: If you would like to interact"
-  whiteBold "with a machine run gov -l get the machine-id and run the wished"
-  whiteBold "command with -v and the machine id -m it is highly recommende to"
-  whiteBold "run any command you want via gov and dont do it manualy so that"
-  whiteBold "the data is always consistent with your current status."
-  whiteBold "If you do anything manually gov can recover some but not all."
+  whiteBold "For the usage read the README file."
+  whiteBold "If you would like to support me, star"
+  whiteBold "the repository!"
 }
+
 
 error() {
   printf "\u274c\033[1m\033[31m ${1}\033[0m\n"
@@ -150,85 +172,106 @@ setDefaultValues() {
   FORCE_DESTROY=${FORCE_DESTROY:-""}
   REALPATH=$(realpath ${0})
   BASEDIR=$(dirname ${REALPATH})
-  CPU="${CPU:-1}"
-  RAM="${RAM:-1048}"
-  OS_IMAGE=${OS_IMAGE:-"ubuntu/trusty64"}
-  SCRIPT=${SCRIPT:-"provision/default.sh"}
-  VIRTUAL_MACHINE=${VIRTUAL_MACHINE:-""}
   VM_CONFIG=${VM_CONFIG:-""}
   ID=${ID:-0}
   VM_NAME=${VM_NAME:-""}
   GOV_CONFIG=${BASEDIR}/${BASE_DIR}/gov.cfg
   IP_FILE=${BASEDIR}/${BASE_DIR}/used_ip.txt
   GROUP=${GROUP:-""}
-  DISK_SIZE_ATTACH=${DISK_SIZE_ATTACH:-""}
+  DISK_SIZE_SECOND=${DISK_SIZE_SECOND:-""}
   DISK_SIZE_PRIMARY=${DISK_SIZE_PRIMARY:-""}
+  MOUNTING_POINT=${MOUNTING_POINT:-"nil"}
+  FILE_SYSTEM=${FILE_SYSTEM:-"nil"}
   TIMESTAMP=$(date '+%s')
 }
 
 emptyOptionalArguments() {
-  DISK_SIZE_ATTACH=""
+  DISK_SIZE_SECOND=""
   DISK_SIZE_PRIMARY=""
 }
 
 
-rmSyncFolder() {
+rmgovm() {
   if [[ -d "${VMSTORE}/${ID}" ]]; then
-    rm -rf "${VMSTORE}/${ID}";
+    rmdirrf "${VMSTORE}/${ID}";
   fi 
 }
 
-removeLogFolder() {
+rmlogdir() {
   if [[ -d "${LOG_PATH}/${ID}" ]]; then
-    rm -rf "${LOG_PATH}/${ID}"
+    rmdirrf "${LOG_PATH}/${ID}"
   fi
 }
 
+# clean is called after
+# destroyed. it will not 
+# handle interrupt
+# it is removing the 
 clean() {
   infoBold "Cleaning up..."
-  rmSyncFolder;
-  removeIPFromFile;
-  removeLogFolder;
+  rmgovm;
+  rmip;
+  rmlogdir;
   success "Destroyed ${ID}!"
 }
 
-IPID() {
-  IP_TO_ID="$(grep ${1} ${IP_FILE} | cut -d '=' -f 1)"
+iptoid() {
+  ID="$(grep ${1} ${IP_FILE} | cut -d '=' -f 1)"
 }
 
-IDIP() {
-  IDIP="$(grep ${1} ${IP_FILE} | cut -d '=' -f 2)"
+idtoip() {
+  HOST_ONLY_IP="$(grep ${1} ${IP_FILE} | cut -d '=' -f 2)"
 }
 
-removeIPFromFile() {
+# rmip is removing the
+# ip-adress from the file
+rmip() {
   if grep -q -w "${HOST_ONLY_IP}" "${IP_FILE}"; then
     sed -i "/${HOST_ONLY_IP}/d" "${IP_FILE}";
   fi
 }
 
-trapExit() {
-  infoBold "Graceful exiting...";
-  sleep 1
-  rmSyncFolder;
-  removeLogFolder;
+makedir() {
+  mkdir -p -- "${1}"
 }
 
-successExitAfterCreation() {
+rmdirrf() {
+  rm -rf "${1}"
+}
+
+trapexit() {
+  infoBold "Graceful exiting...";
+  if [[ "${VAGRANT_CMD}" == "up" || "${VAGRANT_CMD}" == "gup" ]]; then
+    sleep 1
+    rmgovm;
+    rmlogdir;
+  fi
+}
+
+trapexitgroup() {
+  echo "lorem"
+}
+
+trapexitdestroy() {
+  echo "destroy"
+}
+
+successexit() {
   infoBold "Finishing touches...";
-  createConfigFile;
+  createcfg;
   echo "${ID}=${HOST_ONLY_IP}" >> "${IP_FILE}";
   success "VM ${ID} is set and ready to go :)"
   tips;
 }
 
-successExitGroup() {
+gsuccessexit() {
   infoBold "Finishing touches...";
-  createConfigFile;
+  createcfg;
   echo "${ID}=${HOST_ONLY_IP}" >> "${IP_FILE}";
   success "VM ${ID} is set and ready to go :)"
 }
 
-setVagrantENV() {
+setvenv() {
   export CPU;
   export RAM;
   export OS_IMAGE;
@@ -242,13 +285,15 @@ setVagrantENV() {
   export OS_USERNAME;
   export OS_PASSWORD; 
   export DISK_SIZE_PRIMARY
-  export DISK_SIZE_ATTACH
+  export DISK_SIZE_SECOND
+  export MOUNTING_POINT
+  export FILE_SYSTEM
   export VAGRANT_EXPERIMENTAL="disks"
   # not set by User
   export SYNC_FOLDER;
 }
 
-resetVagrantENV() {
+resetvenv() {
   export -n CPU;
   export -n RAM;
   export -n OS_IMAGE;
@@ -262,15 +307,20 @@ resetVagrantENV() {
   export -n OS_USERNAME;
   export -n OS_PASSWORD;
   export -n DISK_SIZE_PRIMARY
-  export -n DISK_SIZE_ATTACH
+  export -n DISK_SIZE_SECOND
+  export -n MOUNTING_POINT
+  export -n FILE_SYSTEM
   # not set by User
   export -n SYNC_FOLDER;
 
 }
 
 
-
-createConfigFile() {
+# createcfg is copying the used
+# config file for the creation
+# and is appending some extra 
+# information to it
+createcfg() {
   cd ${BASEDIR} 
   REALPATH_VM_CONFIG=$(realpath ${VM_CONFIG})
   cp ${REALPATH_VM_CONFIG} ${VMSTORE}/${ID}/${BASE_DIR}/vm.cfg
@@ -281,20 +331,20 @@ LOG_PATH=${LOG_PATH}
 EOF
 }
 
-# preVagrantENV is creating the
+# prepvenv is creating the
 # syncFolder for the VM and also
 # the log folder to log to
-preVagrantENV() {
-  ID="$(openssl rand -hex 5)" 
-  mkdir -p -- "${VMSTORE}/${ID}/${BASE_DIR}"
-  mkdir -p -- "${VMSTORE}/${ID}/sync_folder"
+prepvenv() {
+  ID="$(openssl rand -hex 5)"
+  makedir "${VMSTORE}/${ID}/${BASE_DIR}"
+  makedir "${VMSTORE}/${ID}/sync_folder"
 
   if [[ ${LOG} == "/log" ]]; then
-    mkdir -p -- ${VMSTORE}/${ID}/${BASE_DIR}/logs
+    makedir "${VMSTORE}/${ID}/${BASE_DIR}/logs"
     LOG_PATH=${VMSTORE}/${ID}/${BASE_DIR}/logs
   else 
     LOG_PATH=${LOG}/${ID}
-    mkdir -p -- ${LOG_PATH}
+    makedir "${LOG_PATH}"
   fi
   SYNC_FOLDER="${VMSTORE}/${ID}/sync_folder"
   SCRIPT_NAME=$(basename ${SCRIPT})
@@ -302,32 +352,34 @@ preVagrantENV() {
 
 }
 
-# postVagrantENV is creating 
+# postvenv is creating 
 # directories and copying 
 # all needed vagrant-files so that
 # the vagrant commands can run in the
 # newly created directory
-postVagrantENV() {
-  setVagrantENV;
+postvenv() {
+  setvenv;
   cp "${BASEDIR}/${BASE_DIR}/Vagrantfile" "${VMSTORE}/${ID}/${BASE_DIR}/Vagrantfile"
-  mkdir "${VMSTORE}/${ID}/${BASE_DIR}/provision"
+  makedir "${VMSTORE}/${ID}/${BASE_DIR}/provision"
   cp "${SCRIPT}" "${VMSTORE}/${ID}/${BASE_DIR}/provision/${SCRIPT_NAME}"
 }
 
-#sourceFile is sourcing the
+#sourcefile is sourcing the
 # given file into the current
 # shell-ENV
-sourceFile() {
+sourcefile() {
   . "${1}"
 }
 
 # validateAndSourceVMConfig
 # is validating the config file
 # for the virtual-machine (syntax only)
-# and if the config file is valid 
+# meaning duplicated keys or not enough
+# keys and if the config file is valid 
 # it is getting sourced.
-validateVMConfig() {
-  GIVEN_PARAMS=()
+validatevmcfg() {
+  GIVEN_PARAMS_REQUIRED=()
+  GIVEN_PARAMS_OPTIONAL=()
   info "Loading ${VM_CONFIG}...";
   if [[  -s "${VM_CONFIG}" && "${VM_CONFIG}" == *.cfg ]]; then
     while read LINE
@@ -335,24 +387,30 @@ validateVMConfig() {
       VALUE="$(echo -e "${LINE}" | tr -d '[:space:]')"
       if ! [[ "${VALUE}" =~ ^([A-Za-z0-9_]+)=([^'#'$%'&''*'^]+$) ]]; then
         [[ "${LINE}" =~ ^\#.*$ || -z "${LINE}" ]] && continue
-        error "DID not match ${VALUE}"
+        error "Wrong syntax: ${VALUE}"
         exit 1
       else
         NAME="${BASH_REMATCH[1]}"
-        if ! [[ "${VALID_CONFIG_PARAMS_VM[*]}" =~ "${NAME}" || "${GIVEN_PARAMS[*]}" =~ ${NAME} ]]; then
-          error "Unexpected Key ${NAME}"
+        if [[ "${GIVEN_PARAMS_REQUIRED[*]}" =~ "${NAME}" || "${GIVEN_PARAMS_OPTIONAL[*]}" =~ "${NAME}" ]]; then
+          error "Key duplicated ${NAME}"
           exit 1
-        else 
-          GIVEN_PARAMS+=("${NAME}")
+        elif ! [[ "${VALID_CONFIG_PARAMS_VM[*]}" =~ "${NAME}" ]]; then
+          error "Unexpected key ${NAME}"
+          exit 1
+        elif [[ "${OPTIONAL_CONFIG_PARAMS_VM[*]}" =~ "${NAME}" ]]; then
+          GIVEN_PARAMS_OPTIONAL+=("${NAME}")
+        elif [[ "${VALID_CONFIG_PARAMS_VM[*]}" =~ "${NAME}" ]]; then
+          GIVEN_PARAMS_REQUIRED+=("${NAME}")
         fi
       fi
     done < ${VM_CONFIG}
 
-  if [[ ${#GIVEN_PARAMS[@]} -le ${#VALID_CONFIG_PARAMS_VM[@]} && ${#GIVEN_PARAMS[@]} -ge ${REQUIRED_PARAMS_CONFIG_VM} ]]; then
+  if [[ ${#GIVEN_PARAMS_REQUIRED[*]} -eq ${REQUIRED_PARAMS_CONFIG_VM} ]]; then
     success "Valid Syntax and Arguments for ${VM_CONFIG}" 
   else 
     error "Not Enough Arguments"
-    error "Expected: ${VALID_CONFIG_PARAMS_VM[@]}"
+    error "Expected: ${VALID_CONFIG_PARAMS_VM[*]}"
+    error "Optional: ${OPTIONAL_CONFIG_PARAMS_VM[*]}"
     exit 1
   fi
   
@@ -362,20 +420,21 @@ validateVMConfig() {
   fi
 }
 
-# validateAndSourceAppConfig
+# validateappcfg
 # is validating the config file
 # for the application (syntax only)
 # and if the config file is valid 
 # it is getting sourced.
-validateAndSourceAppConfig() {
+validateappcfg() {
   GIVEN_PARAMS=()
   info "Loading ${GOV_CONFIG}...";
   if [[  -s "${GOV_CONFIG}" ]]; then
     while read LINE
     do
       VALUE="$(echo -e "${LINE}" | tr -d '[:space:]')"
+
       if ! [[ "${VALUE}" =~ ^([^'#']+)=([^'#'$%'&''*'^]+$) ]]; then
-        [[ "${LINE}" =~ ^\#.*$ || -z "${LINE}" ]] && continue
+        [[ "${VALUE}" =~ ^\#.*$ || -z "${VALUE}" ]] && continue
         error "Did not match ${VALUE}"
         exit 1
       else
@@ -391,10 +450,9 @@ validateAndSourceAppConfig() {
 
     if [[ ${#GIVEN_PARAMS[@]} -eq ${#VALID_CONFIG_PARAMS_APP[@]} ]]; then
       success "Valid! Sourcing ${GOV_CONFIG}" 
-      sourceFile ${GOV_CONFIG}
     else 
       error "Not Enough Arguments"
-      error "Expected: ${VALID_CONFIG_PARAMS_APP[@]}"
+      error "Expected: ${VALID_CONFIG_PARAMS_APP[*]}"
       exit 1
     fi
 
@@ -405,12 +463,12 @@ validateAndSourceAppConfig() {
 }
 
 
-# validateVMInput is  checking if 
+# validatevmargs is  checking if 
 # all given VM-Configs are the type 
 # that they has to be like 
 # CPU should be an integer not 
-# a word etc.
-validateVMInput() {
+# a word and so on
+validatevmargs() {
   info "Validating ${VM_CONFIG} argument values..."
   if ! [[ "${CPU}" =~ ^[0-9]+$ && "${CPU}" -ge 1 && "${CPU}" -le 100 ]]; then
     error "CPU may only contain numbers and shall be bigger than 1";
@@ -424,17 +482,26 @@ validateVMInput() {
   elif ! [[ "${HOST_ONLY_IP}" =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
     error "Invalid IP-Adress";
     exit 1;
-  elif ! validateIP;then
+  elif ! validateip;then
     exit 1
-  elif ! [[ ${GIT_PASSWORD} =~ ^(ghp_)([A-Za-z0-9]{36})$ ]];then
+  elif ! [[ "${GIT_PASSWORD}" =~ ^(ghp_)([A-Za-z0-9]{36})$ ]];then
     error "Invalid Git-Password"
-  elif [[ ${DISK_SIZE_PRIMARY} ]]; then
+    exit 1
+  elif [[ "${DISK_SIZE_SECOND}" ]]; then
+    if ! [[ "${DISK_SIZE_SECOND}" =~ ^([0-9]+)GB$ ]]; then
+      error "Invalid Disk-size for second disk ${DISK_SIZE_SECOND}. It should be in the format 9999GB"
+      exit 1
+    elif [[ (! "${MOUNTING_POINT}" =~ ^//[A-Za-z0-9]+$ || "${UNSUPPORTED_MOUNTING_POINTS[*]}" =~ "${MOUNTING_POINT}") && -d "${MOUNTING_POINT}" ]]; then
+      error "Invalid mounting point ${MOUNTING_POINT}"
+      exit 1
+    elif ! [[ "${SUPPORTED_FILE_SYSTEMS[*]}" =~ "${FILE_SYSTEM}" ]]; then
+      error "file system is currently not supported ${FILE_SYSTEM}."
+      exit 1
+    fi
+  elif [[ "${DISK_SIZE_PRIMARY}" ]]; then
     if ! [[ ${DISK_SIZE_PRIMARY} =~ ^([0-9]+)GB$ ]]; then
       error "Invalid Disk-size for main disk ${DISK_SIZE_PRIMARY}. It should be in the format 9999GB"
-    fi
-  elif [[ ${DISK_ATTACH} == "true" ]]; then
-    if ! [[ ${DISK_SIZE_ATTACH} =~ ^([0-9]+)GB$ ]]; then
-      error "Invalid Disk-size for second disk ${DISK_SIZE_ATTACH}. It should be in the format 9999GB"
+      exit 1
     fi
   else 
     success "Valid VM-Values!" 
@@ -442,22 +509,22 @@ validateVMInput() {
   fi
 }
 
-# validateAppInput is checking if 
+# validateappargs is checking if 
 # the given values are valid and is setting 
 # defaults if needed
-validateAppInput() {
+validateappargs() {
   info "Validating App-Configuration arguments values..."
   if ! [[ -d ${VMSTORE} ]]; then
-    mkdir -p -- ${VMSTORE}
+    makedir "${VMSTORE}"
   elif ! [[ ${LOG} == "/log" ]]; then
-    mkdir -p -- ${LOG}
+    makedir "${LOG}"
   else
     success "Valid GOV-Values!"
   fi
 }
 
 
-# validateIP is validating the given ip
+# validateip is validating the given ip
 # if its already in use or not by following 2 steps:
 # First we ping the given IP-Adress. If it is reachable
 # then the IP adress is in use in (but it does not have to 
@@ -465,21 +532,24 @@ validateAppInput() {
 # virtual-machine). Second we check if the IP-Adress
 # is existing in our system. If it does we exit. A recreation 
 # can be forced with -d flag
-validateIP() {
+validateip() {
   # check if ip is used in any way
-  ping -w 1 "${HOST_ONLY_IP}" &> /dev/null;
+  # NOTE: for git bash it is really 
+  # complicated. it is a success even though
+  # some of the packages are not received
+  ping -c 2 "${HOST_ONLY_IP}" &> /dev/null;
 
   if [[ "$?" -eq 0  && -z "${FORCE_DESTROY}" ]]; then
     error "Machine with the IP: ${HOST_ONLY_IP} exists. Choose an other IP-Adress. (Ping successfull)"
     exit 1
   fi
 
-  # check if ip exist within machine-ecosystem
+  # check if ip exist within govm-ecosystem
   grep -q -w "${HOST_ONLY_IP}" ${IP_FILE}  
 
   if [[ "$?" -eq 0 && -z "${FORCE_DESTROY}" ]]; then
-    IPID ${HOST_ONLY_IP}
-    error "Machine still existing in our system ID: ${IP_TO_ID}. Run Command with -d to force recreation."    
+    iptoid ${HOST_ONLY_IP}
+    error "Machine still existing in our system ID: ${ID}. Run Command with -d to force recreation."    
     exit 1
   fi
 
@@ -488,23 +558,22 @@ validateIP() {
   IS_SUCCESS=${?}
 
   if [[ ${FORCE_DESTROY}  && "${IS_SUCCESS}" -eq 0 ]]; then
-    IPID ${HOST_ONLY_IP}
-    VIRTUAL_MACHINE=${IP_TO_ID}
+    iptoid ${HOST_ONLY_IP}
     destroy
     if [ "${VM_CONFIG}" ]; then
-      sourceFile
+      sourcefile
     fi
   fi 
 
 }
 
-# validateArgs is validatin
+# validateposixgroup is validatin
 # all given flags but not the values
 # of the given flags. These are validated in
 # validateInput. Here we validate the given flags
 # and if they can be used together 
 # using groups.
-validateArgs() {
+validateposixgroup() {
   CHECK_MANUAL=()
   CHECK_FILE=()
   CHECK_VAGRANT=()
@@ -551,69 +620,69 @@ validateArgs() {
 
 }
 
-# createVagrantENV is
+# createvenv is
 # sourcing the config file
 # in the ${VMSTORE}/${ID}
 # and is running the given command afterwards
 # otherwise the Vagrantfile cannot pull
 # the ENV-Variables
-createVagrantENV() {
-  grep -q -w "${VIRTUAL_MACHINE}" ${IP_FILE}  
+createvenv() {
+  grep -q -w "${ID}" ${IP_FILE}  
 
   if [[ "${?}" -ne 0 ]]; then
-    error "${VIRTUAL_MACHINE} does not exist!"
+    error "${ID} does not exist!"
     infoBold "run gov -l for a listing of all virtual-machines"
     exit 1
   fi
 
   init;
-  cd ${VMSTORE}/${VIRTUAL_MACHINE}/${BASE_DIR}
-  sourceFile vm.cfg;
-  setVagrantENV;
+  cd ${VMSTORE}/${ID}/${BASE_DIR}
+  sourcefile vm.cfg;
+  setvenv;
 }
 
-createVM() {
+creategovm() {
   infoBold "Creating Virtual-Machine ${ID}. This may take a while..."
   vagrant up &> ${LOG_PATH}/"${TIMESTAMP}_up.log" 
 }
 
-# fileUp is creating
+# fileup is creating
 # a virtual-machine based
 # on a given config file
 # and the values 
-fileUp() {  
+fileup() {  
   init;
-  validateVMConfig;
-  sourceFile ${VM_CONFIG}
-  validateVMInput && preVagrantENV;
-  postVagrantENV;
+  validatevmcfg;
+  sourcefile ${VM_CONFIG}
+  validatevmargs && prepvenv;
+  postvenv;
   cd ${VMSTORE}/${ID}/${BASE_DIR};
-  createVM && successExitAfterCreation || error "Something went wrong. Debbuging information can be found at ${LOG_PATH}"
+  creategovm && successexit || error "Something went wrong. Debbuging information can be found at ${LOG_PATH}"
 
 }
 
-# manualUp is creating
+# manualup is creating
 # a virtual-machine based
 # on the arguments given
 # in the command-line
 # NOTE: this is not recommended 
 # because the commands will get 
-# really big. fileUp is the recommend 
+# really big. fileup is the recommend 
 # way
-manualUp() {
+manualup() {
   init;
-  validateVMInput && preVagrantENV;
-  postVagrantENV;
+  validatevmargs && prepvenv;
+  postvenv;
   cd ${VMSTORE}/${ID}/${BASE_DIR};
-  createVM && successExitAfterCreation || error "Something went wrong. Debbuging information can be found at ${LOG_PATH}"
+  creategovm && successexit || error "Something went wrong. Debbuging information can be found at ${LOG_PATH}"
 }
 
 
 up() {
   if [[ ${IS_MANUAL} == "true" ]]; then
-    manualUp
+    manualup
   elif [[ ${IS_FILE} == "true" ]]; then
-    fileUp;
+    fileup;
   else 
     echo "Error"
     usage;
@@ -622,33 +691,32 @@ up() {
 
 # alias to vagrant destroy
 destroy() {
-  infoBold "Destroying ${VIRTUAL_MACHINE}..."
-  createVagrantENV;
+  infoBold "Destroying ${ID}..."
+  createvenv;
   vagrant destroy --force &> /dev/null;
   cd ${BASEDIR}; 
   clean;
 }
 
 
-
 halt() {
-  info "Stopping ${VIRTUAL_MACHINE}..."
-  createVagrantENV;
-  vagrant halt &> /dev/null;
-  success "Stopped ${VIRTUAL_MACHINE}!"
+  info "Stopping ${ID}..."
+  createvenv;
+  vagrant halt &> "${LOG_PATH}/${TIMESTAMP}_halt.log";
+  success "Stopped ${ID}!"
 }
 
 vssh() {
-  info "SSH into ${VIRTUAL_MACHINE}"
-  createVagrantENV;
+  info "SSH into ${ID}"
+  createvenv;
   vagrant ssh;
 }
 
 start() {
-  info "Starting ${VIRTUAL_MACHINE}. This may take some time..."
-  createVagrantENV;
+  info "Starting ${ID}. This may take some time..."
+  createvenv;
   vagrant up &> ${LOG_PATH}/"${TIMESTAMP}_start.log"
-  success "${VIRTUAL_MACHINE} up and running!"
+  success "${ID} up and running!"
 }
 
 list() {
@@ -669,7 +737,7 @@ list() {
 
   for DIR in ${VMSTORE}/*; do
     cd ${DIR}/${BASE_DIR}
-    . vm.cfg
+    sourcefile vm.cfg && echo "" || continue
     printf "$format" \
     "${ID}" "${VM_NAME}" "${HOST_ONLY_IP}" "${OS_IMAGE}" "${CPU}" "${RAM}" 
   done
@@ -681,17 +749,17 @@ list() {
 # without the any validaton
 # before it
 groupUp() {
-  preVagrantENV;
-  postVagrantENV;
+  prepvenv;
+  postvenv;
   cd ${VMSTORE}/${ID}/${BASE_DIR};
-  createVM && successExitGroup || error "Something went wrong. Debbuging information can be found at ${LOG_PATH}"
+  creategovm && gsuccessexit || error "Something went wrong. Debbuging information can be found at ${LOG_PATH}"
 }
 
 # group is creating
 # as many virtuals machines 
 # as configs files given in the 
 # given directory
-gUp() {
+gup() {
   init
   IP_ADRESSES=()
   NAMES=()
@@ -700,13 +768,13 @@ gUp() {
   for CFG in ${GROUP}/*.cfg; 
   do
     VM_CONFIG="${CFG}"
-    validateVMConfig
+    validatevmcfg
   done
 
   # checking for duplication of ip or names in the given group
   for CFG in ${GROUP}/*.cfg;
   do
-    sourceFile "${CFG}"
+    sourcefile "${CFG}"
     if [[ "${IP_ADRESSES[*]}" =~ "${HOST_ONLY_IP}" ]]; then
       error "Duplicated IP-Adress ${HOST_ONLY_IP}"
       exit 1
@@ -726,8 +794,8 @@ gUp() {
   do
     VM_CONFIG=${CFG}
     cd "${BASEDIR}"
-    sourceFile "${CFG}"
-    validateVMInput 
+    sourcefile "${CFG}"
+    validatevmargs 
   done
 
   info "Starting creation process..."
@@ -738,8 +806,8 @@ gUp() {
   do
     emptyOptionalArguments
     VM_CONFIG=${CFG}
-    sourceFile "${CFG}";
-    resetVagrantENV
+    sourcefile "${CFG}";
+    resetvenv
     info "Creating $(basename ${CFG})..."
     cd "${BASEDIR}"
     groupUp
@@ -747,46 +815,44 @@ gUp() {
 
 }
 
-# gDestroy is an alias
+# gdestroy is an alias
 # for vagrant destroy 
 # but build for a group
 # destruction
-gDestroy() {
+gdestroy() {
   init
   for CFG in ${GROUP}/*.cfg; 
   do
     VM_CONFIG=${CFG}
     cd "${BASEDIR}"
-    resetVagrantENV
-    sourceFile "${CFG}";
-    IPID "${HOST_ONLY_IP}"
-    VIRTUAL_MACHINE=${IP_TO_ID}
+    resetvenv
+    sourcefile "${CFG}";
+    iptoid "${HOST_ONLY_IP}"
     destroy
   done
 }
 
-# gDestroy is an alias
+# gdestroy is an alias
 # for vagrant destroy 
 # but build for a group
 # destruction
-gHalt() {
+ghalt() {
   init
   for CFG in ${GROUP}/*.cfg; 
   do
     VM_CONFIG=${CFG}
     cd "${BASEDIR}"
-    resetVagrantENV
-    sourceFile "${CFG}";
-    # ping -c 2 ${HOST_ONLY_IP} &> /dev/null;
-    if ! ping "${HOST_ONLY_IP}" &> /dev/null; then
-      error "Machine not reachable! Do they even run?"
+    resetvenv
+    sourcefile "${CFG}";
+
+    if ! ping "${HOST_ONLY_IP}" -c 2 &> /dev/null; then
+      error "Machine not reachable! Check if the machines are running."
       exit 1
     fi
 
-    IPID "${HOST_ONLY_IP}"
-    if [[ "${IP_TO_ID}" ]]; then
-      cd ${VMSTORE}/${IP_TO_ID}/${BASE_DIR}
-      VIRTUAL_MACHINE=${IP_TO_ID}
+    iptoid "${HOST_ONLY_IP}"
+    if [[ "${ID}" ]]; then
+      cd ${VMSTORE}/${ID}/${BASE_DIR}
       halt
     else
       error "Did not find the machines! Do they even run?"
@@ -794,16 +860,15 @@ gHalt() {
   done
 }
 
-gStart() {
+gstart() {
   init
   for CFG in ${GROUP}/*.cfg; 
   do
     VM_CONFIG=${CFG}
     cd "${BASEDIR}"
-    resetVagrantENV
-    sourceFile "${CFG}";
-    IPID "${HOST_ONLY_IP}"
-    VIRTUAL_MACHINE=${IP_TO_ID}
+    resetvenv
+    sourcefile "${CFG}";
+    iptoid "${HOST_ONLY_IP}"
     start
   done
 }
@@ -813,27 +878,28 @@ gStart() {
 # of the application
 main() {
   setDefaultValues
-  validateArgs "$@"
-  validateAndSourceAppConfig;
-  validateAppInput;
-  if [[ "${VAGRANT_CMD}" == "destroy" && "${VIRTUAL_MACHINE}" ]]; then 
+  validateposixgroup "$@"
+  validateappcfg;
+  sourcefile ${GOV_CONFIG};
+  validateappargs;
+  if [[ "${VAGRANT_CMD}" == "destroy" && "${ID}" ]]; then 
     destroy;
-  elif [[ "${VAGRANT_CMD}" == "halt" && "${VIRTUAL_MACHINE}" ]]; then
+  elif [[ "${VAGRANT_CMD}" == "halt" && "${ID}" ]]; then
     halt;
-  elif [[ "${VAGRANT_CMD}" == "start" && "${VIRTUAL_MACHINE}" ]]; then
+  elif [[ "${VAGRANT_CMD}" == "start" && "${ID}" ]]; then
     start
   elif [[ "${VAGRANT_CMD}" == "up" ]]; then
     up
-  elif [[ "${VAGRANT_CMD}" == "ssh" && "${VIRTUAL_MACHINE}" ]]; then
+  elif [[ "${VAGRANT_CMD}" == "ssh" && "${ID}" ]]; then
     vssh
   elif [[ "${VAGRANT_CMD}" == "gup" && -d "${GROUP}" ]]; then
-    gUp; 
+    gup; 
   elif [[ "${VAGRANT_CMD}" == "gstart" && -d "${GROUP}" ]]; then
-    gStart
+    gstart
   elif [[ "${VAGRANT_CMD}" == "gdestroy" && -d "${GROUP}" ]]; then
-    gDestroy
+    gdestroy
   elif [[ "${VAGRANT_CMD}" == "ghalt" && -d "${GROUP}" ]]; then
-    gHalt
+    ghalt
   elif [[ "${VM_LIST}" ]]; then
     list
   else 
