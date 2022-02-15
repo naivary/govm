@@ -4,9 +4,9 @@ Vagrant-Wrapper is a shell script for creating dynamic VM automatically.
 # Documentation
 
 ## Usage ##
--c [integer] is setting the count of CPUs
--m [integer] is setting the RAM
--i [integer] is setting the OS-Image
+-c [integer] is setting the count of CPUs  
+-m [integer] is setting the RAM  
+-i [integer] is setting the OS-Image  
 -s [path] is setting the path to the provision-shell-script
 -h [ipv4] is setting the ip-adress for host-only of the type 192.168.56.0/24
 -f [path] is specifing the path to a *.config file with the parameters CPU, RAM, OS_IMAGE, IP and SCRIPT
