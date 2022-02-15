@@ -12,10 +12,12 @@ else
   FSCK=1
 fi
 
-sudo apt-get install -y lvm2
-sudo pvcreate /dev/sdb
-sudo vgcreate second /dev/sdb
-sudo lvcreate -l 100%VG -n sdb1 second
-sudo "mkfs.${FILE_SYSTEM}" /dev/second/sdb1
-sudo mount /dev/second/sdb1 "${MOUNTING_POINT}"
-echo "/dev/second/sdb1 ${MOUNTING_POINT} ${FILE_SYSTEM} defaults 0 ${FSCK}" >> /etc/fstab
+if [[ "${DISK_SIZE_SECOND}" != "" ]]; then
+  sudo apt-get install -y lvm2
+  sudo pvcreate /dev/sdb
+  sudo vgcreate second /dev/sdb
+  sudo lvcreate -l 100%VG -n sdb1 second
+  sudo "mkfs.${FILE_SYSTEM}" /dev/second/sdb1
+  sudo mount /dev/second/sdb1 "${MOUNTING_POINT}"
+  echo "/dev/second/sdb1 ${MOUNTING_POINT} ${FILE_SYSTEM} defaults 0 ${FSCK}" >> /etc/fstab
+fi
