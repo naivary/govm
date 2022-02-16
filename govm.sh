@@ -150,24 +150,28 @@ setDefaultValues() {
   # appliaction
   ALREADY_CREATED_VMS=()
   REQUIRED_PARAMS_CONFIG_VM=$(( ${#VALID_CONFIG_PARAMS_VM[@]} - ${#OPTIONAL_CONFIG_PARAMS_VM[@]} ))
-  BASE_DIR=".govm"
+  GOVM=".govm"
   DEFAULT_VM="default.cfg"
   VM_LIST=${VM_LIST:-""}
   VM_NAMES=()
   FORCE_DESTROY=${FORCE_DESTROY:-""}
   REALPATH=$(realpath ${0})
   BASEDIR=$(dirname ${REALPATH})
-  IP_FILE=${BASEDIR}/${BASE_DIR}/used_ip.txt
+  IP_FILE=${BASEDIR}/${GOVM}/used_ip.txt
   TIMESTAMP=$(date '+%s')
 
-  # gov.cfg
-  GOV_CONFIG=${BASEDIR}/${BASE_DIR}/gov.cfg
+  # govm.cfg
+  GOV_CONFIG=${BASEDIR}/${GOVM}/govm.cfg
 
   # vm.cfg
   GROUP=${GROUP:-""}
-  VM_CONFIG=${VM_CONFIG:-"${BASEDIR}/${BASE_DIR}/${DEFAULT_VM}"}
-  ID=${ID:-0}
-  VM_NAME=${VM_NAME:-""}
+  VM_CONFIG=${VM_CONFIG:-"${BASEDIR}/${GOVM}/${DEFAULT_VM}"}
+  # get id of default machine if 
+  # created otherwise set it to 0
+  iptoid 192.168.56.2
+  ID=${ID:-"nil"}
+  VM_NAME=${VM_NAME:-"default"}
+  HOST_ONLY_IP=${HOST_ONLY_IP:-192.168.56.2}
   DISK_SIZE_SECOND=${DISK_SIZE_SECOND:-""}
   DISK_SIZE_PRIMARY=${DISK_SIZE_PRIMARY:-""}
   MOUNTING_POINT=${MOUNTING_POINT:-"nil"}
@@ -274,7 +278,7 @@ trapexitgroup() {
     rightcut ${CFG}
     VM_CONFIG=${LEFTSIDE}    
     ID=${RIGHTSIDE}
-    cd "${VMSTORE}/${ID}/${BASE_DIR}"
+    cd "${VMSTORE}/${ID}/${GOVM}"
     sourcefile vm.cfg
     trapexitup "${ID}"
   done
@@ -347,8 +351,8 @@ resetvenv() {
 createcfg() {
   cd ${BASEDIR} 
   REALPATH_VM_CONFIG=$(realpath ${VM_CONFIG})
-  cp ${REALPATH_VM_CONFIG} ${VMSTORE}/${ID}/${BASE_DIR}/vm.cfg
-cat << EOF >> ${VMSTORE}/${ID}/${BASE_DIR}/vm.cfg
+  cp ${REALPATH_VM_CONFIG} ${VMSTORE}/${ID}/${GOVM}/vm.cfg
+cat << EOF >> ${VMSTORE}/${ID}/${GOVM}/vm.cfg
 SYNC_FOLDER=${SYNC_FOLDER}
 ID=${ID}
 LOG_PATH=${LOG_PATH}
@@ -360,12 +364,12 @@ EOF
 # the log folder to log to
 prepvenv() {
   ID="$(openssl rand -hex 5)"
-  makedir "${VMSTORE}/${ID}/${BASE_DIR}"
+  makedir "${VMSTORE}/${ID}/${GOVM}"
   makedir "${VMSTORE}/${ID}/sync_folder"
 
   if [[ ${LOG} == "/log" ]]; then
-    makedir "${VMSTORE}/${ID}/${BASE_DIR}/logs"
-    LOG_PATH=${VMSTORE}/${ID}/${BASE_DIR}/logs
+    makedir "${VMSTORE}/${ID}/${GOVM}/logs"
+    LOG_PATH=${VMSTORE}/${ID}/${GOVM}/logs
   else 
     LOG_PATH=${LOG}/${ID}
     makedir "${LOG_PATH}"
@@ -383,9 +387,9 @@ prepvenv() {
 # newly created directory
 postvenv() {
   setvenv;
-  cp "${BASEDIR}/${BASE_DIR}/Vagrantfile" "${VMSTORE}/${ID}/${BASE_DIR}/Vagrantfile"
-  makedir "${VMSTORE}/${ID}/${BASE_DIR}/provision"
-  cp "${SCRIPT}" "${VMSTORE}/${ID}/${BASE_DIR}/provision/${SCRIPT_NAME}"
+  cp "${BASEDIR}/${GOVM}/Vagrantfile" "${VMSTORE}/${ID}/${GOVM}/Vagrantfile"
+  makedir "${VMSTORE}/${ID}/${GOVM}/provision"
+  cp "${SCRIPT}" "${VMSTORE}/${ID}/${GOVM}/provision/${SCRIPT_NAME}"
   createcfg;
 }
 
@@ -481,7 +485,7 @@ validateappcfg() {
     fi
 
   else 
-    error "gov.cfg is not existing or is empty or has the wrong extension (expected: .cfg)"
+    error "govm.cfg is not existing or is empty."
     exit 1
   fi
 }
@@ -675,12 +679,12 @@ createvenv() {
 
   if [[ "${?}" -ne 0 ]]; then
     error "${ID} does not exist!"
-    infobold "run gov -l for a listing of all virtual-machines"
+    infobold "run govm -l for a listing of all virtual-machines"
     exit 1
   fi
 
   init;
-  cd ${VMSTORE}/${ID}/${BASE_DIR}
+  cd ${VMSTORE}/${ID}/${GOVM}
   sourcefile vm.cfg;
   setvenv;
 }
@@ -698,7 +702,7 @@ up() {
   sourcefile ${VM_CONFIG}
   validaterequiredvmargs && prepvenv;
   postvenv;
-  cd ${VMSTORE}/${ID}/${BASE_DIR};
+  cd ${VMSTORE}/${ID}/${GOVM};
   createvm && successexit || error "Something went wrong. Debbuging information can be found at ${LOG_PATH}"
 }
 
@@ -755,7 +759,7 @@ vexport() {
 groupup() {
   prepvenv;
   postvenv;
-  cd ${VMSTORE}/${ID}/${BASE_DIR};
+  cd ${VMSTORE}/${ID}/${GOVM};
   ALREADY_CREATED_VMS+=("${1}:${ID}")
   createvm && gsuccessexit || error "Something went wrong. Debbuging information can be found at ${LOG_PATH}."
 }
@@ -858,7 +862,7 @@ ghalt() {
     fi
     iptoid "${HOST_ONLY_IP}"
     if [[ "${ID}" ]]; then
-      cd ${VMSTORE}/${ID}/${BASE_DIR}
+      cd ${VMSTORE}/${ID}/${GOVM}
       halt
     else
       error "Did not find the machines! Do they even run?"
@@ -913,19 +917,56 @@ list() {
     infobold "No Machines have been created yet!"
     exit 1
   fi
+  # 11
+  ID_LENGTH=11
+  # 12
+  NAME_LENGTH=0
+  # 15
+  IP_LENGTH=0
+  # 17
+  OS_LENGTH=0
+  # 3
+  CPU_LENGTH=3
+  #17
+  MEMORY_LENGTH=17
+
+  # get longest values
+  for DIR in ${VMSTORE}/*
+  do
+    cd ${DIR}/${GOVM}
+    sourcefile vm.cfg
+    NAME_L=$(echo ${#NAME_LENGTH})
+    OS_L=$(echo ${#OS_IMAGE})
+    IP_L=$(echo ${#HOST_ONLY_IP})
+
+    if (( ${NAME_L} > ${NAME_LENGTH} )); then
+      NAME_LENGTH="${NAME_L}"
+    fi 
+
+    if (( ${IP_L} > ${IP_LENGTH} )); then
+      IP_LENGTH=${IP_L} 
+    fi
+
+    if (( ${OS_L} > ${OS_LENGTH} )); then
+      echo "${OS_L}"
+      OS_LENGTH="${OS_L}" 
+    fi
+  done
+
+  echo "${OS_LENGTH} ${IP_LENGTH} ${NAME_LENGTH}"
 
   divider===============================;
   divider=$divider$divider$divider;
   header="\n %-10s %10s %13s %14s %21s %8s\n";
-  format="%11s %12s %15s %17s %3d %17d\n";
+  format="%${ID_LENGTH}s %${NAME_LENGTH}s %${IP_LENGTH}s %${OS_LENGTH}s %${CPU_LENGTH}d %${MEMORY_LENGTH}d\n";
   width=85;
 
-  printf "$header" "VM-ID" "VM-Name" "IP-Adress" "OS-Image" "Processor(s)" "Memory";
+  printf "$header" "VM-ID" "VM-Name" "IP-Adress" "OS-Image" "Processor" "Memory";
   printf "%$width.${width}s\n" "$divider";
 
   for DIR in ${VMSTORE}/*; do
-    cd ${DIR}/${BASE_DIR}
-    sourcefile vm.cfg && echo "" || continue
+    cd ${DIR}/${GOVM}
+    sourcefile vm.cfg
     printf "$format" \
     "${ID}" "${VM_NAME}" "${HOST_ONLY_IP}" "${OS_IMAGE}" "${CPU}" "${RAM}" 
   done
@@ -938,10 +979,10 @@ list() {
 # of the application
 main() {
   setDefaultValues
-  validateposixgroup "$@"
   validateappcfg;
   sourcefile ${GOV_CONFIG};
   validateappargs;
+  validateposixgroup "$@"
   if [[ "${VAGRANT_CMD}" == "destroy" && "${ID}" ]]; then 
     destroy;
   elif [[ "${VAGRANT_CMD}" == "halt" && "${ID}" ]]; then
@@ -967,7 +1008,7 @@ main() {
   elif [[ "${VM_LIST}" ]]; then
     list
   else 
-    error "Wrong arguments or not enough arguments"
+    error "Posix-Arguments did not match!"
     usage
   fi
 }
