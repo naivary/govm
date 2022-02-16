@@ -147,6 +147,7 @@ whitebold() {
 }
 
 setDefaultValues() {
+  # appliaction
   ALREADY_CREATED_VMS=()
   REQUIRED_PARAMS_CONFIG_VM=$(( ${#VALID_CONFIG_PARAMS_VM[@]} - ${#OPTIONAL_CONFIG_PARAMS_VM[@]} ))
   BASE_DIR=".govm"
@@ -156,17 +157,27 @@ setDefaultValues() {
   FORCE_DESTROY=${FORCE_DESTROY:-""}
   REALPATH=$(realpath ${0})
   BASEDIR=$(dirname ${REALPATH})
+  IP_FILE=${BASEDIR}/${BASE_DIR}/used_ip.txt
+  TIMESTAMP=$(date '+%s')
+
+  # gov.cfg
+  GOV_CONFIG=${BASEDIR}/${BASE_DIR}/gov.cfg
+
+  # vm.cfg
+  GROUP=${GROUP:-""}
   VM_CONFIG=${VM_CONFIG:-"${BASEDIR}/${BASE_DIR}/${DEFAULT_VM}"}
   ID=${ID:-0}
   VM_NAME=${VM_NAME:-""}
-  GOV_CONFIG=${BASEDIR}/${BASE_DIR}/gov.cfg
-  IP_FILE=${BASEDIR}/${BASE_DIR}/used_ip.txt
-  GROUP=${GROUP:-""}
   DISK_SIZE_SECOND=${DISK_SIZE_SECOND:-""}
   DISK_SIZE_PRIMARY=${DISK_SIZE_PRIMARY:-""}
   MOUNTING_POINT=${MOUNTING_POINT:-"nil"}
   FILE_SYSTEM=${FILE_SYSTEM:-"nil"}
-  TIMESTAMP=$(date '+%s')
+  GIT_USERNAME=${GIT_USERNAME:-""}
+  GIT_PASSWORD=${GIT_PASSWORD:-""}
+  GIT_EMAIL=${GIT_EMAIL:-""}
+  GIT_NAME=${GIT_NAME:-""}
+  OS_USERNAME=${OS_USERNAME:-""}
+  OS_PASSWORD=${OS_PASSWORD:-""}
 }
 
 emptyOptionalArguments() {
@@ -267,10 +278,6 @@ trapexitgroup() {
     sourcefile vm.cfg
     trapexitup "${ID}"
   done
-}
-
-trapexitdestroy() {
-  echo "destroy"
 }
 
 successexit() {
@@ -404,7 +411,7 @@ validatevmcfg() {
     do
       VALUE="$(echo -e "${LINE}" | tr -d '[:space:]')"
       if ! [[ "${VALUE}" =~ ^([A-Za-z0-9_]+)=([^'#'$%'&''*'^]+$) ]]; then
-        [[ "${LINE}" =~ ^\#.*$ || -z "${LINE}" ]] && continue
+        [[ "${VALUE}" =~ ^\#.*$ || -z "${VALUE}" ]] && continue
         error "Wrong syntax: ${VALUE}"
         exit 1
       else
@@ -422,8 +429,6 @@ validatevmcfg() {
         fi
       fi
     done < ${VM_CONFIG}
-  echo ${#GIVEN_PARAMS_REQUIRED[*]} 
-  echo ${REQUIRED_PARAMS_CONFIG_VM} 
   if [[ ${#GIVEN_PARAMS_REQUIRED[*]} -eq ${REQUIRED_PARAMS_CONFIG_VM} ]]; then
     success "Valid Syntax and Arguments for ${VM_CONFIG}" 
   else 
@@ -504,7 +509,7 @@ validaterequiredvmargs() {
   elif ! validateip;then
     exit 1
   elif validateoptionalvmargs; then
-    success "Valid VM-Values!" 
+    success "Valid required values!" 
   fi
 }
 
@@ -515,11 +520,21 @@ validateoptionalvmargs() {
       error "Invalid Git-Password"
       exit 1
     fi
+  elif [[ "${GIT_EMAIL}" ]]; then
+    if ! [[ "${GIT_EMAIL}" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
+      error "Invalid Email: ${GIT_EMAIL}"
+      exit 1
+    fi
   elif [[ "${GIT_NAME}" ]]; then
     if ! [[ "${GIT_NAME}" =~ ^([A-Za-z])$ ]]; then
       error "Invalid lastname ${GIT_NAME}. It may only contain letters"
+      exit 1
     fi
-  elif [[ "${}"  ]] 
+  elif [[ "${OS_USERNAME}" ]]; then
+    if ! [[ "${OS_USERNAME}" =~ ^([A-Za-z])$ ]]; then
+      error "Invalid OS_USERNAME: ${OS_USERNAME}. May only contain letters!"
+      exit 1
+    fi
   elif [[ "${DISK_SIZE_SECOND}" ]]; then
     if ! [[ "${DISK_SIZE_SECOND}" =~ ^([0-9]+)GB$ ]]; then
       error "Invalid Disk-size for second disk ${DISK_SIZE_SECOND}. It should be in the format 9999GB"
@@ -537,7 +552,7 @@ validateoptionalvmargs() {
       exit 1
     fi
   else
-    success "Valid"
+    success "Valid optional arguments!"
   fi
 }
 
