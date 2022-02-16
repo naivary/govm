@@ -65,7 +65,7 @@ done
 # needed to run the group without any problems
 MANUAL_GROUP=("-c" "-r" "-i" "-s" "-h" "-v" "-n")
 FILE_GROUP=("-f" "-v")
-groupup_GROUP=("-g" "-v")
+GROUPCMD_GROUP=("-g" "-v")
 VAGRANT_GROUP=("-v" "-m")
 LIST_GROUP=("-l")
 VALID_CONFIG_PARAMS_VM=(
@@ -99,8 +99,9 @@ OPTIONAL_CONFIG_PARAMS_VM=(
 )
 
 VALID_CONFIG_PARAMS_APP=(
-  "LOG"
   "VMSTORE"
+  "APPLIANCESTORE"
+  "LOG"
   "CPU"
   "RAM"
   "OS_IMAGE"
@@ -169,6 +170,7 @@ whitebold() {
 setDefaultValues() {
   BASE_DIR=".govm"
   VM_LIST=${VM_LIST:-""}
+  VM_NAMES=()
   FORCE_DESTROY=${FORCE_DESTROY:-""}
   REALPATH=$(realpath ${0})
   BASEDIR=$(dirname ${REALPATH})
@@ -249,6 +251,11 @@ makedir() {
 rmdirrf() {
   rm -rf "${1}"
 }
+
+isvmrunning() {
+  vboxmanage list runningvms | grep -q -w "${1}" 
+}
+
 
 trapexitup() {
   vagrant destroy --force &> /dev/null
@@ -547,6 +554,8 @@ validateappargs() {
     makedir "${VMSTORE}"
   elif ! [[ ${LOG} == "/log" && -d "${LOG}" ]]; then
     makedir "${LOG}"
+  elif ! [[ -d ${APPLIANCESTORE} ]]; then 
+    makedir "${APPLIANCESTORE}"
   else
     success "Valid GOVM-Values!"
   fi
@@ -606,7 +615,7 @@ validateposixgroup() {
   CHECK_MANUAL=()
   CHECK_FILE=()
   CHECK_VAGRANT=()
-  CHECK_groupup=()
+  CHECK_GROUPUP=()
   CHECK_LIST=()
   VAGRANT_COMMAND_GIVEN="false"
 
@@ -619,8 +628,8 @@ validateposixgroup() {
         CHECK_FILE+=("${ARG}")
       elif [[ "${VAGRANT_GROUP[*]}" =~ "${ARG}" && "${ARG}" != "-v" ]]; then
         CHECK_VAGRANT=("${ARG}")
-      elif [[ "${groupup_GROUP[*]}" =~ "${ARG}" && "${ARG}" != "-v" ]]; then
-        CHECK_groupup=("${ARG}")
+      elif [[ "${GROUPCMD_GROUP[*]}" =~ "${ARG}" && "${ARG}" != "-v" ]]; then
+        CHECK_GROUPUP=("${ARG}")
       elif [[ "${ARG}" == "-v" ]]; then
         VAGRANT_COMMAND_GIVEN="true"
       elif [[ "${LIST_GROUP[*]}" =~ "${ARG}" && "${ARG}" != "-v" ]]; then
@@ -632,14 +641,14 @@ validateposixgroup() {
   if [[ "${#CHECK_MANUAL[@]}" -eq $(( ${#MANUAL_GROUP[@]} -1 )) && "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq 0 && "${VAGRANT_COMMAND_GIVEN}" == "true" ]]; then
     infobold "Starting creation process..."
     IS_MANUAL="true"
-  elif [[ "${#CHECK_MANUAL[@]}" -eq 0 && "${#CHECK_FILE[@]}" -eq $(( ${#FILE_GROUP[@]} -1 )) && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq 0 && "${VAGRANT_COMMAND_GIVEN}" == "true" ]]; then
+  elif [[ "${#CHECK_MANUAL[@]}" -eq 0 && "${#CHECK_FILE[@]}" -eq $(( ${#FILE_GROUP[@]} -1 )) && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq 0 && "${VAGRANT_COMMAND_GIVEN}" == "true" && "${#CHECK_GROUPUP[@]}" -eq 0 ]]; then
     infobold "Starting creation process"
     IS_FILE="true"
-  elif [[ "${#CHECK_MANUAL[@]}" -eq 0 && "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq $(( ${#VAGRANT_GROUP[@]} -1 )) && "${#CHECK_LIST[@]}" -eq 0 && "${VAGRANT_COMMAND_GIVEN}" == "true" ]]; then
+  elif [[ "${#CHECK_MANUAL[@]}" -eq 0 && "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq $(( ${#VAGRANT_GROUP[@]} -1 )) && "${#CHECK_LIST[@]}" -eq 0 && "${VAGRANT_COMMAND_GIVEN}" == "true" && "${#CHECK_GROUPUP[@]}" -eq 0 ]]; then
     infobold "Running command..."
-  elif [[ "${#CHECK_MANUAL[@]}" -eq 0 && "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq ${#LIST_GROUP[@]} && "${VAGRANT_COMMAND_GIVEN}" == "false" ]]; then
+  elif [[ "${#CHECK_MANUAL[@]}" -eq 0 && "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq ${#LIST_GROUP[@]} && "${VAGRANT_COMMAND_GIVEN}" == "false" && "${#CHECK_GROUPUP[@]}" -eq 0 ]]; then
     infobold "Listing all virtual-machines..."
-  elif [[ "${#CHECK_MANUAL[@]}" -eq 0 && "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq 0 && "${VAGRANT_COMMAND_GIVEN}" == "true" && "${#CHECK_groupup[@]}" -eq  $(( ${#groupup_GROUP[@]} -1 )) ]]; then
+  elif [[ "${#CHECK_MANUAL[@]}" -eq 0 && "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq 0 && "${VAGRANT_COMMAND_GIVEN}" == "true" && "${#CHECK_GROUPUP[@]}" -eq  $(( ${#GROUPCMD_GROUP[@]} -1 )) ]]; then
     infobold "Running group command on all virtual-machines..."
   else
     error "Too many or not enough arguments"
@@ -713,7 +722,7 @@ up() {
   elif [[ ${IS_FILE} == "true" ]]; then
     fileup;
   else 
-    echo "Error"
+    echo "Error."
     usage;
   fi
 }
@@ -731,8 +740,14 @@ destroy() {
 halt() {
   info "Stopping ${ID}..."
   createvenv;
-  vagrant halt &> "${LOG_PATH}/${TIMESTAMP}_halt.log";
-  success "Stopped ${ID}!"
+  isvmrunning "${VM_NAME}"
+  if [[ "$?" -eq 0 ]]; then
+    vagrant halt &> "${LOG_PATH}/${TIMESTAMP}_halt.log";
+    success "Stopped ${ID}!"
+  else 
+    error "Machine is not running!"
+  fi
+
 }
 
 vssh() {
@@ -748,30 +763,15 @@ start() {
   success "${ID} up and running!"
 }
 
-list() {
-  init; 
-  if [ -z "$(ls -A ${VMSTORE})" ]; then
-    infobold "No Machines have been created yet!"
-    exit 1
-  fi
 
-  divider===============================;
-  divider=$divider$divider$divider;
-  header="\n %-10s %10s %13s %14s %21s %8s\n";
-  format="%11s %12s %15s %17s %3d %17d\n";
-  width=85;
-
-  printf "$header" "VM-ID" "VM-Name" "IP-Adress" "OS-Image" "Processor(s)" "Memory";
-  printf "%$width.${width}s\n" "$divider";
-
-  for DIR in ${VMSTORE}/*; do
-    cd ${DIR}/${BASE_DIR}
-    sourcefile vm.cfg && echo "" || continue
-    printf "$format" \
-    "${ID}" "${VM_NAME}" "${HOST_ONLY_IP}" "${OS_IMAGE}" "${CPU}" "${RAM}" 
-  done
-
+vexport() {
+  sourcefile ${VM_CONFIG}
+  halt
+  infobold "Exporting ${VM_NAME}..."
+  vboxmanage 'export' "${VM_NAME}" --output "${APPLIANCESTORE}/${VM_NAME}.ova"
+  success "Finished! appliance can be found at ${APPLIANCESTORE}"
 }
+
 
 # groupup is just a helper for 
 # starting the virtual machines
@@ -874,18 +874,20 @@ ghalt() {
     cd "${BASEDIR}"
     resetvenv
     sourcefile "${CFG}";
-
-    if ! ping "${HOST_ONLY_IP}" -c 2 &> /dev/null; then
-      error "Machine not reachable! Check if the machines are running."
-      exit 1
+    VM_NAMES+=("${VM_NAME}")
+    isvmrunning "${VM_NAME}" && echo "$?"
+    
+    if [[ "${?}" -eq 1 ]]; then
+      infobold "Machine is not running. Continueing..."
+      continue
     fi
-
     iptoid "${HOST_ONLY_IP}"
     if [[ "${ID}" ]]; then
       cd ${VMSTORE}/${ID}/${BASE_DIR}
       halt
     else
       error "Did not find the machines! Do they even run?"
+      exit 2
     fi
   done
 }
@@ -902,6 +904,59 @@ gstart() {
     start
   done
 }
+
+# alias to vboxmanage 
+# export <machines>
+gexport() {
+  i=1
+  infobold "Exporting group: ${GROUP}"
+  ghalt
+  BASENAME=$(basename ${GROUP})
+  FILENAME="${BASENAME}.v${i}.ova"
+
+  while true 
+  do
+    if [[ -s ${APPLIANCESTORE}/${FILENAME} ]]; then
+      i=$((i +1))
+      NEW_FILENAME="${BASENAME}.v${i}.ova"
+      infobold "${FILENAME} exists! Renaming appliance to ${NEW_FILENAME}"
+      FILENAME=${NEW_FILENAME}
+    else 
+      break
+    fi  
+  done
+  
+  vboxmanage 'export' "${VM_NAMES[@]}" --output "${APPLIANCESTORE}/${FILENAME}" && success "Created appliance ${FILENAME}"
+}
+
+# list is listing all the 
+# virtual-machines created
+# by govm
+list() {
+  init; 
+  if [ -z "$(ls -A ${VMSTORE})" ]; then
+    infobold "No Machines have been created yet!"
+    exit 1
+  fi
+
+  divider===============================;
+  divider=$divider$divider$divider;
+  header="\n %-10s %10s %13s %14s %21s %8s\n";
+  format="%11s %12s %15s %17s %3d %17d\n";
+  width=85;
+
+  printf "$header" "VM-ID" "VM-Name" "IP-Adress" "OS-Image" "Processor(s)" "Memory";
+  printf "%$width.${width}s\n" "$divider";
+
+  for DIR in ${VMSTORE}/*; do
+    cd ${DIR}/${BASE_DIR}
+    sourcefile vm.cfg && echo "" || continue
+    printf "$format" \
+    "${ID}" "${VM_NAME}" "${HOST_ONLY_IP}" "${OS_IMAGE}" "${CPU}" "${RAM}" 
+  done
+
+}
+
 
 
 # main is the entering point
@@ -922,6 +977,8 @@ main() {
     up
   elif [[ "${VAGRANT_CMD}" == "ssh" && "${ID}" ]]; then
     vssh
+  elif [[ "${VAGRANT_CMD}" == "export" && -s ${VM_CONFIG} ]]; then
+    vexport
   elif [[ "${VAGRANT_CMD}" == "gup" && -d "${GROUP}" ]]; then
     gup; 
   elif [[ "${VAGRANT_CMD}" == "gstart" && -d "${GROUP}" ]]; then
@@ -930,6 +987,8 @@ main() {
     gdestroy
   elif [[ "${VAGRANT_CMD}" == "ghalt" && -d "${GROUP}" ]]; then
     ghalt
+  elif [[ "${VAGRANT_CMD}" == "gexport" && -d "${GROUP}" ]]; then
+    gexport
   elif [[ "${VM_LIST}" ]]; then
     list
   else 

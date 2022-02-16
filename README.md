@@ -48,3 +48,8 @@ https://github.com/hashicorp/vagrant/issues/6736
 FIX: chcp.com 1252  
 https://github.com/moby/moby/issues/24029  
 FIX: start every mounting path with a double slash in the config file
+
+## Error Codes ##
+
+1: Machine not reachable with a ping.
+2: Machine not found in system (grep in used_ip.txt)
