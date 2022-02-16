@@ -168,7 +168,6 @@ whitebold() {
 
 setDefaultValues() {
   BASE_DIR=".govm"
-  VMSTORE=${VMSTORE:-""}
   VM_LIST=${VM_LIST:-""}
   FORCE_DESTROY=${FORCE_DESTROY:-""}
   REALPATH=$(realpath ${0})
@@ -198,6 +197,9 @@ rmgovm() {
   fi 
 }
 
+# rmlogdir is removing
+# the log directory if the
+# directory is not the default
 rmlogdir() {
   if [[ -d "${LOG_PATH}/${ID}" ]]; then
     rmdirrf "${LOG_PATH}/${ID}"
@@ -232,9 +234,6 @@ rightcut() {
   RIGHTSIDE="$(cut -d ':' -f 2 <<< ${1})"
 }
 
-
-
-
 # rmip is removing the
 # ip-adress from the file
 rmip() {
@@ -252,15 +251,15 @@ rmdirrf() {
 }
 
 trapexitup() {
-  vagrant destroy --force;
+  vagrant destroy --force &> /dev/null
   rmgovm;
-  rmip
+  rmip;
   rmlogdir;
-  infobold "Cleaned!"
+  infobold "Cleaned ${1}"
 }
 
 trapexit() {
-  infobold "Graceful exiting...";
+  infobold "Graceful exiting. Trying to clean as much as possible...";
   if [[ "${VAGRANT_CMD}" == "up" ]]; then
     trapexitup
   elif [[ "${VAGRANT_CMD}" == "gup" ]]; then
@@ -271,14 +270,13 @@ trapexit() {
 trapexitgroup() {
   for CFG in ${ALREADY_CREATED_VMS[@]}
   do
-    CONFIG="$(leftcut ${CFG})"
-    ID="$(rightcut ${CFG})"
-    infobold "Cleaning ${CONFIG}..."
-    echo "${ID}"
-    echo "${CONFIG}"
+    leftcut ${CFG}
+    rightcut ${CFG}
+    VM_CONFIG=${LEFTSIDE}    
+    ID=${RIGHTSIDE}
     cd "${VMSTORE}/${ID}/${BASE_DIR}"
-    sourcefile vm.cfg;
-    trapexitup;
+    sourcefile vm.cfg
+    trapexitup "${ID}"
   done
 }
 
@@ -674,8 +672,7 @@ createvenv() {
 
 createvm() {
   infobold "Creating Virtual-Machine ${ID}. This may take a while..."
-  # vagrant up &> ${LOG_PATH}/"${TIMESTAMP}_up.log" 
-  vagrant up
+  vagrant up &> ${LOG_PATH}/"${TIMESTAMP}_up.log" 
 }
 
 # fileup is creating
@@ -785,7 +782,7 @@ groupup() {
   postvenv;
   cd ${VMSTORE}/${ID}/${BASE_DIR};
   ALREADY_CREATED_VMS+=("${1}:${ID}")
-  createvm && gsuccessexit || error "Something went wrong. Debbuging information can be found at ${LOG_PATH}"
+  createvm && gsuccessexit || error "Something went wrong. Debbuging information can be found at ${LOG_PATH}."
 }
 
 # group is creating
