@@ -101,6 +101,7 @@ UNSUPPORTED_MOUNTING_POINTS=(
   "/etc"
   "/var"
 )
+
 # init is setting all best-practice-standards 
 # needed for the shell-script to run without
 # any problems
@@ -146,7 +147,7 @@ whitebold() {
   printf "\033[1m\033[37m${1}\033[0m\n"
 }
 
-setDefaultValues() {
+setdefaultvalues() {
   # appliaction
   ALREADY_CREATED_VMS=()
   REQUIRED_PARAMS_CONFIG_VM=$(( ${#VALID_CONFIG_PARAMS_VM[@]} - ${#OPTIONAL_CONFIG_PARAMS_VM[@]} ))
@@ -157,7 +158,7 @@ setDefaultValues() {
   FORCE_DESTROY=${FORCE_DESTROY:-""}
   REALPATH=$(realpath ${0})
   BASEDIR=$(dirname ${REALPATH})
-  IP_FILE=${BASEDIR}/${GOVM}/used_ip.txt
+  DB=${BASEDIR}/${GOVM}/db.txt
   TIMESTAMP=$(date '+%s')
 
   # govm.cfg
@@ -218,11 +219,11 @@ clean() {
 }
 
 iptoid() {
-  ID="$(grep ${1} ${IP_FILE} | cut -d '=' -f 1)"
+  ID="$(grep ${1} ${DB} | cut -d ':' -f 1)"
 }
 
 idtoip() {
-  HOST_ONLY_IP="$(grep ${1} ${IP_FILE} | cut -d '=' -f 2)"
+  HOST_ONLY_IP="$(grep ${1} ${DB} | cut -d ':' -f 2)"
 }
 
 leftcut() {
@@ -233,11 +234,27 @@ rightcut() {
   RIGHTSIDE="$(cut -d ':' -f 2 <<< ${1})"
 }
 
+getid() {
+  ID="$(grep ${1} ${DB} | cut -d ':' -f 1)"
+}
+
+getvmname() {
+  VM_NAME="$(grep ${1} ${DB} | cut -d ':' -f 2)"
+}
+
+getos() {
+  OS_IMAGE="$(grep ${1} ${DB} | cut -d ':' -f 3)"
+}
+
+getip() {
+  HOST_ONLY_IP="$(grep ${1} ${DB} | cut -d ':' -f 4)"
+}
+
 # rmip is removing the
 # ip-adress from the file
 rmip() {
-  if grep -q -w "${HOST_ONLY_IP}" "${IP_FILE}"; then
-    sed -i "/${HOST_ONLY_IP}/d" "${IP_FILE}";
+  if grep -q -w "${HOST_ONLY_IP}" "${DB}"; then
+    sed -i "/${HOST_ONLY_IP}/d" "${DB}";
   fi
 }
 
@@ -286,16 +303,14 @@ trapexitgroup() {
 
 successexit() {
   infobold "Finishing touches...";
-  # createcfg
-  echo "${ID}=${HOST_ONLY_IP}" >> "${IP_FILE}";
+  echo "${ID}:${VM_NAME}:${OS_IMAGE}:${HOST_ONLY_IP}:${RAM}:${CPU}" >> "${DB}";
   success "VM ${ID} is set and ready to go :)"
   tips;
 }
 
 gsuccessexit() {
   infobold "Finishing touches...";
-  createcfg;
-  echo "${ID}=${HOST_ONLY_IP}" >> "${IP_FILE}";
+  echo "${ID}:${VM_NAME}:${OS_IMAGE}:${HOST_ONLY_IP}:${RAM}:${CPU}" >> "${DB}";
   success "VM ${ID} is set and ready to go :)"
 }
 
@@ -598,7 +613,7 @@ validateip() {
   fi
 
   # check if ip exist within govm-ecosystem
-  grep -q -w "${HOST_ONLY_IP}" ${IP_FILE}  
+  grep -q -w "${HOST_ONLY_IP}" ${DB}  
 
   if [[ "$?" -eq 0 && -z "${FORCE_DESTROY}" ]]; then
     iptoid ${HOST_ONLY_IP}
@@ -606,7 +621,7 @@ validateip() {
     exit 1
   fi
 
-  grep -q -w ${HOST_ONLY_IP} ${IP_FILE}
+  grep -q -w ${HOST_ONLY_IP} ${DB}
 
   IS_SUCCESS=${?}
 
@@ -675,7 +690,7 @@ validateposixgroup() {
 # otherwise the Vagrantfile cannot pull
 # the ENV-Variables
 createvenv() {
-  grep -q -w "${ID}" ${IP_FILE}  
+  grep -q -w "${ID}" ${DB}  
 
   if [[ "${?}" -ne 0 ]]; then
     error "${ID} does not exist!"
@@ -693,8 +708,6 @@ createvm() {
   infobold "Creating Virtual-Machine ${ID}. This may take a while..."
   vagrant up &> ${LOG_PATH}/"${TIMESTAMP}_up.log" 
 }
-
-
 
 up() {
   init;
@@ -715,7 +728,7 @@ destroy() {
   clean;
 }
 
-
+# alias to vagrant halt
 halt() {
   info "Stopping ${ID}..."
   createvenv;
@@ -729,12 +742,14 @@ halt() {
 
 }
 
+# alias to vagrant ssh
 vssh() {
   info "SSH into ${ID}"
   createvenv;
   vagrant ssh;
 }
 
+# alias to vagrant start
 start() {
   info "Starting ${ID}. This may take some time..."
   createvenv;
@@ -742,7 +757,8 @@ start() {
   success "${ID} up and running!"
 }
 
-
+# create an appliance
+# of the fiven virtual-machine
 vexport() {
   sourcefile ${VM_CONFIG}
   halt
@@ -917,60 +933,8 @@ list() {
     infobold "No Machines have been created yet!"
     exit 1
   fi
-  # 11
-  ID_LENGTH=11
-  # 12
-  NAME_LENGTH=0
-  # 15
-  IP_LENGTH=0
-  # 17
-  OS_LENGTH=0
-  # 3
-  CPU_LENGTH=3
-  #17
-  MEMORY_LENGTH=17
-
-  # get longest values
-  for DIR in ${VMSTORE}/*
-  do
-    cd ${DIR}/${GOVM}
-    sourcefile vm.cfg
-    NAME_L=$(echo ${#NAME_LENGTH})
-    OS_L=$(echo ${#OS_IMAGE})
-    IP_L=$(echo ${#HOST_ONLY_IP})
-
-    if (( ${NAME_L} > ${NAME_LENGTH} )); then
-      NAME_LENGTH="${NAME_L}"
-    fi 
-
-    if (( ${IP_L} > ${IP_LENGTH} )); then
-      IP_LENGTH=${IP_L} 
-    fi
-
-    if (( ${OS_L} > ${OS_LENGTH} )); then
-      echo "${OS_L}"
-      OS_LENGTH="${OS_L}" 
-    fi
-  done
-
-  echo "${OS_LENGTH} ${IP_LENGTH} ${NAME_LENGTH}"
-
-  divider===============================;
-  divider=$divider$divider$divider;
-  header="\n %-10s %10s %13s %14s %21s %8s\n";
-  format="%${ID_LENGTH}s %${NAME_LENGTH}s %${IP_LENGTH}s %${OS_LENGTH}s %${CPU_LENGTH}d %${MEMORY_LENGTH}d\n";
-  width=85;
-
-  printf "$header" "VM-ID" "VM-Name" "IP-Adress" "OS-Image" "Processor" "Memory";
-  printf "%$width.${width}s\n" "$divider";
-
-  for DIR in ${VMSTORE}/*; do
-    cd ${DIR}/${GOVM}
-    sourcefile vm.cfg
-    printf "$format" \
-    "${ID}" "${VM_NAME}" "${HOST_ONLY_IP}" "${OS_IMAGE}" "${CPU}" "${RAM}" 
-  done
-
+  
+  column ${DB} -t -s ":"
 }
 
 
@@ -978,7 +942,7 @@ list() {
 # main is the entering point
 # of the application
 main() {
-  setDefaultValues
+  setdefaultvalues
   validateappcfg;
   sourcefile ${GOV_CONFIG};
   validateappargs;
