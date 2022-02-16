@@ -3,11 +3,7 @@
 trap trapexit INT;
 
 usage() {
-  echo "-c [integer] is setting the count of CPUs"
-  echo "-m [integer] is setting the RAM"
-  echo "-o [integer] is setting the OS-Image"
-  echo "-s [path] is setting the path to the provision-shell-script"
-  echo "-i [ipv4] is setting the ip-adress for host-only of the type 192.168.56.0/24"
+  echo "-m [integer] is setting the Machine"
   echo "-f [path] is specifing the path to a *.config file with the parameters CPU, RAM, OS_IMAGE, IP and SCRIPT"
   echo "-v [up/halt/start/ssh/destroy] is setting the vagrant command you want to run (has to be present with every command.)"
   echo "You can also prefix any command with g for exampe gdestroy to destroy a whole group (ssh is not possible)"
@@ -15,25 +11,10 @@ usage() {
   echo "-g [path] is setting the path to a directory with one or more *.cfg files to create a group of virtual-machines at once"
 }
 
-while getopts "c:r:o:s:i:f:g:v:n:m:ld" OPT; do
+while getopts "f:g:v:m:ld" OPT; do
   case "${OPT}" in
-    c)
-      CPU="${OPTARG}"
-      ;;
-    r)
-      RAM=${OPTARG}
-      ;;
-    o)
-      OS_IMAGE=${OPTARG}
-      ;;
     f)
       VM_CONFIG=${OPTARG}
-      ;;
-    s)
-      SCRIPT=${OPTARG}
-      ;;
-    i)
-      HOST_ONLY_IP=${OPTARG}
       ;;
     v)
       VAGRANT_CMD=${OPTARG}
@@ -46,9 +27,6 @@ while getopts "c:r:o:s:i:f:g:v:n:m:ld" OPT; do
       ;;
     d)
       FORCE_DESTROY="force"
-      ;;
-    n)
-      VM_NAME=${OPTARG}
       ;;
     g)
       GROUP=${OPTARG}
@@ -63,7 +41,6 @@ done
 
 # <Groupname>_GROUP is the amount of POSIX-Arguments
 # needed to run the group without any problems
-MANUAL_GROUP=("-c" "-r" "-i" "-s" "-h" "-v" "-n")
 FILE_GROUP=("-f" "-v")
 GROUPCMD_GROUP=("-g" "-v")
 VAGRANT_GROUP=("-v" "-m")
@@ -88,14 +65,20 @@ VALID_CONFIG_PARAMS_VM=(
 )
 
 OPTIONAL_CONFIG_PARAMS_VM=(
+  "CPU"
+  "RAM"
+  "OS_IMAGE"
+  "SCRIPT"
   "DISK_SIZE_PRIMARY"
   "DISK_SIZE_SECOND"
   "MOUNTING_POINT"
   "FILE_SYSTEM"
-  "CPU"
-  "RAM"
-  "SCRIPT"
-  "OS_IMAGE"
+  "GIT_USERNAME"
+  "GIT_PASSWORD"
+  "GIT_EMAIL"
+  "GIT_NAME"
+  "OS_USERNAME"
+  "OS_PASSWORD"
 )
 
 VALID_CONFIG_PARAMS_APP=(
@@ -118,10 +101,6 @@ UNSUPPORTED_MOUNTING_POINTS=(
   "/etc"
   "/var"
 )
-ALREADY_CREATED_VMS=()
-IS_MANUAL="false"
-IS_FILE="false"
-REQUIRED_PARAMS_CONFIG_VM=$(( ${#VALID_CONFIG_PARAMS_VM[@]} - ${#OPTIONAL_CONFIG_PARAMS_VM[@]} ))
 # init is setting all best-practice-standards 
 # needed for the shell-script to run without
 # any problems
@@ -168,13 +147,16 @@ whitebold() {
 }
 
 setDefaultValues() {
+  ALREADY_CREATED_VMS=()
+  REQUIRED_PARAMS_CONFIG_VM=$(( ${#VALID_CONFIG_PARAMS_VM[@]} - ${#OPTIONAL_CONFIG_PARAMS_VM[@]} ))
   BASE_DIR=".govm"
+  DEFAULT_VM="default.cfg"
   VM_LIST=${VM_LIST:-""}
   VM_NAMES=()
   FORCE_DESTROY=${FORCE_DESTROY:-""}
   REALPATH=$(realpath ${0})
   BASEDIR=$(dirname ${REALPATH})
-  VM_CONFIG=${VM_CONFIG:-""}
+  VM_CONFIG=${VM_CONFIG:-"${BASEDIR}/${BASE_DIR}/${DEFAULT_VM}"}
   ID=${ID:-0}
   VM_NAME=${VM_NAME:-""}
   GOV_CONFIG=${BASEDIR}/${BASE_DIR}/gov.cfg
@@ -440,12 +422,13 @@ validatevmcfg() {
         fi
       fi
     done < ${VM_CONFIG}
-
+  echo ${#GIVEN_PARAMS_REQUIRED[*]} 
+  echo ${REQUIRED_PARAMS_CONFIG_VM} 
   if [[ ${#GIVEN_PARAMS_REQUIRED[*]} -eq ${REQUIRED_PARAMS_CONFIG_VM} ]]; then
     success "Valid Syntax and Arguments for ${VM_CONFIG}" 
   else 
     error "Not Enough Arguments"
-    error "Expected: ${VALID_CONFIG_PARAMS_VM[*]}"
+    error "Required: ${REQUIRED_CONFIG_PARAMS_VM[*]}"
     error "Optional: ${OPTIONAL_CONFIG_PARAMS_VM[*]}"
     exit 1
   fi
@@ -499,13 +482,13 @@ validateappcfg() {
 }
 
 
-# validatevmargs is  checking if 
+# validaterequiredvmargs is  checking if 
 # all given VM-Configs are the type 
 # that they has to be like 
 # CPU should be an integer not 
 # a word and so on
-validatevmargs() {
-  info "Validating ${VM_CONFIG} argument values..."
+validaterequiredvmargs() {
+  info "Validating required argument values of ${VM_CONFIG}..."
   if ! [[ "${CPU}" =~ ^[0-9]+$ && "${CPU}" -ge 1 && "${CPU}" -le 100 ]]; then
     error "CPU may only contain numbers and shall be bigger than 1";
     exit 1;
@@ -520,9 +503,23 @@ validatevmargs() {
     exit 1;
   elif ! validateip;then
     exit 1
-  elif ! [[ "${GIT_PASSWORD}" =~ ^(ghp_)([A-Za-z0-9]{36})$ ]];then
-    error "Invalid Git-Password"
-    exit 1
+  elif validateoptionalvmargs; then
+    success "Valid VM-Values!" 
+  fi
+}
+
+validateoptionalvmargs() {
+  infobold "Validating optional arguments values of ${VM_CONFIG}..."
+  if [[ ${GIT_PASSWORD} ]];then
+    if ! [[ "${GIT_PASSWORD}" =~ ^(ghp_)([A-Za-z0-9]{36})$ ]]; then
+      error "Invalid Git-Password"
+      exit 1
+    fi
+  elif [[ "${GIT_NAME}" ]]; then
+    if ! [[ "${GIT_NAME}" =~ ^([A-Za-z])$ ]]; then
+      error "Invalid lastname ${GIT_NAME}. It may only contain letters"
+    fi
+  elif [[ "${}"  ]] 
   elif [[ "${DISK_SIZE_SECOND}" ]]; then
     if ! [[ "${DISK_SIZE_SECOND}" =~ ^([0-9]+)GB$ ]]; then
       error "Invalid Disk-size for second disk ${DISK_SIZE_SECOND}. It should be in the format 9999GB"
@@ -539,9 +536,8 @@ validatevmargs() {
       error "Invalid Disk-size for main disk ${DISK_SIZE_PRIMARY}. It should be in the format 9999GB"
       exit 1
     fi
-  else 
-    success "Valid VM-Values!" 
-    return 0
+  else
+    success "Valid"
   fi
 }
 
@@ -612,7 +608,6 @@ validateip() {
 # and if they can be used together 
 # using groups.
 validateposixgroup() {
-  CHECK_MANUAL=()
   CHECK_FILE=()
   CHECK_VAGRANT=()
   CHECK_GROUPUP=()
@@ -622,9 +617,7 @@ validateposixgroup() {
   for ARG in "$@"
   do
     if [[ "${ARG}" =~ ^-.$ ]]; then
-      if [[ "${MANUAL_GROUP[*]}" =~ "${ARG}" && "${ARG}" != "-v" ]]; then
-        CHECK_MANUAL+=("${ARG}")
-      elif [[ "${FILE_GROUP[*]}" =~ "${ARG}" && "${ARG}" != "-v" ]]; then
+      if [[ "${FILE_GROUP[*]}" =~ "${ARG}" && "${ARG}" != "-v" ]]; then
         CHECK_FILE+=("${ARG}")
       elif [[ "${VAGRANT_GROUP[*]}" =~ "${ARG}" && "${ARG}" != "-v" ]]; then
         CHECK_VAGRANT=("${ARG}")
@@ -638,18 +631,16 @@ validateposixgroup() {
     fi
   done
 
-  if [[ "${#CHECK_MANUAL[@]}" -eq $(( ${#MANUAL_GROUP[@]} -1 )) && "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq 0 && "${VAGRANT_COMMAND_GIVEN}" == "true" ]]; then
-    infobold "Starting creation process..."
-    IS_MANUAL="true"
-  elif [[ "${#CHECK_MANUAL[@]}" -eq 0 && "${#CHECK_FILE[@]}" -eq $(( ${#FILE_GROUP[@]} -1 )) && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq 0 && "${VAGRANT_COMMAND_GIVEN}" == "true" && "${#CHECK_GROUPUP[@]}" -eq 0 ]]; then
+  if [[ "${#CHECK_FILE[@]}" -eq $(( ${#FILE_GROUP[@]} -1 )) && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq 0 && "${VAGRANT_COMMAND_GIVEN}" == "true" && "${#CHECK_GROUPUP[@]}" -eq 0 ]]; then
     infobold "Starting creation process"
-    IS_FILE="true"
-  elif [[ "${#CHECK_MANUAL[@]}" -eq 0 && "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq $(( ${#VAGRANT_GROUP[@]} -1 )) && "${#CHECK_LIST[@]}" -eq 0 && "${VAGRANT_COMMAND_GIVEN}" == "true" && "${#CHECK_GROUPUP[@]}" -eq 0 ]]; then
+  elif [[ "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq $(( ${#VAGRANT_GROUP[@]} -1 )) && "${#CHECK_LIST[@]}" -eq 0 && "${VAGRANT_COMMAND_GIVEN}" == "true" && "${#CHECK_GROUPUP[@]}" -eq 0 ]]; then
     infobold "Running command..."
-  elif [[ "${#CHECK_MANUAL[@]}" -eq 0 && "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq ${#LIST_GROUP[@]} && "${VAGRANT_COMMAND_GIVEN}" == "false" && "${#CHECK_GROUPUP[@]}" -eq 0 ]]; then
+  elif [[ "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq ${#LIST_GROUP[@]} && "${VAGRANT_COMMAND_GIVEN}" == "false" && "${#CHECK_GROUPUP[@]}" -eq 0 ]]; then
     infobold "Listing all virtual-machines..."
-  elif [[ "${#CHECK_MANUAL[@]}" -eq 0 && "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq 0 && "${VAGRANT_COMMAND_GIVEN}" == "true" && "${#CHECK_GROUPUP[@]}" -eq  $(( ${#GROUPCMD_GROUP[@]} -1 )) ]]; then
+  elif [[ "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq 0 && "${VAGRANT_COMMAND_GIVEN}" == "true" && "${#CHECK_GROUPUP[@]}" -eq  $(( ${#GROUPCMD_GROUP[@]} -1 )) ]]; then
     infobold "Running group command on all virtual-machines..."
+  elif [[ "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq 0 && "${VAGRANT_COMMAND_GIVEN}" == "true" && "${#CHECK_GROUPUP[@]}" -eq 0 ]]; then
+    infobold "Creating default virtual-machine..."
   else
     error "Too many or not enough arguments"
     usage;
@@ -684,47 +675,16 @@ createvm() {
   vagrant up &> ${LOG_PATH}/"${TIMESTAMP}_up.log" 
 }
 
-# fileup is creating
-# a virtual-machine based
-# on a given config file
-# and the values 
-fileup() {  
-  init;
-  validatevmcfg;
-  sourcefile ${VM_CONFIG}
-  validatevmargs && prepvenv;
-  postvenv;
-  cd ${VMSTORE}/${ID}/${BASE_DIR};
-  createvm && successexit || error "Something went wrong. Debbuging information can be found at ${LOG_PATH}"
-
-}
-
-# manualup is creating
-# a virtual-machine based
-# on the arguments given
-# in the command-line
-# NOTE: this is not recommended 
-# because the commands will get 
-# really big. fileup is the recommend 
-# way
-manualup() {
-  init;
-  validatevmargs && prepvenv;
-  postvenv;
-  cd ${VMSTORE}/${ID}/${BASE_DIR};
-  createvm && successexit || error "Something went wrong. Debbuging information can be found at ${LOG_PATH}"
-}
 
 
 up() {
-  if [[ ${IS_MANUAL} == "true" ]]; then
-    manualup
-  elif [[ ${IS_FILE} == "true" ]]; then
-    fileup;
-  else 
-    echo "Error."
-    usage;
-  fi
+  init;
+  validatevmcfg;
+  sourcefile ${VM_CONFIG}
+  validaterequiredvmargs && prepvenv;
+  postvenv;
+  cd ${VMSTORE}/${ID}/${BASE_DIR};
+  createvm && successexit || error "Something went wrong. Debbuging information can be found at ${LOG_PATH}"
 }
 
 # alias to vagrant destroy
@@ -825,7 +785,7 @@ gup() {
     VM_CONFIG=${CFG}
     cd "${BASEDIR}"
     sourcefile "${CFG}"
-    validatevmargs 
+    validaterequiredvmargs 
   done
 
   info "Starting creation process..."
