@@ -147,7 +147,10 @@ whitebold() {
   printf "\033[1m\033[37m${1}\033[0m\n"
 }
 
-setdefaultvalues() {
+# predefault is setting
+# all defaults that do not
+# dependent on govm.cfg
+predefault() {
   # appliaction
   ALREADY_CREATED_VMS=()
   REQUIRED_PARAMS_CONFIG_VM=$(( ${#VALID_CONFIG_PARAMS_VM[@]} - ${#OPTIONAL_CONFIG_PARAMS_VM[@]} ))
@@ -161,16 +164,16 @@ setdefaultvalues() {
   DB=${BASEDIR}/${GOVM}/db.txt
   TIMESTAMP=$(date '+%s')
   VAGRANT_CMD=${VAGRANT_CMD:-""}
+
   # govm.cfg
   GOV_CONFIG=${BASEDIR}/${GOVM}/govm.cfg
-
-  # vm.cfg
+   # vm.cfg
   GROUP=${GROUP:-""}
   VM_CONFIG=${VM_CONFIG:-"${BASEDIR}/${GOVM}/${DEFAULT_VM}"}
-  # get id of default machine if 
+  CONFIG_NAME=$(basename ${VM_CONFIG})
+  # getid of default machine if 
   # created otherwise set it to 0
   getid 192.168.56.2
-  ID=${ID:-"nil"}
   VM_NAME=${VM_NAME:-"default"}
   HOST_ONLY_IP=${HOST_ONLY_IP:-""}
   DISK_SIZE_SECOND=${DISK_SIZE_SECOND:-""}
@@ -183,6 +186,17 @@ setdefaultvalues() {
   GIT_NAME=${GIT_NAME:-""}
   OS_USERNAME=${OS_USERNAME:-""}
   OS_PASSWORD=${OS_PASSWORD:-""}
+}
+
+# postdefault is setting
+# all defaults that depend
+# on govm.cfg
+postdefault() {
+  VAGRANTFILE=${VAGRANTFILE:-${BASEDIR}/${GOVM}/Vagrantfile}
+  PROVISION_PATH=${PROVISION_PATH:-"${BASEDIR}/provision"}
+  PROVISION_DIR_NAME=$(basename ${PROVISION_PATH})
+  CONFIG_DIR=${CONFIG_DIR:-"${BASEDIR}/config"}
+  SCRIPT=${PROVISION_DIR_NAME}/${SCRIPT}
 }
 
 emptyOptionalArguments() {
@@ -230,7 +244,9 @@ getid() {
   local id
   id="$(grep ${1} ${DB} | cut -d ':' -f 1)"
   if [[ ${id} ]]; then
-    ID=${ip}
+    ID=${id}
+  else 
+    ID="nil"
   fi
 }
 
@@ -247,6 +263,8 @@ getos() {
   os="$(grep ${1} ${DB} | cut -d ':' -f 3)"
   if [[ ${os} ]]; then
     OS_IMAGE=${os}
+  else
+    OS_IMAGE="nil"
   fi
 }
 
@@ -256,6 +274,8 @@ getip() {
 
   if [[ ${ip} ]]; then
     HOST_ONLY_IP=${ip}
+  else
+    HOST_ONLY_IP="nil"
   fi
 }
 
@@ -317,7 +337,7 @@ trapexitgroup() {
     rightcut ${CFG}
     VM_CONFIG=${LEFTSIDE}    
     ID=${RIGHTSIDE}
-    cd "${VMSTORE}/${ID}/${GOVM}"
+    cd "${GOVM_PATH}"
     sourcefile vm.cfg
     trapexitup "${ID}"
   done
@@ -388,12 +408,13 @@ resetvenv() {
 createcfg() {
   cd ${BASEDIR} 
   REALPATH_VM_CONFIG=$(realpath ${VM_CONFIG})
-  cp ${REALPATH_VM_CONFIG} ${VMSTORE}/${ID}/${GOVM}/vm.cfg
-cat << EOF >> ${VMSTORE}/${ID}/${GOVM}/vm.cfg
+  cp ${REALPATH_VM_CONFIG} ${GOVM_PATH}/vm.cfg
+cat << EOF >> ${GOVM_PATH}/vm.cfg
 SYNC_FOLDER=${SYNC_FOLDER}
 ID=${ID}
 LOG_PATH=${LOG_PATH}
 EOF
+sed -i "s#SCRIPT=${SCRIPT}#SCRIPT=${PROVISION_DIR_NAME}/${SCRIPT}#g" ${GOVM_PATH}/vm.cfg
 }
 
 # prepvenv is creating the
@@ -401,20 +422,19 @@ EOF
 # the log folder to log to
 prepvenv() {
   ID="$(openssl rand -hex 5)"
-  makedir "${VMSTORE}/${ID}/${GOVM}"
+  govmpath
+  makedir "${GOVM_PATH}"
   makedir "${VMSTORE}/${ID}/sync_folder"
 
   if [[ ${LOG} == "/log" ]]; then
-    makedir "${VMSTORE}/${ID}/${GOVM}/logs"
-    LOG_PATH=${VMSTORE}/${ID}/${GOVM}/logs
+    makedir "${GOVM_PATH}/logs"
+    LOG_PATH=${GOVM_PATH}/logs
   else 
     LOG_PATH=${LOG}/${ID}
     makedir "${LOG_PATH}"
   fi
   SYNC_FOLDER="${VMSTORE}/${ID}/sync_folder"
   SCRIPT_NAME=$(basename ${SCRIPT})
-
-
 }
 
 # postvenv is creating 
@@ -424,9 +444,9 @@ prepvenv() {
 # newly created directory
 postvenv() {
   setvenv;
-  cp "${BASEDIR}/${GOVM}/Vagrantfile" "${VMSTORE}/${ID}/${GOVM}/Vagrantfile"
-  makedir "${VMSTORE}/${ID}/${GOVM}/provision"
-  cp "${SCRIPT}" "${VMSTORE}/${ID}/${GOVM}/provision/${SCRIPT_NAME}"
+  cp "${VAGRANTFILE}" "${GOVM_PATH}/Vagrantfile"
+  makedir "${GOVM_PATH}/${PROVISION_DIR_NAME}"
+  cp "${SCRIPT}" "${GOVM_PATH}/${PROVISION_DIR_NAME}/${SCRIPT_NAME}"
   createcfg;
 }
 
@@ -435,6 +455,7 @@ postvenv() {
 # shell-ENV
 sourcefile() {
   . "${1}"
+  govmpath
 }
 
 # validateAndSourceVMConfig
@@ -541,7 +562,7 @@ validaterequiredvmargs() {
   elif ! [[ "${RAM}" =~ ^[0-9]+$ && "${RAM}" -ge 512  && "${RAM}" -le 16000 ]]; then
     error "Memory may only contain numbers and shall be bigger than 4";
     exit 1;
-  elif ! [[ -s "${SCRIPT}" ]]; then
+  elif ! [[ -s "${PROVISION_PATH}/${SCRIPT}" ]]; then
     error "Shell-script not found or empty";
     exit 1;
   elif ! [[ "${HOST_ONLY_IP}" =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
@@ -550,7 +571,7 @@ validaterequiredvmargs() {
   elif ! validateip;then
     exit 1
   elif validateoptionalvmargs; then
-    success "Valid required values!" 
+    success "Valid values!" 
   fi
 }
 
@@ -592,8 +613,6 @@ validateoptionalvmargs() {
       error "Invalid Disk-size for main disk ${DISK_SIZE_PRIMARY}. It should be in the format 9999GB"
       exit 1
     fi
-  else
-    success "Valid optional arguments!"
   fi
 }
 
@@ -643,7 +662,6 @@ validateip() {
     error "Machine still existing in our system ID: ${ID}. Run Command with -d to force recreation."    
     exit 1
   fi
-
 
   if [[ ${FORCE_DESTROY} ]]; then
     destroy
@@ -717,7 +735,7 @@ createvenv() {
     exit 1
   fi
 
-  cd ${VMSTORE}/${ID}/${GOVM}
+  cd ${GOVM_PATH}
   dos2unix vm.cfg
   sourcefile vm.cfg;
   setvenv;
@@ -733,7 +751,7 @@ up() {
   sourcefile "${VM_CONFIG}";
   validaterequiredvmargs && prepvenv;
   postvenv;
-  cd ${VMSTORE}/${ID}/${GOVM};
+  cd ${GOVM_PATH};
   createvm && successexit || error "Something went wrong. Debbuging information can be found at ${LOG_PATH}"
 }
 
@@ -741,7 +759,7 @@ up() {
 destroy() {
   infobold "Destroying ${ID}..."
   createvenv;
-  vagrant destroy --force &> /dev/null;
+  vagrant destroy --force &> "${LOG_PATH}/${TIMESTAMP}_destroy.log"
   cd ${BASEDIR}; 
   clean;
 }
@@ -795,7 +813,7 @@ vexport() {
 groupup() {
   prepvenv;
   postvenv;
-  cd ${VMSTORE}/${ID}/${GOVM};
+  cd ${GOVM_PATH};
   ALREADY_CREATED_VMS+=("${1}:${ID}")
   createvm && gsuccessexit || error "Something went wrong. Debbuging information can be found at ${LOG_PATH}."
 }
@@ -848,12 +866,12 @@ gup() {
   # virtual machines
   for CFG in ${GROUP}/*.cfg; 
   do
+    cd "${BASEDIR}"
     emptyOptionalArguments
     VM_CONFIG=${CFG}
     sourcefile "${CFG}";
     resetvenv
     info "Creating $(basename ${CFG})..."
-    cd "${BASEDIR}"
     groupup "${CFG}"
   done
 
@@ -897,7 +915,7 @@ ghalt() {
 
     getid "${HOST_ONLY_IP}"
     if [[ "${ID}" ]]; then
-      cd ${VMSTORE}/${ID}/${GOVM}
+      cd ${GOVM_PATH}
       halt
     else
       error "Did not find the machines! Do they even run?"
@@ -970,12 +988,13 @@ list() {
 # main is the entering point
 # of the application
 main() {
-  setdefaultvalues
+  predefault
   init;
   validateappcfg;
   sourcefile ${GOV_CONFIG};
   validateappargs;
   validateposixgroup "$@"
+  postdefault
   if [[ "${VAGRANT_CMD}" == "destroy" && "${ID}" ]]; then 
     destroy;
   elif [[ "${VAGRANT_CMD}" == "halt" && "${ID}" ]]; then
