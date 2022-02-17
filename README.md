@@ -53,5 +53,5 @@ https://stackoverflow.com/questions/11616835/r-command-not-found-bashrc-bash-pro
 
 ## Error Codes ##
 
-1: Machine not reachable with a ping.
+1: General error
 2: Machine not found in system (grep in used_ip.txt)

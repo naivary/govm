@@ -83,6 +83,9 @@ OPTIONAL_CONFIG_PARAMS_VM=(
 
 VALID_CONFIG_PARAMS_APP=(
   "VMSTORE"
+  "VAGRANTFILE"
+  "PROVISION_DIR"
+  "CONFIG_DIR"
   "APPLIANCESTORE"
   "LOG"
   "CPU"
@@ -90,6 +93,16 @@ VALID_CONFIG_PARAMS_APP=(
   "OS_IMAGE"
   "SCRIPT"
 )
+
+OPTIONAL_CONFIG_PARAMS_APP=(
+  "VMSTORE"
+  "VAGRANTFILE"
+  "PROVISION_DIR"
+  "CONFIG_DIR"
+  "APPLIANCESTORE"
+  "LOG"
+)
+
 SUPPORTED_FILE_SYSTEMS=(
   "ext3"
   "ext4"
@@ -154,6 +167,7 @@ predefault() {
   # appliaction
   ALREADY_CREATED_VMS=()
   REQUIRED_PARAMS_CONFIG_VM=$(( ${#VALID_CONFIG_PARAMS_VM[@]} - ${#OPTIONAL_CONFIG_PARAMS_VM[@]} ))
+  REQUIRED_PARAMS_CONFIG_APP=$(( ${#VALID_CONFIG_PARAMS_APP[@]} - ${#OPTIONAL_CONFIG_PARAMS_APP[@]} ))
   GOVM=".govm"
   DEFAULT_VM="default.cfg"
   VM_LIST=${VM_LIST:-""}
@@ -164,15 +178,24 @@ predefault() {
   DB=${BASEDIR}/${GOVM}/db.txt
   TIMESTAMP=$(date '+%s')
   VAGRANT_CMD=${VAGRANT_CMD:-""}
+  PROVISION_DIR_NAME="provision"
 
   # govm.cfg
   GOV_CONFIG=${BASEDIR}/${GOVM}/govm.cfg
-   # vm.cfg
+  PROVISION_DIR=${PROVISION_DIR:-"${BASEDIR}/provision"}
+  CONFIG_DIR=${CONFIG_DIR:-"${BASEDIR}/config"}
+  VAGRANTFILE=${VAGRANTFILE:-${BASEDIR}/${GOVM}/Vagrantfile}
+  VMSTORE=${VMSTORE:-${HOME}/${GOVM}}
+  APPLIANCESTORE=${APPLIANCESTORE:-${HOME}/"${GOVM}_appliance"}
+  LOG=${LOG:-"/log"}
+
+  # vm.cfg
   GROUP=${GROUP:-""}
   VM_CONFIG=${VM_CONFIG:-"${BASEDIR}/${GOVM}/${DEFAULT_VM}"}
   CONFIG_NAME=$(basename ${VM_CONFIG})
+
   # getid of default machine if 
-  # created otherwise set it to 0
+  # created otherwise set it to nil
   getid 192.168.56.2
   VM_NAME=${VM_NAME:-"default"}
   HOST_ONLY_IP=${HOST_ONLY_IP:-""}
@@ -193,15 +216,9 @@ predefault() {
 # on govm.cfg or other
 # dependencies that are not 
 # yet been set
-postdefault() {
-  VAGRANTFILE=${VAGRANTFILE:-${BASEDIR}/${GOVM}/Vagrantfile}
-  PROVISION_PATH=${PROVISION_PATH:-"${BASEDIR}/provision"}
-  PROVISION_DIR_NAME=$(basename ${PROVISION_PATH})
-  CONFIG_DIR=${CONFIG_DIR:-"${BASEDIR}/config"}
-  SCRIPT=${PROVISION_DIR_NAME}/${SCRIPT}
-}
+# postdefault() {}
 
-emptyOptionalArguments() {
+clearoptionalargs() {
   DISK_SIZE_SECOND=""
   DISK_SIZE_PRIMARY=""
 }
@@ -305,18 +322,18 @@ rmdirrf() {
 }
 
 isvmrunning() {
-  vboxmanage list runningvms | grep -q -w "${1}" 
+  vboxmanage.exe list runningvms | grep -q -w "${1}" 
   echo "$?"
 }
 
 isvmexisting() {
-  vboxmanage list vms | grep -q -w "${1}"
+  vboxmanage.exe list vms | grep -q -w "${1}"
   echo "$?"
 }
 
 
 trapexitup() {
-  vagrant destroy --force &> /dev/null
+  vagrant destroy --force &> "${LOG_PATH}/${TIMESTAMP}_destroy.log"
   rmgovm;
   rmip;
   rmlogdir;
@@ -447,8 +464,7 @@ prepvenv() {
 postvenv() {
   setvenv;
   cp "${VAGRANTFILE}" "${GOVM_PATH}/Vagrantfile"
-  makedir "${GOVM_PATH}/${PROVISION_DIR_NAME}"
-  cp "${SCRIPT}" "${GOVM_PATH}/${PROVISION_DIR_NAME}/${SCRIPT_NAME}"
+  cp "${PROVISION_DIR}/${SCRIPT}" "${GOVM_PATH}/${SCRIPT_NAME}"
   createcfg;
 }
 
@@ -456,6 +472,7 @@ postvenv() {
 # given file into the current
 # shell-ENV
 sourcefile() {
+  dos2unix "${1}" &> /dev/null
   . "${1}"
   govmpath
 }
@@ -514,7 +531,8 @@ validatevmcfg() {
 # and if the config file is valid 
 # it is getting sourced.
 validateappcfg() {
-  GIVEN_PARAMS=()
+  GIVEN_PARAMS_OPTIONAL=()
+  GIVEN_PARAMS_REQUIRED=()
   info "Loading ${GOV_CONFIG}...";
   if [[  -s "${GOV_CONFIG}" ]]; then
     while read LINE
@@ -527,16 +545,21 @@ validateappcfg() {
         exit 1
       else
         NAME="${BASH_REMATCH[1]}"
-        if ! [[ "${VALID_CONFIG_PARAMS_APP[*]}" =~ "${NAME}" || "${GIVEN_PARAMS[*]}" =~ ${NAME} ]]; then
-          error "Unexpected Key ${NAME}"
+       if [[ "${GIVEN_PARAMS_REQUIRED[*]}" =~ "${NAME}" || "${GIVEN_PARAMS_OPTIONAL[*]}" =~ "${NAME}" ]]; then
+          error "Key duplicated ${NAME}"
           exit 1
-        else 
-          GIVEN_PARAMS+=("${NAME}")
+        elif ! [[ "${VALID_CONFIG_PARAMS_APP[*]}" =~ "${NAME}" ]]; then
+          error "Unexpected key ${NAME}"
+          exit 1
+        elif [[ "${OPTIONAL_CONFIG_PARAMS_APP[*]}" =~ "${NAME}" ]]; then
+          GIVEN_PARAMS_OPTIONAL+=("${NAME}")
+        elif [[ "${VALID_CONFIG_PARAMS_APP[*]}" =~ "${NAME}" ]]; then
+          GIVEN_PARAMS_REQUIRED+=("${NAME}")
         fi
       fi
     done < ${GOV_CONFIG}
 
-    if [[ ${#GIVEN_PARAMS[@]} -eq ${#VALID_CONFIG_PARAMS_APP[@]} ]]; then
+    if [[ ${#GIVEN_PARAMS_REQUIRED[@]} -eq ${REQUIRED_PARAMS_CONFIG_APP} ]]; then
       success "Valid! Sourcing ${GOV_CONFIG}" 
     else 
       error "Not Enough Arguments"
@@ -564,7 +587,9 @@ validaterequiredvmargs() {
   elif ! [[ "${RAM}" =~ ^[0-9]+$ && "${RAM}" -ge 512  && "${RAM}" -le 16000 ]]; then
     error "Memory may only contain numbers and shall be bigger than 4";
     exit 1;
-  elif ! [[ -s "${PROVISION_PATH}/${SCRIPT}" ]]; then
+  elif ! [[ -s "${PROVISION_DIR}/${SCRIPT}" ]]; then
+    echo "${PROVISION_DIR}/${SCRIPT}"
+    echo "${SCRIPT}"
     error "Shell-script not found or empty";
     exit 1;
   elif ! [[ "${HOST_ONLY_IP}" =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
@@ -629,9 +654,16 @@ validateappargs() {
     makedir "${LOG}"
   elif ! [[ -d ${APPLIANCESTORE} ]]; then 
     makedir "${APPLIANCESTORE}"
+  elif ! [[ -s ${VAGRANTFILE} ]]; then
+    infobold "${VAGRANTFILE} is not existing or is empty. Using default Vagrantfile."
+  elif ! [[ -d ${CONFIG_DIR} ]]; then
+    makedir "${CONFIG_DIR}"
+  elif ! [[ -d ${PROVISION_DIR} ]]; then
+    makedir "${PROVISION_DIR}"
   else
     success "Valid GOVM-Values!"
   fi
+ 
 }
 
 
@@ -705,7 +737,7 @@ validateposixgroup() {
   done
 
   if [[ "${#CHECK_FILE[@]}" -eq $(( ${#FILE_GROUP[@]} -1 )) && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq 0 && "${VAGRANT_COMMAND_GIVEN}" == "true" && "${#CHECK_GROUPUP[@]}" -eq 0 ]]; then
-    infobold "Starting creation process for $(basename ${VM_CONFIG})"
+    infobold "${VAGRANT_CMD} $(basename ${VM_CONFIG})"
   elif [[ "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq $(( ${#VAGRANT_GROUP[@]} -1 )) && "${#CHECK_LIST[@]}" -eq 0 && "${VAGRANT_COMMAND_GIVEN}" == "true" && "${#CHECK_GROUPUP[@]}" -eq 0 ]]; then
     infobold "Running \"${VAGRANT_CMD}\" on ${ID}..."
   elif [[ "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq ${#LIST_GROUP[@]} && "${VAGRANT_COMMAND_GIVEN}" == "false" && "${#CHECK_GROUPUP[@]}" -eq 0 ]]; then
@@ -729,16 +761,8 @@ validateposixgroup() {
 # otherwise the Vagrantfile cannot pull
 # the ENV-Variables
 createvenv() {
-  getid "${ID}"
-
-  if ! [[ "${ID}" ]]; then
-    error "${ID} does not exist!"
-    infobold "run govm -l for a listing of all virtual-machines"
-    exit 1
-  fi
-
+  govmpath
   cd ${GOVM_PATH}
-  dos2unix vm.cfg
   sourcefile vm.cfg;
   setvenv;
 }
@@ -778,6 +802,7 @@ halt() {
     success "Stopped ${ID}!"
   else 
     error "Machine is not running!"
+    exit 1
   fi
 
 }
@@ -798,12 +823,13 @@ start() {
 }
 
 # create an appliance
-# of the fiven virtual-machine
+# of the given virtual-machine
 vexport() {
-  sourcefile ${VM_CONFIG}
-  halt
+  sourcefile "${VM_CONFIG}"
+  getid "${HOST_ONLY_IP}"
+  halt 
   infobold "Exporting ${VM_NAME}..."
-  vboxmanage 'export' "${VM_NAME}" --output "${APPLIANCESTORE}/${VM_NAME}.ova"
+  vboxmanage.exe 'export' "${VM_NAME}" --output "${APPLIANCESTORE}/${VM_NAME}.ova"
   success "Finished! appliance can be found at ${APPLIANCESTORE}"
 }
 
@@ -869,7 +895,7 @@ gup() {
   for CFG in ${GROUP}/*.cfg; 
   do
     cd "${BASEDIR}"
-    emptyOptionalArguments
+    clearoptionalargs
     VM_CONFIG=${CFG}
     sourcefile "${CFG}";
     resetvenv
@@ -950,7 +976,7 @@ gstart() {
   done
 }
 
-# alias to vboxmanage 
+# alias to vboxmanage.exe 
 # export <machines>
 gexport() {
   i=1
@@ -971,7 +997,7 @@ gexport() {
     fi  
   done
   
-  vboxmanage 'export' "${VM_NAMES[@]}" --output "${APPLIANCESTORE}/${FILENAME}" && success "Created appliance ${FILENAME}"
+  vboxmanage.exe 'export' "${VM_NAMES[@]}" --output "${APPLIANCESTORE}/${FILENAME}" && success "Created appliance ${FILENAME}"
 }
 
 # list is listing all the 
@@ -996,7 +1022,6 @@ main() {
   sourcefile ${GOV_CONFIG};
   validateappargs;
   validateposixgroup "$@"
-  postdefault
   if [[ "${VAGRANT_CMD}" == "destroy" && "${ID}" ]]; then 
     destroy;
   elif [[ "${VAGRANT_CMD}" == "halt" && "${ID}" ]]; then
