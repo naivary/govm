@@ -258,13 +258,23 @@ makedir() {
   mkdir -p -- "${1}"
 }
 
+# rmdirrf is removing
+# a directory recusively 
+# by forcing it
 rmdirrf() {
   rm -rf "${1}"
 }
 
 isvmrunning() {
   vboxmanage list runningvms | grep -q -w "${1}" 
+  echo "$?"
 }
+
+isvmexisting() {
+  vboxmanage list vms | grep -q -w "${1}"
+  echo "$?"
+}
+
 
 trapexitup() {
   vagrant destroy --force &> /dev/null
@@ -604,6 +614,7 @@ validateip() {
 
   if [[ "$?" -eq 0  && -z "${FORCE_DESTROY}" ]]; then
     error "Machine with the IP: ${HOST_ONLY_IP} exists. Choose an other IP-Adress. (Ping successfull)"
+    error "It may not be an virtual-machine but a machine with the same ip in the same network is not possible!"
     exit 1
   fi
 
@@ -669,7 +680,7 @@ validateposixgroup() {
   elif [[ "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq 0 && "${VAGRANT_COMMAND_GIVEN}" == "true" && "${#CHECK_GROUPUP[@]}" -eq  $(( ${#GROUPCMD_GROUP[@]} -1 )) ]]; then
     infobold "Running group command on all virtual-machines..."
   elif [[ "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq 0 && "${VAGRANT_COMMAND_GIVEN}" == "true" && "${#CHECK_GROUPUP[@]}" -eq 0 ]]; then
-    infobold "Creating default virtual-machine..."
+    infobold "Running command \"${VAGRANT_CMD}\" on default-machine..."
   else
     error "Too many or not enough arguments"
     usage;
@@ -723,10 +734,12 @@ destroy() {
 
 # alias to vagrant halt
 halt() {
+  local isrunning
   info "Stopping ${ID}..."
   createvenv;
-  isvmrunning "${VM_NAME}"
-  if [[ "$?" -eq 0 ]]; then
+  isrunning=$(isvmrunning "${VM_NAME}")
+
+  if [[ "${isrunning}" -eq 0 ]]; then
     vagrant halt &> "${LOG_PATH}/${TIMESTAMP}_halt.log";
     success "Stopped ${ID}!"
   else 
@@ -853,6 +866,7 @@ gdestroy() {
 # but build for a group
 # destruction
 ghalt() {
+  local isrunning;
   for CFG in ${GROUP}/*.cfg; 
   do
     VM_CONFIG=${CFG}
@@ -860,9 +874,9 @@ ghalt() {
     resetvenv
     sourcefile "${CFG}";
     VM_NAMES+=("${VM_NAME}")
-    isvmrunning "${VM_NAME}" && echo "$?"
+    isrunning=$(isvmrunning "${VM_NAME}")
     
-    if [[ "${?}" -eq 1 ]]; then
+    if [[ "${isrunning}" -eq 1 ]]; then
       infobold "Machine is not running. Continueing..."
       continue
     fi
