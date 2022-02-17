@@ -190,7 +190,9 @@ predefault() {
 
 # postdefault is setting
 # all defaults that depend
-# on govm.cfg
+# on govm.cfg or other
+# dependencies that are not 
+# yet been set
 postdefault() {
   VAGRANTFILE=${VAGRANTFILE:-${BASEDIR}/${GOVM}/Vagrantfile}
   PROVISION_PATH=${PROVISION_PATH:-"${BASEDIR}/provision"}
