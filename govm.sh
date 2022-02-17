@@ -160,7 +160,7 @@ setdefaultvalues() {
   BASEDIR=$(dirname ${REALPATH})
   DB=${BASEDIR}/${GOVM}/db.txt
   TIMESTAMP=$(date '+%s')
-
+  VAGRANT_CMD=${VAGRANT_CMD:-""}
   # govm.cfg
   GOV_CONFIG=${BASEDIR}/${GOVM}/govm.cfg
 
@@ -169,7 +169,7 @@ setdefaultvalues() {
   VM_CONFIG=${VM_CONFIG:-"${BASEDIR}/${GOVM}/${DEFAULT_VM}"}
   # get id of default machine if 
   # created otherwise set it to 0
-  iptoid 192.168.56.2
+  getid 192.168.56.2
   ID=${ID:-"nil"}
   VM_NAME=${VM_NAME:-"default"}
   HOST_ONLY_IP=${HOST_ONLY_IP:-192.168.56.2}
@@ -218,14 +218,6 @@ clean() {
   success "Destroyed ${ID}!"
 }
 
-iptoid() {
-  ID="$(grep ${1} ${DB} | cut -d ':' -f 1)"
-}
-
-idtoip() {
-  HOST_ONLY_IP="$(grep ${1} ${DB} | cut -d ':' -f 2)"
-}
-
 leftcut() {
   LEFTSIDE="$(cut -d ':' -f 1 <<< ${1})"
 }
@@ -250,6 +242,10 @@ getip() {
   HOST_ONLY_IP="$(grep ${1} ${DB} | cut -d ':' -f 4)"
 }
 
+govmpath() {
+  GOVM_PATH="${VMSTORE}/${ID}/${GOVM}"
+}
+
 # rmip is removing the
 # ip-adress from the file
 rmip() {
@@ -269,7 +265,6 @@ rmdirrf() {
 isvmrunning() {
   vboxmanage list runningvms | grep -q -w "${1}" 
 }
-
 
 trapexitup() {
   vagrant destroy --force &> /dev/null
@@ -616,7 +611,7 @@ validateip() {
   grep -q -w "${HOST_ONLY_IP}" ${DB}  
 
   if [[ "$?" -eq 0 && -z "${FORCE_DESTROY}" ]]; then
-    iptoid ${HOST_ONLY_IP}
+    getid ${HOST_ONLY_IP}
     error "Machine still existing in our system ID: ${ID}. Run Command with -d to force recreation."    
     exit 1
   fi
@@ -626,7 +621,7 @@ validateip() {
   IS_SUCCESS=${?}
 
   if [[ ${FORCE_DESTROY}  && "${IS_SUCCESS}" -eq 0 ]]; then
-    iptoid ${HOST_ONLY_IP}
+    getid ${HOST_ONLY_IP}
     destroy
     if [ "${VM_CONFIG}" ]; then
       sourcefile
@@ -698,7 +693,6 @@ createvenv() {
     exit 1
   fi
 
-  init;
   cd ${VMSTORE}/${ID}/${GOVM}
   sourcefile vm.cfg;
   setvenv;
@@ -710,7 +704,6 @@ createvm() {
 }
 
 up() {
-  init;
   validatevmcfg;
   sourcefile ${VM_CONFIG}
   validaterequiredvmargs && prepvenv;
@@ -785,7 +778,6 @@ groupup() {
 # as configs files given in the 
 # given directory
 gup() {
-  init
   IP_ADRESSES=()
   NAMES=()
 
@@ -845,14 +837,13 @@ gup() {
 # but build for a group
 # destruction
 gdestroy() {
-  init
   for CFG in ${GROUP}/*.cfg; 
   do
     VM_CONFIG=${CFG}
     cd "${BASEDIR}"
     resetvenv
     sourcefile "${CFG}";
-    iptoid "${HOST_ONLY_IP}"
+    getid "${HOST_ONLY_IP}"
     destroy
   done
 }
@@ -862,7 +853,6 @@ gdestroy() {
 # but build for a group
 # destruction
 ghalt() {
-  init
   for CFG in ${GROUP}/*.cfg; 
   do
     VM_CONFIG=${CFG}
@@ -876,7 +866,8 @@ ghalt() {
       infobold "Machine is not running. Continueing..."
       continue
     fi
-    iptoid "${HOST_ONLY_IP}"
+
+    getid "${HOST_ONLY_IP}"
     if [[ "${ID}" ]]; then
       cd ${VMSTORE}/${ID}/${GOVM}
       halt
@@ -888,14 +879,13 @@ ghalt() {
 }
 
 gstart() {
-  init
   for CFG in ${GROUP}/*.cfg; 
   do
     VM_CONFIG=${CFG}
     cd "${BASEDIR}"
     resetvenv
     sourcefile "${CFG}";
-    iptoid "${HOST_ONLY_IP}"
+    getid "${HOST_ONLY_IP}"
     start
   done
 }
@@ -928,13 +918,11 @@ gexport() {
 # virtual-machines created
 # by govm
 list() {
-  init; 
   if [ -z "$(ls -A ${VMSTORE})" ]; then
     infobold "No Machines have been created yet!"
     exit 1
   fi
-  
-  column ${DB} -t -s ":"
+  column ${DB} -t -s ":" 
 }
 
 
@@ -943,6 +931,7 @@ list() {
 # of the application
 main() {
   setdefaultvalues
+  init;
   validateappcfg;
   sourcefile ${GOV_CONFIG};
   validateappargs;
