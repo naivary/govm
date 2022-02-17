@@ -172,7 +172,7 @@ setdefaultvalues() {
   getid 192.168.56.2
   ID=${ID:-"nil"}
   VM_NAME=${VM_NAME:-"default"}
-  HOST_ONLY_IP=${HOST_ONLY_IP:-192.168.56.2}
+  HOST_ONLY_IP=${HOST_ONLY_IP:-""}
   DISK_SIZE_SECOND=${DISK_SIZE_SECOND:-""}
   DISK_SIZE_PRIMARY=${DISK_SIZE_PRIMARY:-""}
   MOUNTING_POINT=${MOUNTING_POINT:-"nil"}
@@ -227,19 +227,36 @@ rightcut() {
 }
 
 getid() {
-  ID="$(grep ${1} ${DB} | cut -d ':' -f 1)"
+  local id
+  id="$(grep ${1} ${DB} | cut -d ':' -f 1)"
+  if [[ ${id} ]]; then
+    ID=${ip}
+  fi
 }
 
 getvmname() {
-  VM_NAME="$(grep ${1} ${DB} | cut -d ':' -f 2)"
+  local name
+  name="$(grep ${1} ${DB} | cut -d ':' -f 2)"
+  if [[ ${name} ]]; then
+    VM_NAME=${name}
+  fi
 }
 
 getos() {
-  OS_IMAGE="$(grep ${1} ${DB} | cut -d ':' -f 3)"
+  local os
+  os="$(grep ${1} ${DB} | cut -d ':' -f 3)"
+  if [[ ${os} ]]; then
+    OS_IMAGE=${os}
+  fi
 }
 
 getip() {
-  HOST_ONLY_IP="$(grep ${1} ${DB} | cut -d ':' -f 4)"
+  local ip
+  ip="$(grep ${1} ${DB} | cut -d ':' -f 4)"
+
+  if [[ ${ip} ]]; then
+    HOST_ONLY_IP=${ip}
+  fi
 }
 
 govmpath() {
@@ -262,7 +279,7 @@ makedir() {
 # a directory recusively 
 # by forcing it
 rmdirrf() {
-  rm -rf "${1}"
+  sudo rm -rf "${1}"
 }
 
 isvmrunning() {
@@ -587,7 +604,7 @@ validateappargs() {
   info "Validating App-Configuration arguments values..."
   if ! [[ -d ${VMSTORE} ]]; then
     makedir "${VMSTORE}"
-  elif ! [[ ${LOG} == "/log" && -d "${LOG}" ]]; then
+  elif [[ "${LOG}" != "/log" && ! -d "${LOG}" ]]; then
     makedir "${LOG}"
   elif ! [[ -d ${APPLIANCESTORE} ]]; then 
     makedir "${APPLIANCESTORE}"
@@ -610,32 +627,28 @@ validateip() {
   # NOTE: for git bash it is really 
   # complicated. it is a success even though
   # some of the packages are not received
-  ping -c 2 "${HOST_ONLY_IP}" &> /dev/null;
+  ping -c 2 -w 3 "${HOST_ONLY_IP}" &> /dev/null
 
-  if [[ "$?" -eq 0  && -z "${FORCE_DESTROY}" ]]; then
+  if [[ "${?}" -eq 0 && -z "${FORCE_DESTROY}" ]]; then
     error "Machine with the IP: ${HOST_ONLY_IP} exists. Choose an other IP-Adress. (Ping successfull)"
     error "It may not be an virtual-machine but a machine with the same ip in the same network is not possible!"
     exit 1
   fi
 
   # check if ip exist within govm-ecosystem
-  grep -q -w "${HOST_ONLY_IP}" ${DB}  
+  getid "${HOST_ONLY_IP}"
 
-  if [[ "$?" -eq 0 && -z "${FORCE_DESTROY}" ]]; then
-    getid ${HOST_ONLY_IP}
+  if [[ "${ID}" != "nil" && -z "${FORCE_DESTROY}" ]]; then
+    getid "${HOST_ONLY_IP}"
     error "Machine still existing in our system ID: ${ID}. Run Command with -d to force recreation."    
     exit 1
   fi
 
-  grep -q -w ${HOST_ONLY_IP} ${DB}
 
-  IS_SUCCESS=${?}
-
-  if [[ ${FORCE_DESTROY}  && "${IS_SUCCESS}" -eq 0 ]]; then
-    getid ${HOST_ONLY_IP}
+  if [[ ${FORCE_DESTROY} ]]; then
     destroy
     if [ "${VM_CONFIG}" ]; then
-      sourcefile
+      sourcefile "${VM_CONFIG}"
     fi
   fi 
 
@@ -672,13 +685,13 @@ validateposixgroup() {
   done
 
   if [[ "${#CHECK_FILE[@]}" -eq $(( ${#FILE_GROUP[@]} -1 )) && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq 0 && "${VAGRANT_COMMAND_GIVEN}" == "true" && "${#CHECK_GROUPUP[@]}" -eq 0 ]]; then
-    infobold "Starting creation process"
+    infobold "Starting creation process for $(basename ${VM_CONFIG})"
   elif [[ "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq $(( ${#VAGRANT_GROUP[@]} -1 )) && "${#CHECK_LIST[@]}" -eq 0 && "${VAGRANT_COMMAND_GIVEN}" == "true" && "${#CHECK_GROUPUP[@]}" -eq 0 ]]; then
-    infobold "Running command..."
+    infobold "Running \"${VAGRANT_CMD}\" on ${ID}..."
   elif [[ "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq ${#LIST_GROUP[@]} && "${VAGRANT_COMMAND_GIVEN}" == "false" && "${#CHECK_GROUPUP[@]}" -eq 0 ]]; then
     infobold "Listing all virtual-machines..."
   elif [[ "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq 0 && "${VAGRANT_COMMAND_GIVEN}" == "true" && "${#CHECK_GROUPUP[@]}" -eq  $(( ${#GROUPCMD_GROUP[@]} -1 )) ]]; then
-    infobold "Running group command on all virtual-machines..."
+    infobold "Running \"${VAGRANT_CMD}\" on group: $(basename ${GROUP})"
   elif [[ "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq 0 && "${VAGRANT_COMMAND_GIVEN}" == "true" && "${#CHECK_GROUPUP[@]}" -eq 0 ]]; then
     infobold "Running command \"${VAGRANT_CMD}\" on default-machine..."
   else
@@ -696,15 +709,16 @@ validateposixgroup() {
 # otherwise the Vagrantfile cannot pull
 # the ENV-Variables
 createvenv() {
-  grep -q -w "${ID}" ${DB}  
+  getid "${ID}"
 
-  if [[ "${?}" -ne 0 ]]; then
+  if ! [[ "${ID}" ]]; then
     error "${ID} does not exist!"
     infobold "run govm -l for a listing of all virtual-machines"
     exit 1
   fi
 
   cd ${VMSTORE}/${ID}/${GOVM}
+  dos2unix vm.cfg
   sourcefile vm.cfg;
   setvenv;
 }
@@ -716,7 +730,7 @@ createvm() {
 
 up() {
   validatevmcfg;
-  sourcefile ${VM_CONFIG}
+  sourcefile "${VM_CONFIG}";
   validaterequiredvmargs && prepvenv;
   postvenv;
   cd ${VMSTORE}/${ID}/${GOVM};
@@ -893,12 +907,24 @@ ghalt() {
 }
 
 gstart() {
+  local exists
+  local isrunning
   for CFG in ${GROUP}/*.cfg; 
   do
     VM_CONFIG=${CFG}
     cd "${BASEDIR}"
     resetvenv
     sourcefile "${CFG}";
+    exists=$(isvmexisting ${VM_NAME})
+    if [[ ${exists} -ne 0 ]]; then
+      error "Machine ${VM_NAME} does not exists"
+      exit 1
+    fi
+
+    if [[ ${isrunning} -eq 0 ]]; then
+      infobold "Machine ${VM_NAME} is already up and running. Continuening with next..."
+      continue
+    fi
     getid "${HOST_ONLY_IP}"
     start
   done

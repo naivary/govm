@@ -48,6 +48,8 @@ https://github.com/hashicorp/vagrant/issues/6736
 FIX: chcp.com 1252  
 https://github.com/moby/moby/issues/24029  
 FIX: start every mounting path with a double slash in the config file
+https://stackoverflow.com/questions/14219092/bash-script-and-bin-bashm-bad-interpreter-no-such-file-or-directory
+https://stackoverflow.com/questions/11616835/r-command-not-found-bashrc-bash-profile
 
 ## Error Codes ##
 
