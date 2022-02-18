@@ -52,6 +52,7 @@ VALID_CONFIG_PARAMS_VM=(
     "SCRIPT"
     "HOST_ONLY_IP"
     "VM_NAME"
+    "PROVISION_VARIABLES"
     "DISK_SIZE_PRIMARY"
     "DISK_SIZE_SECOND"
     "MOUNTING_POINT"
@@ -394,9 +395,17 @@ gsuccessexit() {
 }
 
 hashtablegen() {
-  for PAIR in "${PROVISION_VARIABLES}"
-  do
+  HASH_TABLE_STRING=${PROVISION_VARIABLES[@]}
+  local i=0
 
+  for PAIR in "${PROVISION_VARIABLES[@]}"
+  do
+    if [[ ${i} -eq 0 ]]; then
+      HASH_TABLE_STRING="${PAIR}" 
+    else
+      HASH_TABLE_STRING="${HASH_TABLE_STRING},${PAIR}" 
+    fi
+    i=$((i+1))
   done
 }
 
@@ -407,16 +416,11 @@ setvenv() {
   export SCRIPT;
   export HOST_ONLY_IP;
   export VM_NAME;
-  export GIT_USERNAME;
-  export GIT_PASSWORD;
-  export GIT_NAME;
-  export GIT_EMAIL;
-  export OS_USERNAME;
-  export OS_PASSWORD; 
   export DISK_SIZE_PRIMARY
   export DISK_SIZE_SECOND
   export MOUNTING_POINT
   export FILE_SYSTEM
+  export HASH_TABLE_STRING
   export VAGRANT_EXPERIMENTAL="disks"
   # not set by User
   export SYNC_FOLDER;
@@ -429,16 +433,11 @@ resetvenv() {
   export -n SCRIPT;
   export -n HOST_ONLY_IP;
   export -n VM_NAME;
-  export -n GIT_USERNAME;
-  export -n GIT_PASSWORD;
-  export -n GIT_NAME;
-  export -n GIT_EMAIL;
-  export -n OS_USERNAME;
-  export -n OS_PASSWORD;
   export -n DISK_SIZE_PRIMARY
   export -n DISK_SIZE_SECOND
   export -n MOUNTING_POINT
   export -n FILE_SYSTEM
+  export -n HASH_TABLE_STRING
   # not set by User
   export -n SYNC_FOLDER;
 
@@ -644,7 +643,7 @@ validateoptionalvmargs() {
       error "Invalid Disk-size for main disk ${DISK_SIZE_PRIMARY}. It should be in the format 9999GB"
       exit 1
     fi
-  elif [[ "${PROVISION_VARIABLES}" && "$(declare -p ${PROVISION_VARIABLES})" =~ "declare -a" ]]; then
+  elif [[ "${PROVISION_VARIABLES}" ]]; then
     hashtablegen
   fi
 }
