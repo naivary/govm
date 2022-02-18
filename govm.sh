@@ -618,9 +618,7 @@ validaterequiredvmargs() {
     error "Memory may only contain numbers and shall be bigger than 4";
     exit 1;
   elif ! [[ -s "${PROVISION_DIR}/${SCRIPT}" ]]; then
-    echo "${PROVISION_DIR}/${SCRIPT}"
-    echo "${SCRIPT}"
-    error "Shell-script not found or empty";
+    error "Shell-script not found or empty: ${PROVISION_DIR}/${SCRIPT}";
     exit 1;
   elif ! [[ "${HOST_ONLY_IP}" =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
     error "Invalid IP-Adress";
@@ -767,7 +765,7 @@ validateposixgroup() {
   done
 
   if [[ "${#CHECK_FILE[@]}" -eq $(( ${#FILE_GROUP[@]} -1 )) && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq 0 && "${VAGRANT_COMMAND_GIVEN}" == "true" && "${#CHECK_GROUPUP[@]}" -eq 0 ]]; then
-    infobold "${VAGRANT_CMD} $(basename ${VM_CONFIG})"
+    infobold "Running ${VAGRANT_CMD} on $(basename ${VM_CONFIG})"
   elif [[ "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq $(( ${#VAGRANT_GROUP[@]} -1 )) && "${#CHECK_LIST[@]}" -eq 0 && "${VAGRANT_COMMAND_GIVEN}" == "true" && "${#CHECK_GROUPUP[@]}" -eq 0 ]]; then
     infobold "Running \"${VAGRANT_CMD}\" on ${ID}..."
   elif [[ "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq ${#LIST_GROUP[@]} && "${VAGRANT_COMMAND_GIVEN}" == "false" && "${#CHECK_GROUPUP[@]}" -eq 0 ]]; then
@@ -1045,9 +1043,9 @@ vmexport() {
   local filename=${1}
   local type=${2}
 
-  if [[ ${CURRENT_OS} == "microsoft" && "${type}" == "single" ]]; then
+  if [[ "${type}" == "single" ]]; then
     vboxmanage.exe 'export' "${VM_NAME}" --output "${APPLIANCESTORE}/${filename}"
-  elif [[ ${CURENNT_OS} == "microsoft" && "${type}" == "group" ]]; then
+  elif [[ "${type}" == "group" ]]; then
     vboxmanage.exe 'export' "${VM_NAMES[@]}" --output "${APPLIANCESTORE}/${filename}" && success "Created appliance ${filename}"
   else
     error "currently not supported for ${CURRENT_OS}"

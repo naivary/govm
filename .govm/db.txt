@@ -1,2 +1,1 @@
 ID:Name:OS:IP:Memory:CPU
-790f00087c:govm:ubuntu/trusty64:192.168.56.2:1048:2
