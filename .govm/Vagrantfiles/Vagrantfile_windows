@@ -1,0 +1,49 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+
+Vagrant.configure("2") do |config|
+  config.vm.box = ENV["OS_IMAGE"] 
+  config.vm.provision "shell", path: ENV["SCRIPT"], env: {
+    "OS_USERNAME" => ENV["OS_USERNAME"], 
+    "OS_PASSWORD" => ENV["OS_PASSWORD"], 
+    "GIT_USERNAME" => ENV["GIT_USERNAME"], 
+    "GIT_PASSWORD" => ENV["GIT_PASSWORD"], 
+    "GIT_EMAIL" => ENV["GIT_EMAIL"], 
+    "GIT_NAME" => ENV["GIT_NAME"],
+    "MOUNTING_POINT" => ENV["MOUNTING_POINT"],
+    "FILE_SYSTEM" => ENV["FILE_SYSTEM"]
+  }
+
+  config.vm.guest = :windows
+  config.vm.boot_timeout = 600
+  config.vm.communicator = "winrm"
+  config.winrm.username = "vagrant"
+  config.winrm.password = "vagrant"
+  config.vm.network :forwarded_port, guest: 3389, host: 3389, id: "rdp", auto_correct:true
+  config.vm.network :forwarded_port, guest: 5985, host: 5985, id: "rdp", auto_correct:true
+
+
+
+  config.vm.synced_folder ENV["SYNC_FOLDER"], "/home/gov/sync_folder", disabled:false
+  config.vm.synced_folder ".", "/vagrant", disabled:true
+  config.vm.network "private_network", ip: ENV["HOST_ONLY_IP"]
+  config.vm.network "public_network", bridge: [
+    "Realtek PCIe GbE Family Controller",
+    "Intel(R) Wi-Fi 6 AX201 160MHz"
+  ]
+  config.vm.provider "virtualbox" do |vb|
+    vb.name = ENV["VM_NAME"]
+    vb.memory = ENV["RAM"]
+    vb.cpus = ENV["CPU"]
+  end
+
+  if ENV["DISK_SIZE_PRIMARY"] != ""
+    config.vm.disk :disk, size: ENV["DISK_SIZE_PRIMARY"], primary: true
+  end
+
+  if ENV["DISK_SIZE_SECOND"] != ""
+    config.vm.disk :disk, size: ENV["DISK_SIZE_SECOND"], name: "sdb"
+  end
+
+end
