@@ -56,12 +56,6 @@ VALID_CONFIG_PARAMS_VM=(
     "DISK_SIZE_SECOND"
     "MOUNTING_POINT"
     "FILE_SYSTEM"
-    "GIT_USERNAME"
-    "GIT_PASSWORD"
-    "GIT_EMAIL"
-    "GIT_NAME"
-    "OS_USERNAME"
-    "OS_PASSWORD"
 )
 
 OPTIONAL_CONFIG_PARAMS_VM=(
@@ -73,12 +67,7 @@ OPTIONAL_CONFIG_PARAMS_VM=(
   "DISK_SIZE_SECOND"
   "MOUNTING_POINT"
   "FILE_SYSTEM"
-  "GIT_USERNAME"
-  "GIT_PASSWORD"
-  "GIT_EMAIL"
-  "GIT_NAME"
-  "OS_USERNAME"
-  "OS_PASSWORD"
+  "PROVISION_VARIABLES"
 )
 
 VALID_CONFIG_PARAMS_APP=(
@@ -404,6 +393,13 @@ gsuccessexit() {
   success "VM ${ID} is set and ready to go :)"
 }
 
+hashtablegen() {
+  for PAIR in "${PROVISION_VARIABLES}"
+  do
+
+  done
+}
+
 setvenv() {
   export CPU;
   export RAM;
@@ -632,27 +628,7 @@ validaterequiredvmargs() {
 
 validateoptionalvmargs() {
   infobold "Validating optional arguments values of ${VM_CONFIG}..."
-  if [[ ${GIT_PASSWORD} ]];then
-    if ! [[ "${GIT_PASSWORD}" =~ ^(ghp_)([A-Za-z0-9]{36})$ ]]; then
-      error "Invalid Git-Password"
-      exit 1
-    fi
-  elif [[ "${GIT_EMAIL}" ]]; then
-    if ! [[ "${GIT_EMAIL}" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
-      error "Invalid Email: ${GIT_EMAIL}"
-      exit 1
-    fi
-  elif [[ "${GIT_NAME}" ]]; then
-    if ! [[ "${GIT_NAME}" =~ ^([A-Za-z])$ ]]; then
-      error "Invalid lastname ${GIT_NAME}. It may only contain letters"
-      exit 1
-    fi
-  elif [[ "${OS_USERNAME}" ]]; then
-    if ! [[ "${OS_USERNAME}" =~ ^([A-Za-z])$ ]]; then
-      error "Invalid OS_USERNAME: ${OS_USERNAME}. May only contain letters!"
-      exit 1
-    fi
-  elif [[ "${DISK_SIZE_SECOND}" ]]; then
+  if [[ "${DISK_SIZE_SECOND}" ]]; then
     if ! [[ "${DISK_SIZE_SECOND}" =~ ^([0-9]+)GB$ ]]; then
       error "Invalid Disk-size for second disk ${DISK_SIZE_SECOND}. It should be in the format 9999GB"
       exit 1
@@ -668,6 +644,8 @@ validateoptionalvmargs() {
       error "Invalid Disk-size for main disk ${DISK_SIZE_PRIMARY}. It should be in the format 9999GB"
       exit 1
     fi
+  elif [[ "${PROVISION_VARIABLES}" && "$(declare -p ${PROVISION_VARIABLES})" =~ "declare -a" ]]; then
+    hashtablegen
   fi
 }
 

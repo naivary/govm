@@ -14,23 +14,6 @@ Vagrant.configure("2") do |config|
     "MOUNTING_POINT" => ENV["MOUNTING_POINT"],
     "FILE_SYSTEM" => ENV["FILE_SYSTEM"]
   }
-
-  # big timeout since windows boot is very slow
-  config.vm.boot_timeout = 700
-
-  # Port forward WinRM (Windows Remote Management) and RDP
-  # config.vm.network :forwarded_port, guest: 3389, host: 3389, id: "rdp", auto_correct: true
-  # config.vm.network :forwarded_port, guest: 5985, host: 5985, id: "winrm", auto_correct: true
-
-  # winrm config, uses modern.ie default user/password.
-  # If other credentials are used must be changed here
-  # config.vm.communicator = "winrm"
-  # config.winrm.username = "vagrant"
-  # config.winrm.password = "vagrant"
-  config.winrm.host = "localhost"
-  config.vm.guest = :windows
-
-
   config.vm.synced_folder ENV["SYNC_FOLDER"], "/home/gov/sync_folder", disabled:false
   config.vm.synced_folder ".", "/vagrant", disabled:true
   config.vm.network "private_network", ip: ENV["HOST_ONLY_IP"]
@@ -39,7 +22,6 @@ Vagrant.configure("2") do |config|
     "Intel(R) Wi-Fi 6 AX201 160MHz"
   ]
   config.vm.provider "virtualbox" do |vb|
-    vb.gui = true
     vb.name = ENV["VM_NAME"]
     vb.memory = ENV["RAM"]
     vb.cpus = ENV["CPU"]
