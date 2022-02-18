@@ -185,6 +185,7 @@ predefault() {
   VM_CONFIG=${VM_CONFIG:-"${BASEDIR}/${GOVM}/${DEFAULT_VM}"}
   CONFIG_NAME=$(basename ${VM_CONFIG})
   SCRIPT_VAGRANT=${PROVISON_DIR_NAME}/${SCRIPT_NAME}
+  PROVISION_VARIABLES=${PROVISION_VARIABLES:-""}
   # getid of default machine if 
   # created otherwise set it to nil
   getid 192.168.56.2
@@ -400,6 +401,10 @@ hashtablegen() {
 
   for PAIR in "${PROVISION_VARIABLES[@]}"
   do
+    if ! [[ "${PAIR}" =~ ':' ]]; then
+      PAIR="${PAIR}:${PAIR}"
+    fi
+
     if [[ ${i} -eq 0 ]]; then
       HASH_TABLE_STRING="${PAIR}" 
     else
@@ -456,6 +461,7 @@ cat << EOF >> ${GOVM_PATH}/vm.cfg
 SYNC_FOLDER=${SYNC_FOLDER}
 ID=${ID}
 LOG_PATH=${LOG_PATH}
+PROVISION_VARIABLES=${PROVISION_VARIABLES}
 EOF
 }
 
