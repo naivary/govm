@@ -792,6 +792,7 @@ destroy() {
 
 # alias to vagrant halt
 halt() {
+  FIRST_ARG=${1:-""}
   local isrunning
   info "Stopping ${ID}..."
   createvenv;
@@ -800,6 +801,8 @@ halt() {
   if [[ "${isrunning}" -eq 0 ]]; then
     vagrant halt &> "${LOG_PATH}/${TIMESTAMP}_halt.log";
     success "Stopped ${ID}!"
+  elif [[ ${FIRST_ARG} == "export" ]]; then
+    infobold "Machine already stopped. Continueing..."
   else 
     error "Machine is not running!"
     exit 1
@@ -827,8 +830,9 @@ start() {
 vexport() {
   sourcefile "${VM_CONFIG}"
   getid "${HOST_ONLY_IP}"
-  halt 
-  infobold "Exporting ${VM_NAME}..."
+  halt 'export'
+  infobold "Exporting ${VM_NAME}. This may take some time..."
+  echo "${APPLIANCESTORE}/${VM_NAME}"
   vboxmanage.exe 'export' "${VM_NAME}" --output "${APPLIANCESTORE}/${VM_NAME}.ova"
   success "Finished! appliance can be found at ${APPLIANCESTORE}"
 }

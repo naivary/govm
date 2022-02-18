@@ -1,2 +1,1 @@
 ID:Name:OS:IP:Memory:CPU
-b798a6ef0d:test:ubuntu/trusty64:192.168.56.11:1048:2
