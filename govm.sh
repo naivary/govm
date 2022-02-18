@@ -797,7 +797,8 @@ createvenv() {
 
 createvm() {
   infobold "Creating Virtual-Machine ${ID}. This may take a while..."
-  vagrant up &> ${LOG_PATH}/"${TIMESTAMP}_up.log" 
+  # vagrant up &> ${LOG_PATH}/"${TIMESTAMP}_up.log" 
+  vagrant up
 }
 
 up() {
