@@ -179,21 +179,22 @@ predefault() {
   TIMESTAMP=$(date '+%s')
   VAGRANT_CMD=${VAGRANT_CMD:-""}
   PROVISION_DIR_NAME="provision"
-
+  CURRENT_OS=$(uname -r | sed -n 's/.*\( *Microsoft *\).*/\1/ip')
   # govm.cfg
   GOV_CONFIG=${BASEDIR}/${GOVM}/govm.cfg
-  PROVISION_DIR=${PROVISION_DIR:-"${BASEDIR}/provision"}
+  PROVISION_DIR=${PROVISION_DIR:-"${BASEDIR}/${PROVISION_DIR_NAME}"}
   CONFIG_DIR=${CONFIG_DIR:-"${BASEDIR}/config"}
   VAGRANTFILE=${VAGRANTFILE:-${BASEDIR}/${GOVM}/Vagrantfile}
   VMSTORE=${VMSTORE:-${HOME}/${GOVM}}
   APPLIANCESTORE=${APPLIANCESTORE:-${HOME}/"${GOVM}_appliance"}
   LOG=${LOG:-"/log"}
+  SCRIPT=${SCRIPT:-"nil"}
 
   # vm.cfg
   GROUP=${GROUP:-""}
   VM_CONFIG=${VM_CONFIG:-"${BASEDIR}/${GOVM}/${DEFAULT_VM}"}
   CONFIG_NAME=$(basename ${VM_CONFIG})
-
+  SCRIPT_VAGRANT=${PROVISON_DIR_NAME}/${SCRIPT_NAME}
   # getid of default machine if 
   # created otherwise set it to nil
   getid 192.168.56.2
@@ -217,6 +218,13 @@ predefault() {
 # dependencies that are not 
 # yet been set
 # postdefault() {}
+
+
+osdefault() {
+  if [[ "${CURRENT_OS}" == "microsoft" ]]; then
+    APPLIANCESTORE="$(wslpath -w ${APPLIANCESTORE})"
+  fi
+}
 
 clearoptionalargs() {
   DISK_SIZE_SECOND=""
@@ -331,6 +339,27 @@ isvmexisting() {
   echo "$?"
 }
 
+ovafilenamegen() {
+  local basename=${1}
+  local i=1
+  FILENAME="${basename}.v${i}.ova"
+  local newname
+  local appliancestore=$(wslpath -a "${APPLIANCESTORE}" || echo "${APPLIANCESTORE}") 
+  while true 
+  do
+    if [[ -s "${appliancestore}/${FILENAME}" ]]; then
+      i=$((i +1))
+      newname="${basename}.v${i}.ova"
+      infobold "${FILENAME} exists! Renaming appliance to ${newname}"
+      FILENAME=${newname}
+    else 
+      break
+    fi  
+  done
+}
+
+
+
 
 trapexitup() {
   vagrant destroy --force &> "${LOG_PATH}/${TIMESTAMP}_destroy.log"
@@ -433,7 +462,6 @@ SYNC_FOLDER=${SYNC_FOLDER}
 ID=${ID}
 LOG_PATH=${LOG_PATH}
 EOF
-sed -i "s#SCRIPT=${SCRIPT}#SCRIPT=${PROVISION_DIR_NAME}/${SCRIPT}#g" ${GOVM_PATH}/vm.cfg
 }
 
 # prepvenv is creating the
@@ -464,7 +492,9 @@ prepvenv() {
 postvenv() {
   setvenv;
   cp "${VAGRANTFILE}" "${GOVM_PATH}/Vagrantfile"
-  cp "${PROVISION_DIR}/${SCRIPT}" "${GOVM_PATH}/${SCRIPT_NAME}"
+  DIR_NAME=$(dirname ${SCRIPT})
+  makedir ${GOVM_PATH}/${DIR_NAME}
+  cp "${PROVISION_DIR}/${SCRIPT}" "${GOVM_PATH}/${SCRIPT}"
   createcfg;
 }
 
@@ -792,7 +822,7 @@ destroy() {
 
 # alias to vagrant halt
 halt() {
-  FIRST_ARG=${1:-""}
+  local FIRST_ARG=${1:-""}
   local isrunning
   info "Stopping ${ID}..."
   createvenv;
@@ -828,12 +858,13 @@ start() {
 # create an appliance
 # of the given virtual-machine
 vexport() {
+  local filename
   sourcefile "${VM_CONFIG}"
   getid "${HOST_ONLY_IP}"
   halt 'export'
   infobold "Exporting ${VM_NAME}. This may take some time..."
-  echo "${APPLIANCESTORE}/${VM_NAME}"
-  vboxmanage.exe 'export' "${VM_NAME}" --output "${APPLIANCESTORE}/${VM_NAME}.ova"
+  ovafilenamegen ${VM_NAME}
+  vmexport "${FILENAME}" "single"
   success "Finished! appliance can be found at ${APPLIANCESTORE}"
 }
 
@@ -930,6 +961,7 @@ gdestroy() {
 # but build for a group
 # destruction
 ghalt() {
+  local FIRST_ARG=${1:-""}
   local isrunning;
   for CFG in ${GROUP}/*.cfg; 
   do
@@ -937,7 +969,14 @@ ghalt() {
     cd "${BASEDIR}"
     resetvenv
     sourcefile "${CFG}";
-    VM_NAMES+=("${VM_NAME}")
+
+    # VM_NAMES is not necessary for halt 
+    # but if halt is getting used in combination with export
+    # it is usefull to not do it two times
+    if [[ ${FIRST_ARG} == "export" ]]; then
+      VM_NAMES+=("${VM_NAME}")
+    fi
+
     isrunning=$(isvmrunning "${VM_NAME}")
     
     if [[ "${isrunning}" -eq 1 ]]; then
@@ -983,25 +1022,12 @@ gstart() {
 # alias to vboxmanage.exe 
 # export <machines>
 gexport() {
-  i=1
+  local basename
   infobold "Exporting group: ${GROUP}"
   ghalt
-  BASENAME=$(basename ${GROUP})
-  FILENAME="${BASENAME}.v${i}.ova"
-
-  while true 
-  do
-    if [[ -s ${APPLIANCESTORE}/${FILENAME} ]]; then
-      i=$((i +1))
-      NEW_FILENAME="${BASENAME}.v${i}.ova"
-      infobold "${FILENAME} exists! Renaming appliance to ${NEW_FILENAME}"
-      FILENAME=${NEW_FILENAME}
-    else 
-      break
-    fi  
-  done
-  
-  vboxmanage.exe 'export' "${VM_NAMES[@]}" --output "${APPLIANCESTORE}/${FILENAME}" && success "Created appliance ${FILENAME}"
+  basename=$(basename ${GROUP})
+  ovafilenamegen "${basename}"
+  vmexport "${FILENAME}" "group"
 }
 
 # list is listing all the 
@@ -1015,7 +1041,19 @@ list() {
   column ${DB} -t -s ":" 
 }
 
+vmexport() {
+  local filename=${1}
+  local type=${2}
 
+  if [[ ${CURRENT_OS} == "microsoft" && "${type}" == "single" ]]; then
+    vboxmanage.exe 'export' "${VM_NAME}" --output "${APPLIANCESTORE}/${filename}"
+  elif [[ ${CURENNT_OS} == "microsoft" && "${type}" == "group" ]]; then
+    vboxmanage.exe 'export' "${VM_NAMES[@]}" --output "${APPLIANCESTORE}/${filename}" && success "Created appliance ${filename}"
+  else
+    error "currently not supported for ${CURRENT_OS}"
+    exit 1
+  fi
+}
 
 # main is the entering point
 # of the application
@@ -1026,6 +1064,7 @@ main() {
   sourcefile ${GOV_CONFIG};
   validateappargs;
   validateposixgroup "$@"
+  osdefault
   if [[ "${VAGRANT_CMD}" == "destroy" && "${ID}" ]]; then 
     destroy;
   elif [[ "${VAGRANT_CMD}" == "halt" && "${ID}" ]]; then
