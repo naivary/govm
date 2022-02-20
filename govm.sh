@@ -49,10 +49,10 @@ VALID_CONFIG_PARAMS_VM=(
     "CPU"
     "RAM"
     "OS_IMAGE"
+    "OS_TYPE"
     "SCRIPT"
     "HOST_ONLY_IP"
     "VM_NAME"
-    "OS_TYPE"
     "PROVISION_VARIABLES"
     "DISK_SIZE_PRIMARY"
     "DISK_SIZE_SECOND"
@@ -64,6 +64,7 @@ OPTIONAL_CONFIG_PARAMS_VM=(
   "CPU"
   "RAM"
   "OS_IMAGE"
+  "OS_TYPE"
   "SCRIPT"
   "DISK_SIZE_PRIMARY"
   "DISK_SIZE_SECOND"
@@ -127,7 +128,7 @@ init() {
 }
 
 
-tips() {
+ads() {
   whitebold "Thank you for using govm!"  
   whitebold "For the usage read the README file."
   whitebold "If you would like to support me, star"
@@ -175,23 +176,25 @@ predefault() {
   VAGRANT_CMD=${VAGRANT_CMD:-""}
   PROVISION_DIR_NAME="provision"
   CURRENT_OS=$(uname -r | sed -n 's/.*\( *Microsoft *\).*/\1/ip')
+
   # govm.cfg
   GOVM_CONFIG="${BASEDIR}/${GOVM}/govm.cfg"
   GOVM_NAME="$(basename ${GOVM_CONFIG})"
   PROVISION_DIR=${PROVISION_DIR:-"${BASEDIR}/${PROVISION_DIR_NAME}"}
   CONFIG_DIR=${CONFIG_DIR:-"${BASEDIR}/config"}
-  VAGRANTFILE=${VAGRANTFILE:-${BASEDIR}/${GOVM}/Vagrantfile}
+  VAGRANTFILE=${VAGRANTFILE:-${BASEDIR}/${GOVM}/Vagrantfiles/linux}
   VMSTORE=${VMSTORE:-${HOME}/${GOVM}}
   APPLIANCESTORE=${APPLIANCESTORE:-${HOME}/"${GOVM}_appliance"}
   LOG=${LOG:-"/log"}
   SCRIPT=${SCRIPT:-"nil"}
 
   # vm.cfg
+  HASH_TABLE_STRING=${HASH_TABLE_STRING:-"default:default"}
   GROUP=${GROUP:-""}
   VM_CONFIG=${VM_CONFIG:-"${BASEDIR}/${GOVM}/${DEFAULT_VM}"}
-  CONFIG_NAME=$(basename ${VM_CONFIG})
   SCRIPT_VAGRANT=${PROVISON_DIR_NAME}/${SCRIPT_NAME}
   PROVISION_VARIABLES=${PROVISION_VARIABLES:-""}
+  OS_TYPE=${OS_TYPE:-linux}
   # getid of default machine if 
   # created otherwise set it to nil
   getid 192.168.56.2
@@ -392,7 +395,7 @@ successexit() {
   infobold "Finishing touches...";
   echo "${ID}:${VM_NAME}:${OS_IMAGE}:${HOST_ONLY_IP}:${RAM}:${CPU}" >> "${DB}";
   success "VM ${ID} is set and ready to go :)"
-  tips;
+  ads;
 }
 
 gsuccessexit() {
@@ -460,10 +463,8 @@ resetvenv() {
 }
 
 setvfile() {
-  if [[ "${OS_TYPE}" == "linux" ]]; then
-    VAGRANTFILE=${BASEDIR}/${GOVM}/Vagrantfiles/Vagrantfile_linux
-  else
-    VAGRANTFILE=${BASEDIR}/${GOVM}/Vagrantfiles/Vagrantfile_windows
+  if [[ "${OS_TYPE}" == "windwos" ]]; then
+    VAGRANTFILE=${BASEDIR}/${GOVM}/Vagrantfiles/windows
   fi
 }
 
@@ -630,7 +631,7 @@ validateappcfg() {
 # CPU should be an integer not 
 # a word and so on
 validaterequiredvmargs() {
-  info "Validating required argument values of ${VM_CONFIG}..."
+  info "Validating required arguments values of ${VM_CONFIG}..."
   if ! [[ "${CPU}" =~ ^[0-9]+$ && "${CPU}" -ge 1 && "${CPU}" -le 100 ]]; then
     error "CPU may only contain numbers and shall be bigger than 1";
     exit 1;
@@ -643,7 +644,7 @@ validaterequiredvmargs() {
   elif ! [[ "${HOST_ONLY_IP}" =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
     error "Invalid IP-Adress";
     exit 1;
-  elif ! [[ "${SUPPORTED_OS_TYPES[@]}" =~ "${OS_TYPE}"]]
+  elif ! [[ "${SUPPORTED_OS_TYPES[@]}" =~ "${OS_TYPE}" ]]; then
     error "os is not currently supported: ${OS_TYPE}"
     exit 1
   elif ! validateip;then
@@ -770,7 +771,7 @@ validateposixgroup() {
   done
 
   if [[ "${#CHECK_FILE[@]}" -eq $(( ${#FILE_GROUP[@]} -1 )) && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq 0 && "${VAGRANT_COMMAND_GIVEN}" == "true" && "${#CHECK_GROUPUP[@]}" -eq 0 ]]; then
-    infobold "Running ${VAGRANT_CMD} on $(basename ${VM_CONFIG})"
+    infobold "Running ${VAGRANT_CMD} on ${VM_CONFIG}"
   elif [[ "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq $(( ${#VAGRANT_GROUP[@]} -1 )) && "${#CHECK_LIST[@]}" -eq 0 && "${VAGRANT_COMMAND_GIVEN}" == "true" && "${#CHECK_GROUPUP[@]}" -eq 0 ]]; then
     infobold "Running \"${VAGRANT_CMD}\" on ${ID}..."
   elif [[ "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq ${#LIST_GROUP[@]} && "${VAGRANT_COMMAND_GIVEN}" == "false" && "${#CHECK_GROUPUP[@]}" -eq 0 ]]; then
@@ -1069,15 +1070,7 @@ main() {
   validateappargs;
   validateposixgroup "$@"
   osdefault
-  if [[ "${VAGRANT_CMD}" == "destroy" && "${ID}" ]]; then 
-    destroy;
-  elif [[ "${VAGRANT_CMD}" == "halt" && "${ID}" ]]; then
-    halt;
-  elif [[ "${VAGRANT_CMD}" == "start" && "${ID}" ]]; then
-    start
-  elif [[ "${VAGRANT_CMD}" == "up" ]]; then
-    up
-  elif [[ "${VAGRANT_CMD}" == "ssh" && "${ID}" ]]; then
+  if [[ "${VAGRANT_CMD}" == "ssh" && "${ID}" ]]; then
     vssh
   elif [[ "${VAGRANT_CMD}" == "export" && -s ${VM_CONFIG} ]]; then
     vexport
@@ -1093,6 +1086,15 @@ main() {
     gexport
   elif [[ "${VM_LIST}" ]]; then
     list
+  elif [[ "${VAGRANT_CMD}" == "destroy" && "${ID}" ]]; then 
+    destroy;
+  elif [[ "${VAGRANT_CMD}" == "halt" && "${ID}" ]]; then
+    halt;
+  elif [[ "${VAGRANT_CMD}" == "start" && "${ID}" ]]; then
+    start
+  elif [[ "${VAGRANT_CMD}" == "up" ]]; then
+
+    up
   else 
     error "Posix-Arguments did not match!"
     usage
