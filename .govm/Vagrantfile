@@ -2,7 +2,7 @@
 # vi: set ft=ruby :
 
 Vagrant.configure("2") do |config|
-  # creating hash from the given string
+  # creating hash from the given hash_string
   hash_string=ENV["HASH_TABLE_STRING"]
   arr = hash_string.split(',')
   hash = {}

@@ -171,7 +171,8 @@ predefault() {
   PROVISION_DIR_NAME="provision"
   CURRENT_OS=$(uname -r | sed -n 's/.*\( *Microsoft *\).*/\1/ip')
   # govm.cfg
-  GOV_CONFIG=${BASEDIR}/${GOVM}/govm.cfg
+  GOVM_CONFIG="${BASEDIR}/${GOVM}/govm.cfg"
+  GOVM_NAME="$(basename ${GOVM_CONFIG})"
   PROVISION_DIR=${PROVISION_DIR:-"${BASEDIR}/${PROVISION_DIR_NAME}"}
   CONFIG_DIR=${CONFIG_DIR:-"${BASEDIR}/config"}
   VAGRANTFILE=${VAGRANTFILE:-${BASEDIR}/${GOVM}/Vagrantfile}
@@ -349,9 +350,6 @@ ovafilenamegen() {
   done
 }
 
-
-
-
 trapexitup() {
   vagrant destroy --force &> "${LOG_PATH}/${TIMESTAMP}_destroy.log"
   rmgovm;
@@ -361,11 +359,14 @@ trapexitup() {
 }
 
 trapexit() {
-  infobold "Graceful exiting. Trying to clean as much as possible...";
   if [[ "${VAGRANT_CMD}" == "up" ]]; then
+    infobold "Graceful exiting. Trying to clean as much as possible...";
     trapexitup "${VM_NAME}"
   elif [[ "${VAGRANT_CMD}" == "gup" ]]; then
+    infobold "Graceful exiting. Trying to clean as much as possible...";
     trapexitgroup
+  else 
+    infobiold "Nothing to clean up. Exiting!"
   fi
 }
 
@@ -569,8 +570,8 @@ validatevmcfg() {
 validateappcfg() {
   GIVEN_PARAMS_OPTIONAL=()
   GIVEN_PARAMS_REQUIRED=()
-  info "Loading ${GOV_CONFIG}...";
-  if [[  -s "${GOV_CONFIG}" ]]; then
+  info "Loading ${GOVM_NAME}...";
+  if [[  -s "${GOVM_CONFIG}" ]]; then
     while read LINE
     do
       VALUE="$(echo -e "${LINE}" | tr -d '[:space:]')"
@@ -593,10 +594,10 @@ validateappcfg() {
           GIVEN_PARAMS_REQUIRED+=("${NAME}")
         fi
       fi
-    done < ${GOV_CONFIG}
+    done < ${GOVM_CONFIG}
 
     if [[ ${#GIVEN_PARAMS_REQUIRED[@]} -eq ${REQUIRED_PARAMS_CONFIG_APP} ]]; then
-      success "Valid! Sourcing ${GOV_CONFIG}" 
+      success "Valid! Sourcing ${GOVM_CONFIG}" 
     else 
       error "Not Enough Arguments"
       error "Expected: ${VALID_CONFIG_PARAMS_APP[*]}"
@@ -819,7 +820,7 @@ halt() {
     vagrant halt &> "${LOG_PATH}/${TIMESTAMP}_halt.log";
     success "Stopped ${ID}!"
   elif [[ ${FIRST_ARG} == "export" ]]; then
-    infobold "Machine already stopped. Continueing..."
+    infobold "Machine already powered off. Continueing..."
   else 
     error "Machine is not running!"
     exit 1
@@ -1048,7 +1049,7 @@ main() {
   predefault
   init;
   validateappcfg;
-  sourcefile ${GOV_CONFIG};
+  sourcefile ${GOVM_CONFIG};
   validateappargs;
   validateposixgroup "$@"
   osdefault
