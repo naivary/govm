@@ -363,7 +363,7 @@ trapexitup() {
 trapexit() {
   infobold "Graceful exiting. Trying to clean as much as possible...";
   if [[ "${VAGRANT_CMD}" == "up" ]]; then
-    trapexitup
+    trapexitup "${VM_NAME}"
   elif [[ "${VAGRANT_CMD}" == "gup" ]]; then
     trapexitgroup
   fi
@@ -398,20 +398,25 @@ gsuccessexit() {
 hashtablegen() {
   HASH_TABLE_STRING=${PROVISION_VARIABLES[@]}
   local i=0
+  if [[ ${#PROVISION_VARIABLES[@]} -gt 0 ]]; then
+    for PAIR in "${PROVISION_VARIABLES[@]}"
+    do
+      if ! [[ "${PAIR}" =~ ':' ]]; then
+        PAIR="${PAIR}:${PAIR}"
+      fi
 
-  for PAIR in "${PROVISION_VARIABLES[@]}"
-  do
-    if ! [[ "${PAIR}" =~ ':' ]]; then
-      PAIR="${PAIR}:${PAIR}"
-    fi
-
-    if [[ ${i} -eq 0 ]]; then
-      HASH_TABLE_STRING="${PAIR}" 
-    else
-      HASH_TABLE_STRING="${HASH_TABLE_STRING},${PAIR}" 
-    fi
-    i=$((i+1))
-  done
+      if [[ ${i} -eq 0 ]]; then
+        HASH_TABLE_STRING="${PAIR}" 
+      else
+        HASH_TABLE_STRING="${HASH_TABLE_STRING},${PAIR}" 
+      fi
+      i=$((i+1))
+    done
+  else
+    error "Empty PROVISION_VARIABLES Array: ${PROVISION_VARIABLES}"
+    error "If you dotn want to have any comment it out"
+    exit 1
+  fi
 }
 
 setvenv() {
@@ -461,7 +466,7 @@ cat << EOF >> ${GOVM_PATH}/vm.cfg
 SYNC_FOLDER=${SYNC_FOLDER}
 ID=${ID}
 LOG_PATH=${LOG_PATH}
-PROVISION_VARIABLES=${PROVISION_VARIABLES}
+HASH_TABLE_STRING="${HASH_TABLE_STRING}"
 EOF
 }
 
