@@ -189,7 +189,7 @@ predefault() {
   SCRIPT=${SCRIPT:-"nil"}
 
   # vm.cfg
-  HASH_TABLE_STRING=${HASH_TABLE_STRING:-"default:default"}
+  HASH_TABLE_STRING=${HASH_TABLE_STRING:-"govm:govm"}
   GROUP=${GROUP:-""}
   VM_CONFIG=${VM_CONFIG:-"${BASEDIR}/${GOVM}/${DEFAULT_VM}"}
   SCRIPT_VAGRANT=${PROVISON_DIR_NAME}/${SCRIPT_NAME}
@@ -198,7 +198,7 @@ predefault() {
   # getid of default machine if 
   # created otherwise set it to nil
   getid 192.168.56.2
-  VM_NAME=${VM_NAME:-"default"}
+  VM_NAME=${VM_NAME:-"govm"}
   HOST_ONLY_IP=${HOST_ONLY_IP:-""}
   DISK_SIZE_SECOND=${DISK_SIZE_SECOND:-""}
   DISK_SIZE_PRIMARY=${DISK_SIZE_PRIMARY:-""}
@@ -535,9 +535,10 @@ sourcefile() {
 # keys and if the config file is valid 
 # it is getting sourced.
 validatevmcfg() {
+  local config_name
   GIVEN_PARAMS_REQUIRED=()
   GIVEN_PARAMS_OPTIONAL=()
-  info "Loading ${VM_CONFIG}...";
+  info "Loading ${config_name}...";
   if [[  -s "${VM_CONFIG}" && "${VM_CONFIG}" == *.cfg ]]; then
     while read LINE
     do
@@ -631,7 +632,8 @@ validateappcfg() {
 # CPU should be an integer not 
 # a word and so on
 validaterequiredvmargs() {
-  info "Validating required arguments values of ${VM_CONFIG}..."
+  local config_name
+  info "Validating required arguments values of ${config_name}..."
   if ! [[ "${CPU}" =~ ^[0-9]+$ && "${CPU}" -ge 1 && "${CPU}" -le 100 ]]; then
     error "CPU may only contain numbers and shall be bigger than 1";
     exit 1;
@@ -770,15 +772,15 @@ validateposixgroup() {
     fi
   done
 
-  if [[ "${#CHECK_FILE[@]}" -eq $(( ${#FILE_GROUP[@]} -1 )) && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq 0 && "${VAGRANT_COMMAND_GIVEN}" == "true" && "${#CHECK_GROUPUP[@]}" -eq 0 ]]; then
+  if [[ "${#CHECK_FILE[@]}" -eq $(( ${#FILE_GROUP[@]} -1 )) && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq 0 && "${VAGRANT_COMMAND_GIVEN}" == "true" && "${#CHECK_GROUPUP[@]}" -eq 0 && ! "${VAGRANT_CMD}" =~  g[a-z]+ ]]; then
     infobold "Running ${VAGRANT_CMD} on ${VM_CONFIG}"
-  elif [[ "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq $(( ${#VAGRANT_GROUP[@]} -1 )) && "${#CHECK_LIST[@]}" -eq 0 && "${VAGRANT_COMMAND_GIVEN}" == "true" && "${#CHECK_GROUPUP[@]}" -eq 0 ]]; then
+  elif [[ "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq $(( ${#VAGRANT_GROUP[@]} -1 )) && "${#CHECK_LIST[@]}" -eq 0 && "${VAGRANT_COMMAND_GIVEN}" == "true" && "${#CHECK_GROUPUP[@]}" -eq 0 && ! "${VAGRANT_CMD}" =~  g[a-z]+ ]]; then
     infobold "Running \"${VAGRANT_CMD}\" on ${ID}..."
   elif [[ "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq ${#LIST_GROUP[@]} && "${VAGRANT_COMMAND_GIVEN}" == "false" && "${#CHECK_GROUPUP[@]}" -eq 0 ]]; then
     infobold "Listing all virtual-machines..."
-  elif [[ "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq 0 && "${VAGRANT_COMMAND_GIVEN}" == "true" && "${#CHECK_GROUPUP[@]}" -eq  $(( ${#GROUPCMD_GROUP[@]} -1 )) ]]; then
+  elif [[ "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq 0 && "${VAGRANT_COMMAND_GIVEN}" == "true" && "${#CHECK_GROUPUP[@]}" -eq  $(( ${#GROUPCMD_GROUP[@]} -1 )) && "${VAGRANT_CMD}" =~ g[a-z]+ ]]; then
     infobold "Running \"${VAGRANT_CMD}\" on group: $(basename ${GROUP})"
-  elif [[ "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq 0 && "${VAGRANT_COMMAND_GIVEN}" == "true" && "${#CHECK_GROUPUP[@]}" -eq 0 ]]; then
+  elif [[ "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq 0 && "${VAGRANT_COMMAND_GIVEN}" == "true" && "${#CHECK_GROUPUP[@]}" -eq 0 && ! "${VAGRANT_CMD}" =~ g[a-z]+ ]]; then
     infobold "Running command \"${VAGRANT_CMD}\" on default-machine..."
   else
     error "Too many or not enough arguments"
