@@ -271,9 +271,9 @@ getid() {
   local id
   id="$(grep ${1} ${DB} | cut -d ':' -f 1)"
   if [[ ${id} ]]; then
-    ID=${id}
+    ID="${id}"
   else 
-    ID="nil"
+    ID=${ID:-"nil"}
   fi
 }
 
@@ -289,9 +289,9 @@ getos() {
   local os
   os="$(grep ${1} ${DB} | cut -d ':' -f 3)"
   if [[ ${os} ]]; then
-    OS_IMAGE=${os}
+    OS_IMAGE=${OS_IMAGE:-os}
   else
-    OS_IMAGE="nil"
+    OS_IMAGE=${OS_IMAGE:-"nil"}
   fi
 }
 
@@ -300,9 +300,9 @@ getip() {
   ip="$(grep ${1} ${DB} | cut -d ':' -f 4)"
 
   if [[ ${ip} ]]; then
-    HOST_ONLY_IP=${ip}
+    HOST_ONLY_IP=${HOST_ONLY_IP:-ip}
   else
-    HOST_ONLY_IP="nil"
+    HOST_ONLY_IP=${HOST_ONLY_IP:-"nil"}
   fi
 }
 
@@ -374,7 +374,7 @@ trapexit() {
     infobold "Graceful exiting. Trying to clean as much as possible...";
     trapexitgroup
   else 
-    infobiold "Nothing to clean up. Exiting!"
+    infobold "Nothing to clean up. Exiting!"
   fi
 }
 
@@ -477,6 +477,8 @@ createcfg() {
   REALPATH_VM_CONFIG=$(realpath ${VM_CONFIG})
   cp ${REALPATH_VM_CONFIG} ${GOVM_PATH}/vm.cfg
 cat << EOF >> ${GOVM_PATH}/vm.cfg
+
+# CREATED BY GOVM. DO NOT EDIT DATA! 
 SYNC_FOLDER=${SYNC_FOLDER}
 ID=${ID}
 LOG_PATH=${LOG_PATH}
@@ -535,7 +537,7 @@ sourcefile() {
 # keys and if the config file is valid 
 # it is getting sourced.
 validatevmcfg() {
-  local config_name
+  local config_name=$(basename "${VM_CONFIG}")
   GIVEN_PARAMS_REQUIRED=()
   GIVEN_PARAMS_OPTIONAL=()
   info "Loading ${config_name}...";
@@ -563,7 +565,7 @@ validatevmcfg() {
       fi
     done < ${VM_CONFIG}
   if [[ ${#GIVEN_PARAMS_REQUIRED[*]} -eq ${REQUIRED_PARAMS_CONFIG_VM} ]]; then
-    success "Valid Syntax and Arguments for ${VM_CONFIG}" 
+    success "Valid Syntax and Arguments for ${config_name}" 
   else 
     error "Not Enough Arguments"
     error "Valid-Arguments: ${VALID_CONFIG_PARAMS_VM[*]}"
@@ -612,7 +614,7 @@ validateappcfg() {
     done < ${GOVM_CONFIG}
 
     if [[ ${#GIVEN_PARAMS_REQUIRED[@]} -eq ${REQUIRED_PARAMS_CONFIG_APP} ]]; then
-      success "Valid! Sourcing ${GOVM_CONFIG}" 
+      success "Valid! Sourcing ${GOVM_NAME}" 
     else 
       error "Not Enough Arguments"
       error "Expected: ${VALID_CONFIG_PARAMS_APP[*]}"
@@ -632,7 +634,7 @@ validateappcfg() {
 # CPU should be an integer not 
 # a word and so on
 validaterequiredvmargs() {
-  local config_name
+  local config_name=$(basename "${VM_CONFIG}")
   info "Validating required arguments values of ${config_name}..."
   if ! [[ "${CPU}" =~ ^[0-9]+$ && "${CPU}" -ge 1 && "${CPU}" -le 100 ]]; then
     error "CPU may only contain numbers and shall be bigger than 1";
@@ -657,7 +659,8 @@ validaterequiredvmargs() {
 }
 
 validateoptionalvmargs() {
-  infobold "Validating optional arguments values of ${VM_CONFIG}..."
+  local config_name=$(basename "${VM_CONFIG}")
+  infobold "Validating optional arguments values of ${config_name}..."
   if [[ "${DISK_SIZE_SECOND}" ]]; then
     if ! [[ "${DISK_SIZE_SECOND}" =~ ^([0-9]+)GB$ ]]; then
       error "Invalid Disk-size for second disk ${DISK_SIZE_SECOND}. It should be in the format 9999GB"
@@ -993,6 +996,7 @@ ghalt() {
 
     getid "${HOST_ONLY_IP}"
     if [[ "${ID}" ]]; then
+      govmpath
       cd ${GOVM_PATH}
       halt
     else
@@ -1016,7 +1020,7 @@ gstart() {
       error "Machine ${VM_NAME} does not exists"
       exit 1
     fi
-
+    isrunning=$(isvmrunning ${VM_NAME})
     if [[ ${isrunning} -eq 0 ]]; then
       infobold "Machine ${VM_NAME} is already up and running. Continuening with next..."
       continue
@@ -1031,7 +1035,7 @@ gstart() {
 gexport() {
   local basename
   infobold "Exporting group: ${GROUP}"
-  ghalt
+  ghalt "export"
   basename=$(basename ${GROUP})
   ovafilenamegen "${basename}"
   vmexport "${FILENAME}" "group"
@@ -1051,10 +1055,11 @@ list() {
 vmexport() {
   local filename=${1}
   local type=${2}
-
   if [[ "${type}" == "single" ]]; then
+    infobold "Exporting ${VM_NAME} as ${filename}"
     vboxmanage.exe 'export' "${VM_NAME}" --output "${APPLIANCESTORE}/${filename}"
   elif [[ "${type}" == "group" ]]; then
+    infobold "Exporting machine group (${VM_NAMES[*]}) as ${filename}" 
     vboxmanage.exe 'export' "${VM_NAMES[@]}" --output "${APPLIANCESTORE}/${filename}" && success "Created appliance ${filename}"
   else
     error "currently not supported for ${CURRENT_OS}"
