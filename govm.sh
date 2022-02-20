@@ -52,6 +52,7 @@ VALID_CONFIG_PARAMS_VM=(
     "SCRIPT"
     "HOST_ONLY_IP"
     "VM_NAME"
+    "OS_TYPE"
     "PROVISION_VARIABLES"
     "DISK_SIZE_PRIMARY"
     "DISK_SIZE_SECOND"
@@ -105,6 +106,10 @@ UNSUPPORTED_MOUNTING_POINTS=(
   "/var"
 )
 
+SUPPORTED_OS_TYPES=(
+  "linux"
+  "windows"
+)
 # init is setting all best-practice-standards 
 # needed for the shell-script to run without
 # any problems
@@ -454,6 +459,13 @@ resetvenv() {
 
 }
 
+setvfile() {
+  if [[ "${OS_TYPE}" == "linux" ]]; then
+    VAGRANTFILE=${BASEDIR}/${GOVM}/Vagrantfiles/Vagrantfile_linux
+  else
+    VAGRANTFILE=${BASEDIR}/${GOVM}/Vagrantfiles/Vagrantfile_windows
+  fi
+}
 
 # createcfg is copying the used
 # config file for the creation
@@ -498,6 +510,7 @@ prepvenv() {
 # newly created directory
 postvenv() {
   setvenv;
+  setvfile
   cp "${VAGRANTFILE}" "${GOVM_PATH}/Vagrantfile"
   DIR_NAME=$(dirname ${SCRIPT})
   makedir ${GOVM_PATH}/${DIR_NAME}
@@ -551,7 +564,7 @@ validatevmcfg() {
     success "Valid Syntax and Arguments for ${VM_CONFIG}" 
   else 
     error "Not Enough Arguments"
-    error "Required: ${REQUIRED_CONFIG_PARAMS_VM[*]}"
+    error "Valid-Arguments: ${VALID_CONFIG_PARAMS_VM[*]}"
     error "Optional: ${OPTIONAL_CONFIG_PARAMS_VM[*]}"
     exit 1
   fi
@@ -630,6 +643,9 @@ validaterequiredvmargs() {
   elif ! [[ "${HOST_ONLY_IP}" =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
     error "Invalid IP-Adress";
     exit 1;
+  elif ! [[ "${SUPPORTED_OS_TYPES[@]}" =~ "${OS_TYPE}"]]
+    error "os is not currently supported: ${OS_TYPE}"
+    exit 1
   elif ! validateip;then
     exit 1
   elif validateoptionalvmargs; then
