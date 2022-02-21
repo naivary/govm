@@ -51,6 +51,7 @@ VALID_CONFIG_PARAMS_VM=(
     "OS_IMAGE"
     "OS_TYPE"
     "SCRIPT"
+    "SYNC_FOLDER"
     "HOST_ONLY_IP"
     "VM_NAME"
     "PROVISION_VARIABLES"
@@ -66,6 +67,8 @@ OPTIONAL_CONFIG_PARAMS_VM=(
   "OS_IMAGE"
   "OS_TYPE"
   "SCRIPT"
+  "SYNC_FOLDER"
+  "VM_NAME"
   "DISK_SIZE_PRIMARY"
   "DISK_SIZE_SECOND"
   "MOUNTING_POINT"
@@ -198,8 +201,9 @@ predefault() {
   # getid of default machine if 
   # created otherwise set it to nil
   getid 192.168.56.2
-  VM_NAME=${VM_NAME:-"govm"}
   HOST_ONLY_IP=${HOST_ONLY_IP:-""}
+  SYNC_FOLDER=${SYNC_FOLDER:-""}
+  VM_NAME=${VM_NAME:-""}
   DISK_SIZE_SECOND=${DISK_SIZE_SECOND:-""}
   DISK_SIZE_PRIMARY=${DISK_SIZE_PRIMARY:-""}
   MOUNTING_POINT=${MOUNTING_POINT:-"nil"}
@@ -502,7 +506,8 @@ prepvenv() {
     LOG_PATH=${LOG}/${ID}
     makedir "${LOG_PATH}"
   fi
-  SYNC_FOLDER="${VMSTORE}/${ID}/sync_folder"
+  SYNC_FOLDER=${SYNC_FOLDER:-"${VMSTORE}/${ID}/sync_folder"}
+  VM_NAME="${HOST_ONLY_IP}_${ID}"
   SCRIPT_NAME=$(basename ${SCRIPT})
 }
 
@@ -677,8 +682,20 @@ validateoptionalvmargs() {
       error "Invalid Disk-size for main disk ${DISK_SIZE_PRIMARY}. It should be in the format 9999GB"
       exit 1
     fi
+  elif [[ "${SYNC_FOLDER}" ]]; then
+    if [[ -d "${SYNC_FOLDER}" ]]; then
+      makedir "${SYNC_FOLDER}"
+    else 
+      error "${SYNC_FOLDER} is not a directory!"
+      exit 1
+    fi
   elif [[ "${PROVISION_VARIABLES}" ]]; then
     hashtablegen
+  elif [[ "${VM_NAME}" ]]; then
+    if ! [[ "${VM_NAME}" =~ ^([A-Za-z0-9-_]+)$ ]]; then
+      error "VM_NAME may only containt letters numbres hypens and underscores"
+      exit 1
+    fi
   fi
 }
 
