@@ -792,15 +792,15 @@ validateposixgroup() {
     fi
   done
 
-  if [[ "${#CHECK_FILE[@]}" -eq $(( ${#FILE_GROUP[@]} -1 )) && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq 0 && "${VAGRANT_COMMAND_GIVEN}" == "true" && "${#CHECK_GROUPUP[@]}" -eq 0 && ! "${VAGRANT_CMD}" =~  g[a-z]+ ]]; then
+  if [[ "${#CHECK_FILE[@]}" -eq $(( ${#FILE_GROUP[@]} -1 )) && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq 0 && "${#CHECK_GROUPUP[@]}" -eq 0 && ! "${VAGRANT_CMD}" =~  g[a-z]+ ]]; then
     infobold "Running ${VAGRANT_CMD} on ${VM_CONFIG}"
-  elif [[ "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq $(( ${#VAGRANT_GROUP[@]} -1 )) && "${#CHECK_LIST[@]}" -eq 0 && "${VAGRANT_COMMAND_GIVEN}" == "true" && "${#CHECK_GROUPUP[@]}" -eq 0 && ! "${VAGRANT_CMD}" =~  g[a-z]+ ]]; then
+  elif [[ "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq $(( ${#VAGRANT_GROUP[@]} -1 )) && "${#CHECK_LIST[@]}" -eq 0 && "${#CHECK_GROUPUP[@]}" -eq 0 && ! "${VAGRANT_CMD}" =~  g[a-z]+ ]]; then
     infobold "Running \"${VAGRANT_CMD}\" on ${ID}..."
   elif [[ "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq ${#LIST_GROUP[@]} && "${VAGRANT_COMMAND_GIVEN}" == "false" && "${#CHECK_GROUPUP[@]}" -eq 0 ]]; then
     infobold "Listing all virtual-machines..."
-  elif [[ "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq 0 && "${VAGRANT_COMMAND_GIVEN}" == "true" && "${#CHECK_GROUPUP[@]}" -eq  $(( ${#GROUPCMD_GROUP[@]} -1 )) && "${VAGRANT_CMD}" =~ g[a-z]+ ]]; then
+  elif [[ "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq 0 && "${#CHECK_GROUPUP[@]}" -eq  $(( ${#GROUPCMD_GROUP[@]} -1 )) && "${VAGRANT_CMD}" =~ g[a-z]+ ]]; then
     infobold "Running \"${VAGRANT_CMD}\" on group: $(basename ${GROUP})"
-  elif [[ "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq 0 && "${VAGRANT_COMMAND_GIVEN}" == "true" && "${#CHECK_GROUPUP[@]}" -eq 0 && ! "${VAGRANT_CMD}" =~ g[a-z]+ ]]; then
+  elif [[ "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq 0 && "${#CHECK_GROUPUP[@]}" -eq 0 && ! "${VAGRANT_CMD}" =~ g[a-z]+ ]]; then
     infobold "Running command \"${VAGRANT_CMD}\" on default-machine..."
   else
     error "Too many or not enough arguments"
