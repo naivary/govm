@@ -204,6 +204,8 @@ predefault() {
   # getid of default machine if 
   # created otherwise set it to nil
   getid 192.168.56.2
+  getvmname 192.168.56.2
+
   HOST_ONLY_IP=${HOST_ONLY_IP:-""}
   SYNC_FOLDER=${SYNC_FOLDER:-""}
   VM_NAME=${VM_NAME:-""}
@@ -276,7 +278,7 @@ rightcut() {
 
 getid() {
   local id
-  id="$(grep ${1} ${DB} | cut -d ':' -f 1)"
+  id="$(grep -w ${1} ${DB} | cut -d ':' -f 1)"
   if [[ ${id} ]]; then
     ID="${id}"
   else 
@@ -286,7 +288,7 @@ getid() {
 
 getvmname() {
   local name
-  name="$(grep ${1} ${DB} | cut -d ':' -f 2)"
+  name="$(grep ${1} -w ${DB} | cut -d ':' -f 2)"
   if [[ ${name} ]]; then
     VM_NAME=${name}
   fi
@@ -294,7 +296,7 @@ getvmname() {
 
 getos() {
   local os
-  os="$(grep ${1} ${DB} | cut -d ':' -f 3)"
+  os="$(grep ${1} -w ${DB} | cut -d ':' -f 3)"
   if [[ ${os} ]]; then
     OS_IMAGE=${OS_IMAGE:-os}
   else
@@ -304,7 +306,7 @@ getos() {
 
 getip() {
   local ip
-  ip="$(grep ${1} ${DB} | cut -d ':' -f 4)"
+  ip="$(grep ${1} -w ${DB} | cut -d ':' -f 4)"
 
   if [[ ${ip} ]]; then
     HOST_ONLY_IP=${HOST_ONLY_IP:-ip}
@@ -1125,8 +1127,8 @@ main() {
   sourcefile ${GOVM_CONFIG};
   validateappargs;
   validateposixgroup "$@"
-  osdefault
   bridgeoptiongen
+  osdefault
   if [[ "${VAGRANT_CMD}" == "ssh" && "${ID}" ]]; then
     vssh
   elif [[ "${VAGRANT_CMD}" == "export" && -s ${VM_CONFIG} ]]; then
