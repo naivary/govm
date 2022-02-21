@@ -773,7 +773,6 @@ validateposixgroup() {
   CHECK_VAGRANT=()
   CHECK_GROUPUP=()
   CHECK_LIST=()
-  VAGRANT_COMMAND_GIVEN="false"
 
   for ARG in "$@"
   do
@@ -784,8 +783,6 @@ validateposixgroup() {
         CHECK_VAGRANT=("${ARG}")
       elif [[ "${GROUPCMD_GROUP[*]}" =~ "${ARG}" && "${ARG}" != "-v" ]]; then
         CHECK_GROUPUP=("${ARG}")
-      elif [[ "${ARG}" == "-v" ]]; then
-        VAGRANT_COMMAND_GIVEN="true"
       elif [[ "${LIST_GROUP[*]}" =~ "${ARG}" && "${ARG}" != "-v" ]]; then
         CHECK_LIST+=("${ARG}")
       fi
@@ -796,7 +793,7 @@ validateposixgroup() {
     infobold "Running ${VAGRANT_CMD} on ${VM_CONFIG}"
   elif [[ "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq $(( ${#VAGRANT_GROUP[@]} -1 )) && "${#CHECK_LIST[@]}" -eq 0 && "${#CHECK_GROUPUP[@]}" -eq 0 && ! "${VAGRANT_CMD}" =~  g[a-z]+ ]]; then
     infobold "Running \"${VAGRANT_CMD}\" on ${ID}..."
-  elif [[ "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq ${#LIST_GROUP[@]} && "${VAGRANT_COMMAND_GIVEN}" == "false" && "${#CHECK_GROUPUP[@]}" -eq 0 ]]; then
+  elif [[ "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq ${#LIST_GROUP[@]} && -z "${VAGRANT_CMD}" && "${#CHECK_GROUPUP[@]}" -eq 0 ]]; then
     infobold "Listing all virtual-machines..."
   elif [[ "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq 0 && "${#CHECK_GROUPUP[@]}" -eq  $(( ${#GROUPCMD_GROUP[@]} -1 )) && "${VAGRANT_CMD}" =~ g[a-z]+ ]]; then
     infobold "Running \"${VAGRANT_CMD}\" on group: $(basename ${GROUP})"
@@ -885,7 +882,6 @@ start() {
 # create an appliance
 # of the given virtual-machine
 vexport() {
-  local filename
   sourcefile "${VM_CONFIG}"
   getid "${HOST_ONLY_IP}"
   halt 'export'
