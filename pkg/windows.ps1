@@ -31,3 +31,12 @@ if (-not(Get-Command "vboxmanage --version" -errorAction SilentlyContinue))
 } else {
   Write-Output "Virtual-Box is already installed. Continueing..."
 }
+
+
+if (-not(Get-Command "vagrant -v" -errorAction SilentlyContinue)) 
+{
+  Write-Output "Vagrant does not exist! Installing..."
+  choco install vagrant
+} else {
+  Write-Output "Vagrant is already isntalled. Continueing..."
+}

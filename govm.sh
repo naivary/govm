@@ -918,11 +918,10 @@ vexport() {
   getid "${HOST_ONLY_IP}"
   halt 'export'
   infobold "Exporting ${VM_NAME}. This may take some time..."
-  ovafilenamegen ${VM_NAME}
+  ovafilenamegen "${VM_NAME}"
   vmexport "${FILENAME}" "single"
   success "Finished! appliance can be found at ${APPLIANCESTORE}"
 }
-
 
 # groupup is just a helper for 
 # starting the virtual machines
@@ -1111,7 +1110,6 @@ vmexport() {
     exit 1
   fi
 }
-
 
 vmlistbridgedlifs() {
   vboxmanage.exe list bridgedifs | grep -w "Name:" | tr -s " " 
