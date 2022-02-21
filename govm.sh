@@ -82,6 +82,7 @@ VALID_CONFIG_PARAMS_APP=(
   "PROVISION_DIR"
   "CONFIG_DIR"
   "APPLIANCESTORE"
+  "BRIDGE_OPTIONS"
   "LOG"
   "CPU"
   "RAM"
@@ -190,6 +191,7 @@ predefault() {
   APPLIANCESTORE=${APPLIANCESTORE:-${HOME}/"${GOVM}_appliance"}
   LOG=${LOG:-"/log"}
   SCRIPT=${SCRIPT:-"nil"}
+  BRIDGE_OPTIONS=${BRIDGE_OPTIONS:-()}
 
   # vm.cfg
   HASH_TABLE_STRING=${HASH_TABLE_STRING:-"govm:govm"}
@@ -432,6 +434,26 @@ hashtablegen() {
   fi
 }
 
+bridgeoptiongen() {
+  local i=0
+  if [[ ${#BRIDGE_OPTIONS[@]} -gt 0 ]]; then
+    for VALUE in "${BRIDGE_OPTIONS[@]}"
+    do
+      if [[ ${i} -eq 0 ]]; then
+        BRIDGE_OPTION_STRING="${VALUE}" 
+      else
+        BRIDGE_OPTION_STRING="${BRIDGE_OPTION_STRING},${VALUE}" 
+      fi
+      i=$((i+1))
+    done
+  else
+    error "Empty BRIDGE_OPTIONS Array!"
+    infobold "Your options are:"
+    vmlistbridgedlifs
+    exit 1
+  fi
+}
+
 setvenv() {
   export CPU;
   export RAM;
@@ -444,6 +466,7 @@ setvenv() {
   export MOUNTING_POINT
   export FILE_SYSTEM
   export HASH_TABLE_STRING
+  export BRIDGE_OPTION_STRING
   export VAGRANT_EXPERIMENTAL="disks"
   # not set by User
   export SYNC_FOLDER;
@@ -461,6 +484,7 @@ resetvenv() {
   export -n MOUNTING_POINT
   export -n FILE_SYSTEM
   export -n HASH_TABLE_STRING
+  export -n BRIDGE_OPTION_STRING
   # not set by User
   export -n SYNC_FOLDER;
 
@@ -1080,6 +1104,12 @@ vmexport() {
   fi
 }
 
+
+vmlistbridgedlifs() {
+  vboxmanage.exe list bridgedifs | grep -w "Name:" | tr -s " " 
+}
+
+
 # main is the entering point
 # of the application
 main() {
@@ -1090,6 +1120,7 @@ main() {
   validateappargs;
   validateposixgroup "$@"
   osdefault
+  bridgeoptiongen
   if [[ "${VAGRANT_CMD}" == "ssh" && "${ID}" ]]; then
     vssh
   elif [[ "${VAGRANT_CMD}" == "export" && -s ${VM_CONFIG} ]]; then
