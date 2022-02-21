@@ -34,5 +34,4 @@ sudo touch /etc/sudoers.d/${USER}
 sudo chmod 0440 "/etc/sudoers.d/${USER}"
 echo "${USER} ALL = (ALL) NOPASSWD:ALL" | sudo tee -a /etc/sudoers.d/musti
 
-
-success "You are ready to go! Start with govm -h. For any documenation read the README file. Thanks for choosing govm :)"
+success "Wait for the windows-powershell-prompt to close automatically and you are ready to go!"
