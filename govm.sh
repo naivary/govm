@@ -200,6 +200,7 @@ predefault() {
   SCRIPT_VAGRANT=${PROVISON_DIR_NAME}/${SCRIPT_NAME}
   PROVISION_VARIABLES=${PROVISION_VARIABLES:-""}
   OS_TYPE=${OS_TYPE:-linux}
+  SYNC_USER=${SYNC_USER:-"vagrant"}
   # getid of default machine if 
   # created otherwise set it to nil
   getid 192.168.56.2
@@ -420,6 +421,13 @@ hashtablegen() {
         PAIR="${PAIR}:${PAIR}"
       fi
 
+      leftcut "${PAIR}"
+
+      if [[ "${LEFTSIDE}" == "os_user" ]]; then
+        rightcut "${PAIR}"
+        SYNC_USER=${RIGHTSIDE}
+      fi
+
       if [[ ${i} -eq 0 ]]; then
         HASH_TABLE_STRING="${PAIR}" 
       else
@@ -468,8 +476,8 @@ setvenv() {
   export HASH_TABLE_STRING
   export BRIDGE_OPTION_STRING
   export VAGRANT_EXPERIMENTAL="disks"
-  # not set by User
   export SYNC_FOLDER;
+  export SYNC_USER
 }
 
 resetvenv() {
@@ -485,8 +493,8 @@ resetvenv() {
   export -n FILE_SYSTEM
   export -n HASH_TABLE_STRING
   export -n BRIDGE_OPTION_STRING
-  # not set by User
   export -n SYNC_FOLDER;
+  export -n SYNC_USER
 
 }
 

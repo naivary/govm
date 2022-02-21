@@ -1,5 +1,1 @@
 ID:Name:OS:IP:Memory:CPU
-8b24f51bb0:first:ubuntu/trusty64:192.168.56.11:1048:2
-8b60bc7218:secdsjasdhjashdshdsdhsadgahdsgahsdghasgd:ubuntu/trusty64:192.168.56.12:1048:2
-ad1e8fd50c:192.168.56.30_ad1e8fd50c:ubuntu/trusty64:192.168.56.30:1048:2
-16e58b9cfa:192.168.56.2_16e58b9cfa:ubuntu/trusty64:192.168.56.2:1048:2
