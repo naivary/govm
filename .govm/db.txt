@@ -1,2 +1,1 @@
 ID:Name:OS:IP:Memory:CPU
-8f90d3115b:192.168.56.2_8f90d3115b:ubuntu/trusty64:192.168.56.2:1048:2
