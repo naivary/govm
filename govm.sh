@@ -201,11 +201,8 @@ predefault() {
   PROVISION_VARIABLES=${PROVISION_VARIABLES:-""}
   OS_TYPE=${OS_TYPE:-linux}
   SYNC_USER=${SYNC_USER:-"vagrant"}
-  # getid of default machine if 
-  # created otherwise set it to nil
   getid 192.168.56.2
   getvmname 192.168.56.2
-
   HOST_ONLY_IP=${HOST_ONLY_IP:-""}
   SYNC_FOLDER=${SYNC_FOLDER:-""}
   VM_NAME=${VM_NAME:-""}
@@ -538,7 +535,7 @@ prepvenv() {
     makedir "${LOG_PATH}"
   fi
   SYNC_FOLDER=${SYNC_FOLDER:-"${VMSTORE}/${ID}/sync_folder"}
-  VM_NAME="${HOST_ONLY_IP}_${ID}"
+  VM_NAME="${VM_NAME:-${HOST_ONLY_IP}_${ID}}"
   SCRIPT_NAME=$(basename ${SCRIPT})
 }
 
@@ -723,8 +720,8 @@ validateoptionalvmargs() {
   elif [[ "${PROVISION_VARIABLES}" ]]; then
     hashtablegen
   elif [[ "${VM_NAME}" ]]; then
-    if ! [[ "${VM_NAME}" =~ ^([A-Za-z0-9-_]+)$ ]]; then
-      error "VM_NAME may only containt letters numbres hypens and underscores"
+    if ! [[ "${VM_NAME}" =~ ^([A-Za-z0-9_.-]+)$ ]]; then
+      error "VM_NAME may only contain letters numbres hypens and underscores: ${VM_NAME}"
       exit 1
     fi
   fi

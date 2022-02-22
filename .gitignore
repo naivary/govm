@@ -1,3 +1,4 @@
 .vagrant/
 .todo
 config/*
+import.exe
