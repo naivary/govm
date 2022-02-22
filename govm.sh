@@ -352,16 +352,16 @@ appliancesemver() {
   APPLIANCE_NAME=${1}
   VERSION=1
 
-  if [[ ! -d ${APPLIANCESTORE}/${APPLIANCE_NAME} ]];
+  if [[ ! -d ${APPLIANCESTORE}/${APPLIANCE_NAME} ]]; then
     makedir "${APPLIANCESTORE}/${APPLIANCE_NAME}"
   fi
 
-  while [[ -s "${APPLIANCESTORE}/${APPLIANCE_NAME}/${APPLIANCE_NAME}v${VERSION}.0.ova" ]];
+  while [[ -s "${APPLIANCESTORE}/${APPLIANCE_NAME}/${APPLIANCE_NAME}-v${VERSION}.0.ova" ]];
   do
-    (( ${VERSION}+1 ))
+    VERSION=$((VERSION+1))
   done
 
-  APPLIANCE_NAME="${APPLIANCE_NAME}v${VERSION}.o.ova"
+  APPLIANCE_NAME="${APPLIANCE_NAME}-v${VERSION}.0.ova"
 }
 
 trapexitup() {
@@ -917,8 +917,8 @@ vexport() {
   getid "${HOST_ONLY_IP}"
   halt 'export'
   infobold "Exporting ${VM_NAME}. This may take some time..."
-  ovafilenamegen "${VM_NAME}"
-  vmexport "${FILENAME}" "single"
+  appliancesemver "${VM_NAME}"
+  vmexport "${VM_NAME}" "single"
   success "Finished! appliance can be found at ${APPLIANCESTORE}"
 }
 
@@ -1080,8 +1080,8 @@ gexport() {
   infobold "Exporting group: ${GROUP}"
   ghalt "export"
   basename=$(basename ${GROUP})
-  ovafilenamegen "${basename}"
-  vmexport "${FILENAME}" "group"
+  appliancesemver "${basename}"
+  vmexport "${basename}" "group"
 }
 
 # list is listing all the 
@@ -1096,13 +1096,15 @@ list() {
 }
 
 vmexport() {
-  local type=${1}
+  local dir=${1}
+  local type=${2}
+  osdefault
   if [[ "${type}" == "single" ]]; then
-    infobold "Exporting ${VM_NAME} as ${APPLIANCE_NAME}"
-    vboxmanage.exe 'export' "${VM_NAME}" --output "${APPLIANCESTORE}/${APPLIANCE_NAME}"
+    infobold "Exporting ${VM_NAME} to ${APPLIANCE_NAME}"
+    vboxmanage.exe 'export' "${VM_NAME}" --output "${APPLIANCESTORE}/${dir}/${APPLIANCE_NAME}"
   elif [[ "${type}" == "group" ]]; then
-    infobold "Exporting machine group (${VM_NAMES[*]}) as ${APPLIANCE_NAME}" 
-    vboxmanage.exe 'export' "${VM_NAMES[@]}" --output "${APPLIANCESTORE}/${APPLIANCE_NAME}" && success "Created appliance ${APPLIANCE_NAME}"
+    infobold "Exporting machine group (${VM_NAMES[*]}) to ${APPLIANCE_NAME}" 
+    vboxmanage.exe 'export' "${VM_NAMES[@]}" --output "${APPLIANCESTORE}/${dir}/${APPLIANCE_NAME}" && success "Created appliance ${APPLIANCE_NAME}"
   else
     error "currently not supported for ${CURRENT_OS}"
     exit 1
@@ -1124,7 +1126,6 @@ main() {
   validateappargs;
   validateposixgroup "$@"
   bridgeoptiongen
-  osdefault
   if [[ "${VAGRANT_CMD}" == "ssh" && "${ID}" ]]; then
     vssh
   elif [[ "${VAGRANT_CMD}" == "export" && -s ${VM_CONFIG} ]]; then
