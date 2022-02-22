@@ -20,6 +20,7 @@ BASHFILE="${HOME}/.bashrc"
 if grep -w -q '# CREATED BY GOVM. DO NOT EDIT' ${BASHFILE}; then
   infobold "Path and vagrant env-variables already set"
 else
+  infobold "Adding needed ENV-Variables..."
   echo "# CREATED BY GOVM. DO NOT EDIT" >> ${BASHFILE}
   echo "# BEGIN" >> ${BASHFILE}
   echo "export VAGRANT_WSL_ENABLE_WINDOWS_ACCESS=\"1\"" >> "${BASHFILE}"
