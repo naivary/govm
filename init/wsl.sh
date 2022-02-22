@@ -15,23 +15,24 @@ success() {
 
 powershell.exe -File "../pkg/windows.ps1";
 
-if [[ "$?" -ne 0 ]]; then
-  error "Something went wrong."
-  exit 1
-fi
-
 infobold  "Finishing touches..."
 BASHFILE="${HOME}/.bashrc"
-echo "# CREATED BY GOVM. DO NOT EDIT" >> ${BASHFILE}
-echo "# BEGIN" >> ${BASHFILE}
-echo "export VAGRANT_WSL_ENABLE_WINDOWS_ACCESS=\"1\"" >> "${BASHFILE}"
-echo "export PATH=\"\$PATH:/mnt/c/Program Files/Oracle/VirtualBox:${HOME}/vagrant-wrapper/govm\"" >> "${BASHFILE}"
-echo "# END" >> ${BASHFILE}
-echo "" >> ${BASHFILE}
+if grep -w -q '# CREATED BY GOVM. DO NOT EDIT' ${BASHFILE}; then
+  infobold "Path and vagrant env-variables already set"
+else
+  echo "# CREATED BY GOVM. DO NOT EDIT" >> ${BASHFILE}
+  echo "# BEGIN" >> ${BASHFILE}
+  echo "export VAGRANT_WSL_ENABLE_WINDOWS_ACCESS=\"1\"" >> "${BASHFILE}"
+  echo "export PATH=\"\$PATH:/mnt/c/Program Files/Oracle/VirtualBox:${HOME}/vagrant-wrapper/govm\"" >> "${BASHFILE}"
+  echo "# END" >> ${BASHFILE}
+  echo "" >> ${BASHFILE}
+fi
 
-
-sudo touch /etc/sudoers.d/${USER}
-sudo chmod 0440 "/etc/sudoers.d/${USER}"
-echo "${USER} ALL = (ALL) NOPASSWD:ALL" | sudo tee -a /etc/sudoers.d/musti
+if ! sudo grep -w -q "${USER} ALL = (ALL) NOPASSWD:ALL" /etc/sudoers.d/musti; then
+  infobold "Setting sudo-priviliges without password"
+  sudo touch /etc/sudoers.d/${USER}
+  sudo chmod 0440 "/etc/sudoers.d/${USER}"
+  echo "${USER} ALL = (ALL) NOPASSWD:ALL" | sudo tee -a /etc/sudoers.d/musti
+fi
 
 success "Wait for the windows-powershell-prompt to close automatically and you are ready to go!"

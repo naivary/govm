@@ -35,11 +35,14 @@ else {
 
 if (-not(Get-Command "vagrant -v" -errorAction SilentlyContinue)) {
   Write-Output "Vagrant does not exist! Installing..."
-  choco install vagrant
+  choco install vagrant -y
 }
 else {
   Write-Output "Vagrant is already isntalled. Continueing..."
 }
 
+#! has to be run after reboot SOLUTION not found
+vboxmanage hostonlyif remove "VirtualBox Host-Only Ethernet Adapter";
 vboxmanage hostonlyif create;
+vboxmanage dhcpserver remove --interface="VirtualBox Host-Only Ethernet Adapter";
 vboxmanage hostonlyif ipconfig "VirtualBox Host-Only Ethernet Adapter" --ip 192.168.56.1;
