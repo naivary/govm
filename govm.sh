@@ -3,15 +3,22 @@
 trap trapexit INT;
 
 usage() {
-  echo "-m [integer] is setting the Machine"
-  echo "-f [path] is specifing the path to a *.config file with the parameters CPU, RAM, OS_IMAGE, IP and SCRIPT"
+  # govm-cmd
   echo "-v [up/halt/start/ssh/destroy] is setting the vagrant command you want to run (has to be present with every command.)"
   echo "You can also prefix any command with g for exampe gdestroy to destroy a whole group (ssh is not possible)"
-  echo "-d if this is present it will force a recreation of the vm if there is a virtual machine registered but not reachable"
+
+  # path/machine
+  echo "-f [path] is specifing the path to a *.config file with the parameters CPU, RAM, OS_IMAGE, IP and SCRIPT"
   echo "-g [path] is setting the path to a directory with one or more *.cfg files to create a group of virtual-machines at once"
+  echo "-m [integer] is setting the Machine"
+  
+  # behavior changes
+  echo "-i if this is present the group/virtual-machine that is getting exported is set as the main.ova"
+  echo "which is getting used by import.ps1/exe for automatically setting up importing the .ova file"
+  echo "-d if this is present it will force a recreation of the vm if there is a virtual machine registered but not reachable"
 }
 
-while getopts "f:g:v:m:ld" OPT; do
+while getopts "f:g:v:m:ldi" OPT; do
   case "${OPT}" in
     f)
       VM_CONFIG=${OPTARG}
@@ -30,6 +37,9 @@ while getopts "f:g:v:m:ld" OPT; do
       ;;
     g)
       GROUP=${OPTARG}
+      ;;
+    i)
+      MAIN_OVA="true"
       ;;
     ?)
       usage
@@ -180,6 +190,7 @@ predefault() {
   VAGRANT_CMD=${VAGRANT_CMD:-""}
   PROVISION_DIR_NAME="provision"
   CURRENT_OS=$(uname -r | sed -n 's/.*\( *Microsoft *\).*/\1/ip')
+  MAIN_OVA=${MAIN_OVA:-"false"}
 
   # govm.cfg
   GOVM_CONFIG="${BASEDIR}/${GOVM}/govm.cfg"
@@ -349,16 +360,21 @@ appliancesemver() {
   APPLIANCE_NAME=${1}
   VERSION=1
 
-  if [[ ! -d ${APPLIANCESTORE}/${APPLIANCE_NAME} ]]; then
+  if [[ ! -d ${APPLIANCESTORE}/${APPLIANCE_NAME} && ${MAIN_OVA} == "false" ]]; then
     makedir "${APPLIANCESTORE}/${APPLIANCE_NAME}"
   fi
 
-  while [[ -s "${APPLIANCESTORE}/${APPLIANCE_NAME}/${APPLIANCE_NAME}-v${VERSION}.0.ova" ]];
-  do
-    VERSION=$((VERSION+1))
-  done
-
-  APPLIANCE_NAME="${APPLIANCE_NAME}-v${VERSION}.0.ova"
+  if [[ ${MAIN_OVA} == "false" ]]; then
+    while [[ -s "${APPLIANCESTORE}/${APPLIANCE_NAME}/${APPLIANCE_NAME}-v${VERSION}.0.ova" ]];
+    do
+      VERSION=$((VERSION+1))
+    done
+    APPLIANCE_NAME="${APPLIANCE_NAME}-v${VERSION}.0.ova"
+  else
+    sudo rm ${APPLIANCESTORE}/main.ova || true
+    APPLIANCE_NAME="main.ova"
+  fi
+  
 }
 
 trapexitup() {
@@ -1095,10 +1111,17 @@ list() {
 vmexport() {
   local dir=${1}
   local type=${2}
+
+  if [[ ${MAIN_OVA} == "true" ]]; then
+    dir=""
+  else
+    dir="/${dir}"
+  fi
+
   osdefault
   if [[ "${type}" == "single" ]]; then
     infobold "Exporting ${VM_NAME} to ${APPLIANCE_NAME}"
-    vboxmanage.exe 'export' "${VM_NAME}" --output "${APPLIANCESTORE}/${dir}/${APPLIANCE_NAME}"
+    vboxmanage.exe 'export' "${VM_NAME}" --output "${APPLIANCESTORE}${dir}/${APPLIANCE_NAME}"
   elif [[ "${type}" == "group" ]]; then
     infobold "Exporting machine group (${VM_NAMES[*]}) to ${APPLIANCE_NAME}" 
     vboxmanage.exe 'export' "${VM_NAMES[@]}" --output "${APPLIANCESTORE}/${dir}/${APPLIANCE_NAME}" && success "Created appliance ${APPLIANCE_NAME}"
