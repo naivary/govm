@@ -348,23 +348,20 @@ isvmexisting() {
   echo "$?"
 }
 
-ovafilenamegen() {
-  local basename=${1}
-  local i=1
-  FILENAME="${basename}.v${i}.ova"
-  local newname
-  local appliancestore=$(wslpath -a "${APPLIANCESTORE}" || echo "${APPLIANCESTORE}") 
-  while true 
+appliancesemver() {
+  APPLIANCE_NAME=${1}
+  VERSION=1
+
+  if [[ ! -d ${APPLIANCESTORE}/${APPLIANCE_NAME} ]];
+    makedir "${APPLIANCESTORE}/${APPLIANCE_NAME}"
+  fi
+
+  while [[ -s "${APPLIANCESTORE}/${APPLIANCE_NAME}/${APPLIANCE_NAME}v${VERSION}.0.ova" ]];
   do
-    if [[ -s "${appliancestore}/${FILENAME}" ]]; then
-      i=$((i +1))
-      newname="${basename}.v${i}.ova"
-      infobold "${FILENAME} exists! Renaming appliance to ${newname}"
-      FILENAME=${newname}
-    else 
-      break
-    fi  
+    (( ${VERSION}+1 ))
   done
+
+  APPLIANCE_NAME="${APPLIANCE_NAME}v${VERSION}.o.ova"
 }
 
 trapexitup() {
@@ -1099,14 +1096,13 @@ list() {
 }
 
 vmexport() {
-  local filename=${1}
-  local type=${2}
+  local type=${1}
   if [[ "${type}" == "single" ]]; then
-    infobold "Exporting ${VM_NAME} as ${filename}"
-    vboxmanage.exe 'export' "${VM_NAME}" --output "${APPLIANCESTORE}/${filename}"
+    infobold "Exporting ${VM_NAME} as ${APPLIANCE_NAME}"
+    vboxmanage.exe 'export' "${VM_NAME}" --output "${APPLIANCESTORE}/${APPLIANCE_NAME}"
   elif [[ "${type}" == "group" ]]; then
-    infobold "Exporting machine group (${VM_NAMES[*]}) as ${filename}" 
-    vboxmanage.exe 'export' "${VM_NAMES[@]}" --output "${APPLIANCESTORE}/${filename}" && success "Created appliance ${filename}"
+    infobold "Exporting machine group (${VM_NAMES[*]}) as ${APPLIANCE_NAME}" 
+    vboxmanage.exe 'export' "${VM_NAMES[@]}" --output "${APPLIANCESTORE}/${APPLIANCE_NAME}" && success "Created appliance ${APPLIANCE_NAME}"
   else
     error "currently not supported for ${CURRENT_OS}"
     exit 1
