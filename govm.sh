@@ -550,8 +550,10 @@ prepvenv() {
     LOG_PATH=${LOG}/${ID}
     makedir "${LOG_PATH}"
   fi
-  SYNC_FOLDER=${SYNC_FOLDER:-"${VMSTORE}/${ID}/sync_folder"}
-  VM_NAME="${VM_NAME:-${HOST_ONLY_IP}_${ID}}"
+  SYNC_FOLDER="${VMSTORE}/${ID}/sync_folder"
+  if [[ "${VM_NAME}" == "" ]]; then
+    VM_NAME="${HOST_ONLY_IP}_${ID}"
+  fi
   SCRIPT_NAME=$(basename ${SCRIPT})
 }
 
@@ -841,7 +843,7 @@ validateposixgroup() {
     infobold "Listing all virtual-machines..."
   elif [[ "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq 0 && "${#CHECK_GROUPUP[@]}" -eq  $(( ${#GROUPCMD_GROUP[@]} -1 )) && "${VAGRANT_CMD}" =~ g[a-z]+ ]]; then
     infobold "Running \"${VAGRANT_CMD}\" on group: $(basename ${GROUP})"
-  elif [[ "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq 0 && "${#CHECK_GROUPUP[@]}" -eq 0 && ! "${VAGRANT_CMD}" =~ g[a-z]+ ]]; then
+  elif [[ "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq 0 && "${#CHECK_GROUPUP[@]}" -eq 0 && "${VAGRANT_CMD}" =~ [a-z]+ ]]; then
     infobold "Running command \"${VAGRANT_CMD}\" on default-machine..."
   else
     error "Too many or not enough arguments"
@@ -987,6 +989,7 @@ gup() {
     cd "${BASEDIR}"
     sourcefile "${CFG}"
     validaterequiredvmargs 
+    validateoptionalvmargs
   done
 
   info "Starting creation process..."
