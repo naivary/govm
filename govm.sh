@@ -152,7 +152,6 @@ ads() {
   whitebold "the repository!"
 }
 
-
 error() {
   printf "\u274c\033[1m\033[31m ${1}\033[0m\n"
 }
