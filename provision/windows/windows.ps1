@@ -1,1 +1,1 @@
-echo "somethign"
+Write-Output "PROVISION!!!!"

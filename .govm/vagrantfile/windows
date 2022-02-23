@@ -3,18 +3,23 @@
 
 
 Vagrant.configure("2") do |config|
-  config.vm.box = ENV["OS_IMAGE"] 
-  config.vm.provision "shell", path: ENV["SCRIPT"], env: {
-    "OS_USERNAME" => ENV["OS_USERNAME"], 
-    "OS_PASSWORD" => ENV["OS_PASSWORD"], 
-    "GIT_USERNAME" => ENV["GIT_USERNAME"], 
-    "GIT_PASSWORD" => ENV["GIT_PASSWORD"], 
-    "GIT_EMAIL" => ENV["GIT_EMAIL"], 
-    "GIT_NAME" => ENV["GIT_NAME"],
-    "MOUNTING_POINT" => ENV["MOUNTING_POINT"],
-    "FILE_SYSTEM" => ENV["FILE_SYSTEM"]
-  }
 
+
+  # creating hash from the given hash_string
+  hash_string=ENV["HASH_TABLE_STRING"]
+  hash_arr = hash_string.split(',')
+  hash = {}
+  hash_arr.each do |e|
+    pair = e.split(':')
+    hash[pair[0]] = pair[1]
+  end
+
+  bridge_string = ENV["BRIDGE_OPTION_STRING"]
+  bridge_arr = bridge_string.split(',')
+
+
+  config.vm.box = ENV["OS_IMAGE"] 
+  config.vm.provision "shell", path: ENV["SCRIPT"], env: hash
   # big timeout since windows boot is very slow
   config.vm.boot_timeout = 700
 
@@ -25,19 +30,22 @@ Vagrant.configure("2") do |config|
   # winrm config, uses modern.ie default user/password.
   # If other credentials are used must be changed here
   config.vm.communicator = "winrm"
-  config.winrm.username = "vagrant"
-  config.winrm.password = "vagrant"
+  config.winrm.username = "IEUser"
+  config.winrm.password = "Passw0rd!"
   config.winrm.host = "localhost"
+  config.winrm.timeout = 180
+
+  config.ssh.username = "IEUser"
+  config.ssh.password = "Passw0rd!"
+  config.ssh.extra_args = "cmd"  # cmd or powershell
   config.vm.guest = :windows
 
 
   config.vm.synced_folder ENV["SYNC_FOLDER"], "/home/gov/sync_folder", disabled:false
   config.vm.synced_folder ".", "/vagrant", disabled:true
   config.vm.network "private_network", ip: ENV["HOST_ONLY_IP"]
-  config.vm.network "public_network", bridge: [
-    "Realtek PCIe GbE Family Controller",
-    "Intel(R) Wi-Fi 6 AX201 160MHz"
-  ]
+  config.vm.network "public_network", bridge: bridge_arr
+
   config.vm.provider "virtualbox" do |vb|
     vb.gui = true
     vb.name = ENV["VM_NAME"]

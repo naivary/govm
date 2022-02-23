@@ -18,7 +18,7 @@ usage() {
   echo "-d if this is present it will force a recreation of the vm if there is a virtual machine registered but not reachable"
 }
 
-while getopts "f:g:v:m:ldi" OPT; do
+while getopts "f:g:v:m:lrid" OPT; do
   case "${OPT}" in
     f)
       VM_CONFIG=${OPTARG}
@@ -32,8 +32,11 @@ while getopts "f:g:v:m:ldi" OPT; do
     l)
       VM_LIST="show"
       ;;
+    r)
+      FORCE_REPLACE="force"
+      ;;
     d)
-      FORCE_DESTROY="force"
+      DETACH_MODE="true"
       ;;
     g)
       GROUP=${OPTARG}
@@ -182,7 +185,7 @@ predefault() {
   DEFAULT_VM="default.cfg"
   VM_LIST=${VM_LIST:-""}
   VM_NAMES=()
-  FORCE_DESTROY=${FORCE_DESTROY:-""}
+  FORCE_REPLACE=${FORCE_REPLACE:-""}
   REALPATH=$(realpath ${0})
   BASEDIR=$(dirname ${REALPATH})
   DB=${BASEDIR}/${GOVM}/db.txt
@@ -197,7 +200,7 @@ predefault() {
   GOVM_NAME="$(basename ${GOVM_CONFIG})"
   PROVISION_DIR=${PROVISION_DIR:-"${BASEDIR}/${PROVISION_DIR_NAME}"}
   CONFIG_DIR=${CONFIG_DIR:-"${BASEDIR}/config"}
-  VAGRANTFILE=${VAGRANTFILE:-${BASEDIR}/${GOVM}/Vagrantfiles/linux}
+  VAGRANTFILE=${VAGRANTFILE:-${BASEDIR}/${GOVM}/vagrantfile/linux}
   VMSTORE=${VMSTORE:-${HOME}/${GOVM}}
   APPLIANCESTORE=${APPLIANCESTORE:-${HOME}/"${GOVM}_appliance"}
   LOG=${LOG:-"/log"}
@@ -246,6 +249,7 @@ osdefault() {
 clearoptionalargs() {
   DISK_SIZE_SECOND=""
   DISK_SIZE_PRIMARY=""
+  SYNC_FOLDER=""
 }
 
 
@@ -371,7 +375,7 @@ appliancesemver() {
     done
     APPLIANCE_NAME="${APPLIANCE_NAME}-v${VERSION}.0.ova"
   else
-    sudo rm ${APPLIANCESTORE}/main.ova || true
+    sudo rm ${APPLIANCESTORE}/main.ova || true &> /dev/null
     APPLIANCE_NAME="main.ova"
   fi
   
@@ -404,6 +408,7 @@ trapexitgroup() {
     rightcut ${CFG}
     VM_CONFIG=${LEFTSIDE}    
     ID=${RIGHTSIDE}
+    govmpath
     cd "${GOVM_PATH}"
     sourcefile vm.cfg
     trapexitup "${ID}"
@@ -412,6 +417,7 @@ trapexitgroup() {
 
 successexit() {
   infobold "Finishing touches...";
+  sed -i -e '$a\' "${DB}"
   echo "${ID}:${VM_NAME}:${OS_IMAGE}:${HOST_ONLY_IP}:${RAM}:${CPU}" >> "${DB}";
   success "VM ${ID} is set and ready to go :)"
   ads;
@@ -511,8 +517,8 @@ resetvenv() {
 }
 
 setvfile() {
-  if [[ "${OS_TYPE}" == "windwos" ]]; then
-    VAGRANTFILE=${BASEDIR}/${GOVM}/Vagrantfiles/windows
+  if [[ "${OS_TYPE}" == "windows" ]]; then
+    VAGRANTFILE=${BASEDIR}/${GOVM}/vagrantfile/windows
   fi
 }
 
@@ -541,7 +547,6 @@ prepvenv() {
   ID="$(openssl rand -hex 5)"
   govmpath
   makedir "${GOVM_PATH}"
-  makedir "${VMSTORE}/${ID}/sync_folder"
 
   if [[ ${LOG} == "/log" ]]; then
     makedir "${GOVM_PATH}/logs"
@@ -550,7 +555,12 @@ prepvenv() {
     LOG_PATH=${LOG}/${ID}
     makedir "${LOG_PATH}"
   fi
-  SYNC_FOLDER="${VMSTORE}/${ID}/sync_folder"
+
+  if [[ ${SYNC_FOLDER} == "" ]]; then
+    makedir "${VMSTORE}/${ID}/sync_folder"
+    SYNC_FOLDER="${VMSTORE}/${ID}/sync_folder"
+  fi
+
   if [[ "${VM_NAME}" == "" ]]; then
     VM_NAME="${HOST_ONLY_IP}_${ID}"
   fi
@@ -729,11 +739,8 @@ validateoptionalvmargs() {
       exit 1
     fi
   elif [[ "${SYNC_FOLDER}" ]]; then
-    if [[ -d "${SYNC_FOLDER}" ]]; then
+    if ! [[ -d "${SYNC_FOLDER}" ]]; then
       makedir "${SYNC_FOLDER}"
-    else 
-      error "${SYNC_FOLDER} is not a directory!"
-      exit 1
     fi
   elif [[ "${PROVISION_VARIABLES}" ]]; then
     hashtablegen
@@ -756,8 +763,9 @@ validateappargs() {
     makedir "${LOG}"
   elif ! [[ -d ${APPLIANCESTORE} ]]; then 
     makedir "${APPLIANCESTORE}"
-  elif ! [[ -s ${VAGRANTFILE} ]]; then
+  elif ! [[ -f ${VAGRANTFILE} && -s ${VAGRANTFILE} ]]; then
     infobold "${VAGRANTFILE} is not existing or is empty. Using default Vagrantfile."
+    VAGRANTFILE=${BASEDIR}/${GOVM}/vagrantfile/linux
   elif ! [[ -d ${CONFIG_DIR} ]]; then
     makedir "${CONFIG_DIR}"
   elif ! [[ -d ${PROVISION_DIR} ]]; then
@@ -784,7 +792,7 @@ validateip() {
   # some of the packages are not received
   ping -c 2 -w 3 "${HOST_ONLY_IP}" &> /dev/null
 
-  if [[ "${?}" -eq 0 && -z "${FORCE_DESTROY}" ]]; then
+  if [[ "${?}" -eq 0 && -z "${FORCE_REPLACE}" ]]; then
     error "Machine with the IP: ${HOST_ONLY_IP} exists. Choose an other IP-Adress. (Ping successfull)"
     error "It may not be an virtual-machine but a machine with the same ip in the same network is not possible!"
     exit 1
@@ -793,13 +801,13 @@ validateip() {
   # check if ip exist within govm-ecosystem
   getid "${HOST_ONLY_IP}"
 
-  if [[ "${ID}" != "nil" && -z "${FORCE_DESTROY}" ]]; then
+  if [[ "${ID}" != "nil" && -z "${FORCE_REPLACE}" ]]; then
     getid "${HOST_ONLY_IP}"
     error "Machine still existing in our system ID: ${ID}. Run Command with -d to force recreation."    
     exit 1
   fi
 
-  if [[ ${FORCE_DESTROY} ]]; then
+  if [[ ${FORCE_REPLACE} ]]; then
     destroy
     if [ "${VM_CONFIG}" ]; then
       sourcefile "${VM_CONFIG}"
@@ -989,7 +997,6 @@ gup() {
     cd "${BASEDIR}"
     sourcefile "${CFG}"
     validaterequiredvmargs 
-    validateoptionalvmargs
   done
 
   info "Starting creation process..."
@@ -1093,7 +1100,7 @@ gstart() {
 # export <machines>
 gexport() {
   local basename
-  infobold "Exporting group: ${GROUP}"
+  infobold "Exporting group: $(basename ${GROUP})"
   ghalt "export"
   basename=$(basename ${GROUP})
   appliancesemver "${basename}"
@@ -1123,10 +1130,10 @@ vmexport() {
 
   osdefault
   if [[ "${type}" == "single" ]]; then
-    infobold "Exporting ${VM_NAME} to ${APPLIANCE_NAME}"
+    infobold "Exporting ${VM_NAME} as ${APPLIANCE_NAME}"
     vboxmanage.exe 'export' "${VM_NAME}" --output "${APPLIANCESTORE}${dir}/${APPLIANCE_NAME}"
   elif [[ "${type}" == "group" ]]; then
-    infobold "Exporting machine group (${VM_NAMES[*]}) to ${APPLIANCE_NAME}" 
+    infobold "Exporting machine group (${VM_NAMES[*]}) as ${APPLIANCE_NAME}" 
     vboxmanage.exe 'export' "${VM_NAMES[@]}" --output "${APPLIANCESTORE}/${dir}/${APPLIANCE_NAME}" && success "Created appliance ${APPLIANCE_NAME}"
   else
     error "currently not supported for ${CURRENT_OS}"
@@ -1149,6 +1156,8 @@ main() {
   validateappargs;
   validateposixgroup "$@"
   bridgeoptiongen
+  GROUP=${CONFIG_DIR}/${GROUP}
+  VM_CONFIG=${CONFIG_DIR}/${VM_CONFIG}
   if [[ "${VAGRANT_CMD}" == "ssh" && "${ID}" ]]; then
     vssh
   elif [[ "${VAGRANT_CMD}" == "export" && -s ${VM_CONFIG} ]]; then
