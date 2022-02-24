@@ -139,7 +139,7 @@ set a disk-size here
 otherwise there is only
 one attached <br/>
 
-`MOUNTING_POINT (default: nil)` <br/>
+`MOUNTING_POINT: nil` <br/>
 Where shall the second disk be mounted?
 Note the path has to be always an absolut
 path. It is not allowed to mount to:
@@ -152,7 +152,7 @@ IMPORTANT: always start your path
 with a double // if using git-bash. This prevents that the
 path is getting converted by mingw. <br/>
 
-`FILE_SYSTEM (default: nil)` <br/>
+`FILE_SYSTEM: nil` <br/>
 FILE_SYSTEM is setting the
 mkfs that is getting used 
 on the second disk. Valid values are:
@@ -160,7 +160,7 @@ on the second disk. Valid values are:
 `ext4`
 `xfs` <br/>
  
-`PROVISION_VAR (default: ())` <br/>
+`PROVISION_VAR: ()` <br/>
 PROVISION_VAR are variables
 that you want to access 
 in your provision script.
@@ -303,7 +303,7 @@ This directory contains directories and files that are used by the software to f
 `config`
 In this directory you can define your virtual-machine `cfg` files. If you want to create a `group` of virtual-machines
 create a directory with the name of the group and insert all `cfg` files into that new directory e.g.
-`
+```
 📦config
  ┣ 📂ansible
  ┃ ┣ 📜controll.cfg
@@ -313,12 +313,10 @@ create a directory with the name of the group and insert all `cfg` files into th
  ┃ ┗ 📜replica.cfg
  ┣ 📜test.cfg
  ┗ 📜windows.cfg
-`
+```
 `provision` <br/>
 Every provision script or other types of provision should be located here. The structure of the
 directory is up to you.
-
-# Quick start
 
 # Errors
 Errors are something nobody likes! Thats a fact! But they will always be a part of software. The following sections are descripping how to [interpretated](#interpretation) some custome defined errors and some known [issues](#known-issues-and-possible-fixes) and possible fixes.
