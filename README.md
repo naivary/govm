@@ -41,10 +41,10 @@ sudo commands without entering the password (`<username> ALL = PASSWD:ALL`).
 `-i` if this is present the group or virtual machine  that is getting `exported` as an `.ova` is set as the `main.ova`. <br/>
 `-r` if this is present it will force a `recreation` of the vm if there is a virtual machine registered but not reachable. You may also use it to `reload` a virtual machine or group. <br/>
 
-Every command should (just a recommendation) start with: `govm -v [options]`. Afterwards you can specifiy antyhing you would like like `-f`.
-This way every command is properly structure and human readbale.
+Every command should but does not have to start with: `govm -v [options]`. Afterwards you can specifiy antyhing like `-f`.
+This way every command is properly structured and human readable.
 
-If you rung the command `govm -v [options]` without specifiying `-f`, `-g` or `-m` govm will run the defined command on the **default** virtual-machine if it is running.
+If you rungthe command `govm -v [options]` without specifiying `-f`, `-g` or `-m` govm will run the defined command on the **default** virtual-machine.
 
 # Config
 > Config (cfg) files are the way that govm can be manipulated and controlled 
@@ -60,116 +60,116 @@ There are two types of `.cfg files`.
 
 There are lots of options to that can be defined to create a virtual-machine based on yout needs. In this section you will learn about all possible options. <br/>
 `CPU` <br/>
-CPU is setting the 
-quantity of proceccors 
-for the virtual-machine.
-The quantity has to be 1
+Quantity of proceccors 
+for the virtual-machine. Has to be 1
 or bigger but less than 100
 
 `RAM` <br/>
-RAM is setting the amaount of
-memory for the virtual-machine. 
-The minumum is 512 the maximum 16000.
+Amaount of memory for the virtual-machine. 
+min: 512 MB; max: 16000 MB.
 
 `OS_IMAGE` <br/>
-OS_IMAGE is the base box
-that vagrant should use 
-for setting the operating system
-if you use windows be sure that
-the OS_TYPE is also set to windows.
-any os_images can be found at
-https://app.vagrantup.com/boxes/search?provider=virtualbox
+base box that vagrant should use 
+for setting the operating system.
+If you use windows be sure that
+the `OS_TYPE` is also set to windows.
+All possible base-boxes can be found [here](https://app.vagrantup.com/boxes/search?provider=virtualbox)
 
 `OS_TYPE` <br/>
 OS_TYPE is informing the application
 which type of operating-system you are
 using. This is needed because as always windows
-needs some special configurations in the vagrantfile
-valid values are "linux" and "windows"
+needs some special configurations in the vagrantfile.
+Valid values are "linux" and "windows"
 default: linux
 
 `SCRIPT` <br/>
-SCRIPT is setting the
-provision script that shall run 
+Defining the provision script that shall run 
 in the virtual-machine. If you wish to
 have the minimum of provision
 its recommended to take provision/default.sh
-which is only doing an update and upgrade
+which is only doing an update and upgrade in ubuntu.
+Every path has to be set relative to the `PROVISION_DIR`.
 
-# HOST_ONLY_IP is setting the 
-# ip of the host-only-virtual-adapter 
-# of the virtual-machine.
-# NOTE: 192.168.56.2 is reserved for 
-# the default virtual-machine. 
-# Its recommended to never use it.
-HOST_ONLY_IP=192.168.56.2
+`HOST_ONLY_IP` <br/>
+Defining the ip of the host-only-virtual-adapter 
+of the virtual-machine.
+NOTE: 192.168.56.2 is reserved for 
+the default virtual-machine. 
+Its recommended to never use it.
+default: 192.168.56.2
 
-# VM_NAME is the name 
-# of the virtual-machine
-# take a describtive name
-# that is representing 
-# the purpose of the virtual-machine
-# the default will be <IP>_<GOVMID>
-VM_NAME=govm
+`VM_NAME` <br/>
+The name of the virtual-machine.
+Take a describtive name that is representing 
+the purpose of the virtual-machine
+`default: <HOST_ONLY_IP>_<ID>`
 
-# SYNC_FOLDER is setting the
-# directory that shall be mounted 
-# from host to guest. The default 
-# is a created directory called 
-# sync_folder in the home directory
-# of the guest-machine connected to
-# VMSTORE/GOVM-ID/sync_folder.
-# If you wish the default behavior
-# comment out the option.
-# SYNC_FOLDER=""
+`SYNC_FOLDER` <br/> 
+The directory that shall be mounted 
+from host to guest. The default 
+is a created directory called
+`sync_folder` in the home directory
+of the guest-machine mounted to
+`VMSTORE/GOVM-ID/sync_folder`.
+If you wish the default behavior
+comment out the option.
 
-# here you can set the main 
-# disk size in the virtual-machine  
-# its recommended to have a 
-# disk size of 32GB or more 
-# DISK_SIZE_PRIMARY=50GB
+`DISK_SIZE_PRIMARY` <br/>
+here you can set the main 
+disk size in the virtual-machine  
+its recommended to have a 
+disk size of 32GB or more 
+NOTE: Because this feature is currently
+experimental there are some issues with `wsl`.
+Because of this it is not recommend to use it with `wsl`.
+For more Information read [Disk size](#Disk-Size)
+`default: 40GB`
 
-# If you would like to habe 
-# a second disk attached to your
-# virtual machine you can 
-# set a disk-size here
-# otherwise there is only
-# one attached 
-# DISK_SIZE_SECOND=10GB
+`DISK_SIZE_SECOND` <br/>
+If you would like to have
+a second disk attached to your
+virtual machine you can 
+set a disk-size here
+otherwise there is only
+one attached 
+`default: nil`
 
-# where shall the second disk be mounted?
-# note the path has to be always an absolut
-# path. 
-# it is not allowed to mount to:
-# /root
-# /
-# /boot
-# /var
-# IMPORTANT: always start your path
-# with a double //. this prevents that the
-# path is getting converted by mingw (Git-Bash)
-# MOUNTING_POINT=//mnt
+`MOUNTING_POINT` <br/>
+Where shall the second disk be mounted?
+note the path has to be always an absolut
+path. Tt is not allowed to mount to:
+- /root
+- /
+- /boot
+- /var
+IMPORTANT: always start your path
+with a double // if using git-bash. This prevents that the
+path is getting converted by mingw.
+`default: nil`
 
-# FILE_SYSTEM is setting the
-# mkfs that is getting used 
-# on the second disk
-# hilfe
-# FILE_SYSTEM=ext4
+`FILE_SYSTEM` <br/>
+FILE_SYSTEM is setting the
+mkfs that is getting used 
+on the second disk. Valid values are:
+`ext3`
+`ext4`
+`xfs`
+`default: nil`
  
-# PROVISION_VAR are variables
-# that you want to access
-# in your provision script.
-# it is an array seperated with 
-# whitespace.
-# for example ("GIT_PASSWORD:hardpassword" "GIT_USERNAME=No1Lik3U")
-# if you dont need it just comment out the 
-# parameter
-# if you just declare an string in the array like ("something")
-# then this will be taken as key and value like this 
-# ("something") -> {something => something}
-# SPECIAL-VARIABLES
-# 1) os_user: if this is set this users home-directory will be used as the mounting point in the virtual-machine
-# PROVISION_VARIABLES=()
+`PROVISION_VAR` <br/>
+PROVISION_VAR are variables
+that you want to access 
+in your provision script.
+It is an array seperated with 
+whitespace. For example ("GIT_PASSWORD:hardpassword" "GIT_USERNAME=No1Lik3U").
+If you dont need it just comment out the parameter.
+If you just declare an string in the array like ("something")
+then this will be taken as key and value like this 
+("something") -> {something => something}
+SPECIAL-VARIABLES:
+1. os_user: if this is set this users home-directory will be used as the mounting point in the virtual-machine
+`default: ()`
 
 
 
@@ -215,6 +215,13 @@ For a single-export `govm -v export -f some/cfg/file` its straightforward: The n
 For a group-export `govm -v gexport -g some/dir` the directory name is used for the name of the `.ova` file.
 
 After the first part of the name is calculated based on the rules described above the versioning will be calculated. The versioning is based on [semver](https://semver.org/) standard.
+
+# WSL
+As always there are some specialities needed for windows (wsl). We tried to cover as much as possible but still there are some limitation
+compared to a native linux machine.
+
+## Disk-Size
+
 
 # Best-practices
 Here are some best practices that you may follow. It is just a recommendation because the software was mostly tested this way and will promise
