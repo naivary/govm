@@ -10,7 +10,7 @@ currently a shell-wrapper for vagrant and virtualbox to create automatically:
 # Requirements
 The only requirements are [HashiCorp Vagrant](https://www.vagrantup.com/) and [Oracle VirtualBox](https://www.virtualbox.org/).
 Because we don't want to waste your time there are some pre-written **init-scripts** for [wsl](init/wsl.sh) and [ubuntu](init/linux.sh) which will
-install all requirement and make some adjustement needed for `govm` to work properply. If you decide to run one of the init scripts be sure to reboot your local machine and then start using govm. DO NOT USE govm directly after using the init script! There may occur an error which is discussed in [this](#init) section.
+install all requirement and make some adjustement needed for `govm` to work properply. If you decide to run one of the init scripts be sure to reboot your local machine and then start using govm. DO NOT USE govm directly after using the init script! There may occur an error which is discussed in [this](#init) section (even though you did not use govm directly afterwards).
 
 ## init: wsl
 The init script wsl.sh will install `Chocolatey`, `Oracle VirtualBox`, `HashiCorp Vagrant`. 
@@ -195,7 +195,7 @@ Defining the possible networks virtual-box can use to bridge
 to it is an array seperated by whitespace
 e.g. (<first-network> <second-network>) <br/>
 
-`LOG: govm.VMSTORE/$GOMV-ID/logs -opt` <br/>
+`LOG: govm.VMSTORE/$GOVM-ID/logs -opt` <br/>
 The path wehere the debugging 
 logging is made the default behavior 
 is the logging to the newly created
@@ -245,7 +245,7 @@ To start a single-creation you have two options:
 2. You can run `govm -v up -f your/vm/config/path`. This will create a virtual-machine based on the `.cfg` that you provided.
 
 After the virtual machine is created your are able to interact with it by using the `GOVM-ID` of the virtual-machine created by `govm`.
-You can get any `metadata-information` of the created virtual-machines by running `govm -l`. After you got the `GOMV-ID` you can run any command
+You can get any `metadata-information` of the created virtual-machines by running `govm -l`. After you got the `GOVM-ID` you can run any command
 that you is specified with `-v [options]` and [more!](#Exporting) <br/>
 
 The syntax for any interaction with the virtual machine is `govm -v [options] -m [GOVM-ID]`.
@@ -324,7 +324,7 @@ an additional disk with the option DISK_SIZE_SECOND but your are not
 setting the FILE_SYSTEM for it, then you will see that type of error message.
 
 ## Init
-Running the init script will install all requirements and setup the environment for the proper using of `govm`. After a reboot of your local machine you can use govm. In some cases it may occur an error that vagrant is not able to start the virtual-machine. There are two solutions for this error:
+Running the init script will install all requirements and setup the environment for `govm` to work properly. After a reboot of your local machine you can use govm. In some cases it may occur an error that vagrant is not able to start the virtual-machine. There are two solutions for this error:
 1. Use govm after a reboot of the local machine once the init script is finished.
 2. Deactive and activate the `VirtualBox Host-Only Ethernet Adapter` and reboot your local machine afterwards.
 3. Delete all `VirtualBox Host-Only Ethernet Adapter` and create one without a `dhcp-server` and with the `IPv4 192.168.56.1/24`.
