@@ -33,7 +33,7 @@ while getopts "f:g:v:m:lrid" OPT; do
       VM_LIST="show"
       ;;
     r)
-      FORCE_REPLACE="force"
+      FORCE_REPLACE="true"
       ;;
     d)
       DETACH_MODE="true"
@@ -245,6 +245,7 @@ osdefault() {
   fi
 }
 
+
 clearoptionalargs() {
   DISK_SIZE_SECOND=""
   DISK_SIZE_PRIMARY=""
@@ -374,7 +375,7 @@ appliancesemver() {
     done
     APPLIANCE_NAME="${APPLIANCE_NAME}-v${VERSION}.0.ova"
   else
-    sudo rm ${APPLIANCESTORE}/main.ova || true &> /dev/null
+    sudo rm ${APPLIANCESTORE}/main.ova || true 2> /dev/null
     APPLIANCE_NAME="main.ova"
   fi
   
@@ -935,10 +936,10 @@ start() {
 # create an appliance
 # of the given virtual-machine
 vexport() {
+  infobold "Exporting ${VM_NAME}. This may take some time..."
   sourcefile "${VM_CONFIG}"
   getid "${HOST_ONLY_IP}"
   halt 'export'
-  infobold "Exporting ${VM_NAME}. This may take some time..."
   appliancesemver "${VM_NAME}"
   vmexport "${VM_NAME}" "single"
   success "Finished! appliance can be found at ${APPLIANCESTORE}"
@@ -1145,6 +1146,53 @@ vmlistbridgedlifs() {
 }
 
 
+testing() {
+  if ! [[ -f ${BASEDIR}/${GOVM}/tested ]]; then
+    APPSTORE=${APPLIANCESTORE}
+    infobold "Running some tests to asure that everything works as planned."
+    infobold "This will take some time. Get a coffee... :)"
+    up
+    halt
+    start
+    vexport
+    APPLIANCESTORE=${APPSTORE}
+    vexport
+    APPLIANCESTORE=${APPSTORE}
+    MAIN_OVA="true"
+    vexport 
+    APPLIANCESTORE=${APPSTORE}
+    destroy
+    success "Single-functions are working!"
+    infobold "Testing group functions..."
+    sleep 10
+    ID=""
+    MAIN_OVA="false"
+    GROUP="${BASEDIR}/${GOVM}/config/ubuntu"
+    gup
+    ghalt
+    gstart
+    gexport
+    APPLIANCESTORE=${APPSTORE}
+    MAIN_OVA="true"
+    gexport
+    APPLIANCESTORE=${APPSTORE}
+    gdestroy
+    success "Group-functions are working!"
+    infobold "Testing edge cases..."
+    VM_CONFIG=${BASEDIR}/${GOVM}/default.cfg
+    ID=""
+    up
+    FORCE_REPLACE="true" 
+    up
+    destroy
+    rmdirrf "${APPLIANCESTORE}"
+    rmdirrf "${VMSTORE}"
+    touch "${BASEDIR}/${GOVM}/tested"
+    success "Finished testing! Everthing working!"
+    exit 0
+  fi
+}
+
 # main is the entering point
 # of the application
 main() {
@@ -1155,6 +1203,7 @@ main() {
   validateappargs;
   validateposixgroup "$@"
   bridgeoptiongen
+  testing
   GROUP=${CONFIG_DIR}/${GROUP}
   VM_CONFIG=${CONFIG_DIR}/${VM_CONFIG}
   if [[ "${VAGRANT_CMD}" == "ssh" && "${ID}" ]]; then
@@ -1180,12 +1229,18 @@ main() {
   elif [[ "${VAGRANT_CMD}" == "start" && "${ID}" ]]; then
     start
   elif [[ "${VAGRANT_CMD}" == "up" ]]; then
-
     up
   else 
     error "Posix-Arguments did not match!"
     usage
   fi
+
+  if [[ ${CURRENT_OS} == "microsoft" ]]; then
+    WINDOWS_PATH=$(wslpath -w "${APPLIANCESTORE}")
+    powershell.exe -Command "Remove-Item Env:\\WINDOWS_PATH" -ErrorAction "silentlycontinue"
+    powershell.exe -Command "setx APPLIANCESTORE ${WINDOWS_PATH}"
+  fi
+
 }
 
 main "$@"

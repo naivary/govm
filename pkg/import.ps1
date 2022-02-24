@@ -1,1 +1,1 @@
-vboxmanage import $HOME/.govm_appliance/main.ova 
+vboxmanage import $env:APPLIANCESTORE/main.ova 
