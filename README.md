@@ -293,7 +293,7 @@ a flawless experience.
 The project structure can be what ever you want. But it is recommened to use the structure which will be present after you clone the repository.
 
 `.govm` <br/>
-This directory contains directories and files that are used by the software to function properly. The only files that can be changed by you are
+This directory contains directories and files that are used by the software to function properly. The only files that should be changed by you are
 `govm.cfg` and `default.cfg`.
 
 `config` <br/>
