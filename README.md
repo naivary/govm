@@ -1,18 +1,24 @@
-# vagrant-wrapper
-Vagrant-Wrapper is a shell script for creating dynamic VM automatically.
+# Purpose
+vagrant-wrapper or govm (which is called govm because it will be implemented in go in the future with a proper API) is 
+currently a shell-wrapper for vagrant to:
+* create a highly configurable virtual machine
+* run any action you know from vagrant
+  * ssh
+  * destroy
+  * start
+  * halt
+* create a group of virtual machines with multiple config-files
+* manage the group with the know commands destroy/start/halt
+* export a group or one virtual machine as an .ova file
 
 # Documentation
 
 ## Usage ##
--c [integer] is setting the count of CPUs  
--m [integer] is setting the RAM  
--i [integer] is setting the OS-Image  
--s [path] is setting the path to the provision-shell-script  
--h [ipv4] is setting the ip-adress for host-only of the type 192.168.56.0/24  
 -f [path] is specifing the path to a *.config file with the parameters CPU, RAM, OS_IMAGE, IP and SCRIPT  
 -v [up/halt/start/ssh/destroy] is setting the vagrant command you want to run (has to be present with every command.)  
 -d if this is present it will force a recreation of the vm if there is a virtual machine registered but not reachable  
 -g [path] is setting the path to a directory with one or more *.cfg files to create a group of virtual-machines at once  
+-i [integer] is setting the OS-Image  
 
 
 The usage is pretty straight forward. You can create a virtual machine manually using the flags.
