@@ -43,21 +43,26 @@ sudo commands without entering the password (`<username> ALL = PASSWD:ALL`).
 
 # Config
 Config files are the way that govm can be manipulated and controlled to serve your purpose. There are two types of `.cfg-files`
-1. `vm.cfg` which configure the options for the `virtual machines` you would like to create.
+1. `vm.cfg` which is representing a virtual machine and the [options](#default.cfg) create.
 2. [govm.cfg](#govmcfg). This file is controlling the software as a whole for example setting default values or where the virtual machine `metadata` should be saved.
 
 ## default.cfg
 
 ## govm.cfg
 
+# Creating single or groups
+
 ## Single-creation
-If you would like to create just one virtual-machine then you habe two options:
+> Single-creation is the process of creating one virtual-machine with an optional provided
+> .cfg file representing the virtual-machine.
+
+To start a single-creation you have two options:
 1. You can run `govm -v up`. This will create a virtual machine based on the [default.cfg](.govm/default.cfg).
 2. You can run `govm -v up -f your/vm/config/path`. This will create a virtual-machine based on the `.cfg` that you provided.
 
 After the virtual machine is created you may interact with it by using the `ID` of the virtual-machine created by `govm`.
 You can get any `metadata-information` of the running virtual-machines by running `govm -l`. After you got the ID you can ran any command
-that you know from **Vagrant** and more! <br/>
+that you know from **Vagrant** and [more!](#Extras) <br/>
 
 The syntax for any interaction with the virtual machine is <br/>
 **govm -v [options] -m [ID]**
@@ -65,6 +70,8 @@ The syntax for any interaction with the virtual machine is <br/>
 
 ## Group-creation
 
+
+# Extras
 
 ## Error-Interpretation ##
 If you see anytime an error message with "nil" then this means
