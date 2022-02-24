@@ -6,6 +6,7 @@ currently a shell-wrapper for vagrant and virtualbox to create automatically:
 - create a group of virtual machines with multiple config-files each representing a virtual machine
 - manage the group with the known commands (destroy/start/halt)
 - export a group or one virtual machine as an .ova file
+- easy import of [main.ova](#mainova) file with a `.exe` file.
 
 # Requirements
 The only requirements are [HashiCorp Vagrant](https://www.vagrantup.com/) and [Oracle VirtualBox](https://www.virtualbox.org/).
@@ -272,6 +273,9 @@ For a group-export `govm -v gexport -g some/dir` the directory name is used for 
 
 After the first part of the name is calculated based on the rules described above the versioning will be calculated. The versioning is based on [semver](https://semver.org/) standard.
 
+### main.ova
+`main.ova` is a special kind of `.ova` file. This file is the main ova file which will be used by [import.exe](.govm/pkg/exe/import.exe). `import.exe` will automatically import `main.ova` into `VirtualBox`. This is especially useful if you have multiple computers that all can import with one click the `main.ova` and are ready to go.  
+
 ## Testing
 The first valid command that you will run will trigger an `integrationtest` which is assuring that every functionality is working properly. If the testing was successfull an empty file named `tested` will be created, which is telling govm that the integrationtest was already ran successfully.
 
@@ -328,7 +332,6 @@ Running the init script will install all requirements and setup the environment 
 2. Deactive and activate the `VirtualBox Host-Only Ethernet Adapter` and reboot your local machine afterwards.
 3. Delete all `VirtualBox Host-Only Ethernet Adapter` and create one without a `dhcp-server` and with the `IPv4 192.168.56.1/24`.
 
-## main.ova
 
 
 ## Known issues and possible fixes
