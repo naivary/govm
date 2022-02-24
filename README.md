@@ -314,7 +314,7 @@ create a directory with the name of the group and insert all `cfg` files into th
 the directory name will be used as the [filename](#how-is-the-ova-filename-generated) of the `.ova` file. <br/>
 
 `provision` <br/>
-Every provision script or other types of provision should be located here. The structure of the directory is up to you. If you are using an other provision directory other than the default one be sure to set it as `PROVISION_DIR` in `govm.cfg`. All `SCRIPT` values should be releative to `PROVISION_DIR`
+Every provision script or other types of provision should be located here. The structure of the directory is up to you. If you are using an other provision directory other than the default one be sure to set it as `PROVISION_DIR` in `govm.cfg`. All `SCRIPT` values in any `vm.cfg` file should be releative to `PROVISION_DIR`
 
 # Errors
 Errors are something nobody likes! Thats a fact! But they will always be a part of software. The following sections are describing how to [interpretated](#interpretation) some custome defined errors and some known [issues](#known-issues-and-possible-fixes) and possible fixes.
