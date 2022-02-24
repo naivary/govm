@@ -54,6 +54,7 @@ If you rungthe command `govm -v [options]` without specifiying `-f`, `-g` or `-m
 # Config
 > Config (cfg) files are the way that govm can be manipulated and controlled 
 > to serve your purpose.
+
 There are two types of `.cfg files`.
 1. `*.cfg` which is representing a virtual machine and the [options](#vmcfg) is should have after it has been created.
 2. [govm.cfg](#govmcfg). This file is controlling the software as a whole for example setting default values or where the virtual machine metadata should be saved.
@@ -309,7 +310,7 @@ This directory contains directories and files that are used by the software to f
 `config`
 In this directory you can define your virtual-machine `cfg` files. If you want to create a `group` of virtual-machines
 create a directory with the name of the group and insert all `cfg` files into that new directory e.g.
-```
+`
 📦config
  ┣ 📂ansible
  ┃ ┣ 📜controll.cfg
@@ -319,10 +320,12 @@ create a directory with the name of the group and insert all `cfg` files into th
  ┃ ┗ 📜replica.cfg
  ┣ 📜test.cfg
  ┗ 📜windows.cfg
-```
+`
 `provision` <br/>
 Every provision script or other types of provision should be located here. The structure of the
 directory is up to you.
+
+# Quick start
 
 # Errors
 Errors are something nobody likes! Thats a fact! But they will always be a part of software. The following sections are descripping how to [interpretated](#interpretation) some custome defined errors and some known [issues](#known-issues-and-possible-fixes) and possible fixes.
