@@ -32,25 +32,16 @@ sudo commands without entering the password (`<username> ALL = PASSWD:ALL`).
 
 # Documentation
 
-`-v (up/halt/start/ssh/destroy)` is setting the vagrant command you want to run (has to be present with every command.) You can also prefix any command with `g` e.g `gdestroy` to destroy a whole group.
+## Usage
+`-v [up|halt|start|ssh|destroy]` is setting the vagrant command you want to run (has to be present with every command.) You can also prefix any command with `g[up|halt|start|ssh|destroy]` e.g `gdestroy` to destroy a whole `group`.
 
--f [path] is specifing the path to a `*.config` file with the valid parameters.
-`-g [path] is setting the path to a directory with one or more *.cfg files to create a group of virtual-machines at once`
--m [govm-ID] is setting the Machine
- 
--i if this is present the group/virtual-machine that is getting exported is set as the main.ova
-which is getting used by import.ps1/exe for automatically setting up importing the .ova file
--r if this is present it will force a recreation of the vm if there is a virtual machine registered but not reachable
+`-f [path]` is specifing the path to a `*.config` file with the *possible arguments*.
+`-g [path]` is setting the path to a directory with one or more `*.cfg` files each representing a `virtual machine` creating multiple virtual machines at once
+`-m [ID]` is setting the `virtual machine` which should be manipulated by the `-v` command.
+`-i` if this is present the group or virtual machine  that is getting `exported` as an `.ova` is set as the `main.ova`.
+`-r` if this is present it will force a `recreation` of the vm if there is a virtual machine registered but not reachable. You may also use it to `reload` a virtual machine or group.
 
-
-## Usage ##
--f [path] is specifing the path to a *.config file with the parameters CPU, RAM, OS_IMAGE, IP and SCRIPT  
--v [up/halt/start/ssh/destroy] is setting the vagrant command you want to run (has to be present with every command.)  
--d if this is present it will force a recreation of the vm if there is a virtual machine registered but not reachable  
--g [path] is setting the path to a directory with one or more *.cfg files to create a group of virtual-machines at once  
--i [integer] is setting the OS-Image  
-
-
+## VM
 The usage is pretty straight forward. You can create a virtual machine manually using the flags.
 This practice is not recommended because it is not really effective but if your are just interest in
 getting started fast with one Virtual-Machine it is more than enough.
@@ -70,7 +61,10 @@ and is representing the vagrant command you would like to run e.g. up, halt, sta
 Prefixing the commands with a "g" for example -v gup will start the creation process in group
 creation meaning you can start, destroy, halt and create multiple machines at once.
 
-## Rules ##
+## Group
+
+
+## Error-Interpretation ##
 If you see anytime an error message with "nil" then this means
 that some option was not set which is required if you are using
 one other option for example: if you would like to have
