@@ -123,7 +123,7 @@ disk size of 32GB or more
 NOTE: Because this feature is currently
 experimental there are some issues with `wsl`.
 Because of this it is not recommend to use it with `wsl`.
-For more Information read [Disk size](#Disk-Size)
+For more Information read [Disk size](#Disk-Size) <br/>
 `default: 40GB`
 
 `DISK_SIZE_SECOND` <br/>
@@ -132,7 +132,7 @@ a second disk attached to your
 virtual machine you can 
 set a disk-size here
 otherwise there is only
-one attached 
+one attached <br/>
 `default: nil`
 
 `MOUNTING_POINT` <br/>
