@@ -232,7 +232,7 @@ There are two types of creation-processes [single-creation](#single-creation) an
 1. security 
 2. faster creation time
 
-`govm` is running some other validations if [single-creation](#single-creation) is used instead of [`group-creation`](#group-creation)
+`govm` is running some other validations if [single-creation](#single-creation) is used instead of [group-creation](#group-creation)
 
 ## single-creation
 > Single-creation is the process of creating one virtual-machine with an optional provided
