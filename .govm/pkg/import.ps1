@@ -1,0 +1,1 @@
+vboxmanage import $env:APPLIANCESTORE/main.ova 
