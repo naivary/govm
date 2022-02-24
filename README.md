@@ -21,7 +21,8 @@ It will also try to create a Host-Only adapter with the IPv4: 192.168.56.1/24. T
 the windows part. For HashiCorp Vagrant to run properly using wsl there are some ENV-Variables
 needed. 
 1. `export VAGRANT_WSL_ENABLE_WINDOWS_ACCESS="1"`
-2. `export PATH="$PATH:/mnt/c/Program Files/Oracle/VirtualBox"`\ 
+2. `export PATH="$PATH:/mnt/c/Program Files/Oracle/VirtualBox"` 
+
 These ENV-Variables will be appended to your `~/.bashrc` so the will be permanently set.
 Becuase govm.sh is using some `sudo` commands for removing and creating folders you may be
 asked to enter a password. Because this is killing the User-Experience it will also
