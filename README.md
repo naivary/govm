@@ -1,6 +1,6 @@
 # Purpose
 vagrant-wrapper or govm (which is called govm because it will be implemented in go in the future with a proper API) is 
-currently a shell-wrapper for vagrant to create automatically:
+currently a shell-wrapper for vagrant and virtualbox to create automatically:
 * one highly configurable virtual machine
 * run any action you know from vagrant on this machine
   * ssh
@@ -12,8 +12,9 @@ currently a shell-wrapper for vagrant to create automatically:
 * export a group or one virtual machine as an .ova file
 
 # Requirements
-The only requirement that is needed is **HashiCorp Vagrant** and **Oracle VirtualBox**.
-Because of these requirements there are also some *init scripts* for **windows (wsl)** and **ubuntu**;
+The only requirements are [HashiCorp Vagrant](https://www.vagrantup.com/) and [Oracle VirtualBox](https://www.virtualbox.org/).
+Because we don't want to waste your time there are some pre-written [init scripts](init/) for **windows(wsl)** and **ubuntu** which will
+install all requirement and make some adjustement needed for `govm` to work properply.
 
 **wsl.sh**
 The init script wsl.sh will install *Chocolatey, Oracle VirtualBox, HashiCorp Vagrant*. 
@@ -41,27 +42,18 @@ sudo commands without entering the password (`<username> ALL = PASSWD:ALL`).
 `-i` if this is present the group or virtual machine  that is getting `exported` as an `.ova` is set as the `main.ova`. <br/>
 `-r` if this is present it will force a `recreation` of the vm if there is a virtual machine registered but not reachable. You may also use it to `reload` a virtual machine or group. <br/>
 
-## VM
-The usage is pretty straight forward. You can create a virtual machine manually using the flags.
-This practice is not recommended because it is not really effective but if your are just interest in
-getting started fast with one Virtual-Machine it is more than enough.
+# Config
+Config files are the way that govm can be manipulated and controlled to serve your purpose. There are two types of `vm.cfg` which configure the options for the `virtual machines` you would like to create and `govm.cfg` which is located at `vagrant-wrapper/.govm/govm.cfg/`. This file is controlling the software as a whole for examples setting default values or where the virtual machine `metadata` should be saved.
+## default.cfg
 
-The recommended way is to use Config files (*.cfg).
+## govm.cfg
 
-Using this method its pretty easy to create from one config file
-one virtual machine and have it persist some where to reuse it again
-and again.
 
-If you would like to create multiple virtual-machines at once you can do that too. Just
-create a sub-directory under config and create multiple config files each reperesenting 
-a virtual machine. 
 
-For every command you run you have to provide the -v flag, whtich stands for -vagrant
-and is representing the vagrant command you would like to run e.g. up, halt, start, destroy.
-Prefixing the commands with a "g" for example -v gup will start the creation process in group
-creation meaning you can start, destroy, halt and create multiple machines at once.
+## Single-creation
+If you would like to create an
 
-## Group
+## Group-creation
 
 
 ## Error-Interpretation ##
