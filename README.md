@@ -73,7 +73,7 @@ for the virtual-machine.
 
 `RAM: govm.RAM -opt` <br/>
 Amount of memory for the virtual-machine. 
-min: 512 MB; max: 16000 MB.
+`min: 512 MB` `max: 16000 MB`.
 
 `OS_IMAGE: govm.OS_IMAGE -opt` <br/>
 base box that vagrant should use 

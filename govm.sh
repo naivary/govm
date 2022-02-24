@@ -64,7 +64,7 @@ VALID_CONFIG_PARAMS_VM=(
     "OS_IMAGE"
     "OS_TYPE"
     "SCRIPT"
-    "SYNC_FOLDER"
+    "SYNC_DIR"
     "HOST_ONLY_IP"
     "VM_NAME"
     "PROVISION_VARIABLES"
@@ -80,7 +80,7 @@ OPTIONAL_CONFIG_PARAMS_VM=(
   "OS_IMAGE"
   "OS_TYPE"
   "SCRIPT"
-  "SYNC_FOLDER"
+  "SYNC_DIR"
   "VM_NAME"
   "DISK_SIZE_PRIMARY"
   "DISK_SIZE_SECOND"
@@ -217,7 +217,7 @@ predefault() {
   getid 192.168.56.2
   getvmname 192.168.56.2
   HOST_ONLY_IP=${HOST_ONLY_IP:-""}
-  SYNC_FOLDER=${SYNC_FOLDER:-""}
+  SYNC_DIR=${SYNC_DIR:-""}
   VM_NAME=${VM_NAME:-""}
   DISK_SIZE_SECOND=${DISK_SIZE_SECOND:-""}
   DISK_SIZE_PRIMARY=${DISK_SIZE_PRIMARY:-""}
@@ -249,7 +249,7 @@ osdefault() {
 clearoptionalargs() {
   DISK_SIZE_SECOND=""
   DISK_SIZE_PRIMARY=""
-  SYNC_FOLDER=""
+  SYNC_DIR=""
 }
 
 
@@ -494,7 +494,7 @@ setvenv() {
   export HASH_TABLE_STRING
   export BRIDGE_OPTION_STRING
   export VAGRANT_EXPERIMENTAL="disks"
-  export SYNC_FOLDER;
+  export SYNC_DIR;
   export SYNC_USER
 }
 
@@ -511,7 +511,7 @@ resetvenv() {
   export -n FILE_SYSTEM
   export -n HASH_TABLE_STRING
   export -n BRIDGE_OPTION_STRING
-  export -n SYNC_FOLDER;
+  export -n SYNC_DIR;
   export -n SYNC_USER
 
 }
@@ -533,7 +533,7 @@ createcfg() {
 cat << EOF >> ${GOVM_PATH}/vm.cfg
 
 # CREATED BY GOVM. DO NOT EDIT DATA! 
-SYNC_FOLDER=${SYNC_FOLDER}
+SYNC_DIR=${SYNC_DIR}
 ID=${ID}
 LOG_PATH=${LOG_PATH}
 HASH_TABLE_STRING="${HASH_TABLE_STRING}"
@@ -556,9 +556,9 @@ prepvenv() {
     makedir "${LOG_PATH}"
   fi
 
-  if [[ ${SYNC_FOLDER} == "" ]]; then
-    makedir "${VMSTORE}/${ID}/sync_folder"
-    SYNC_FOLDER="${VMSTORE}/${ID}/sync_folder"
+  if [[ ${SYNC_DIR} == "" ]]; then
+    makedir "${VMSTORE}/${ID}/SYNC_DIR"
+    SYNC_DIR="${VMSTORE}/${ID}/SYNC_DIR"
   fi
 
   if [[ "${VM_NAME}" == "" ]]; then
@@ -738,9 +738,9 @@ validateoptionalvmargs() {
       error "Invalid Disk-size for main disk ${DISK_SIZE_PRIMARY}. It should be in the format 9999GB"
       exit 1
     fi
-  elif [[ "${SYNC_FOLDER}" ]]; then
-    if ! [[ -d "${SYNC_FOLDER}" ]]; then
-      makedir "${SYNC_FOLDER}"
+  elif [[ "${SYNC_DIR}" ]]; then
+    if ! [[ -d "${SYNC_DIR}" ]]; then
+      makedir "${SYNC_DIR}"
     fi
   elif [[ "${PROVISION_VARIABLES}" ]]; then
     hashtablegen
