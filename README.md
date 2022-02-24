@@ -310,6 +310,7 @@ create a directory with the name of the group and insert all `cfg` files into th
  ┣ 📜test.cfg
  ┗ 📜windows.cfg
 ```
+the directory name will be used as the [filename](#how-is-the-ova-filename-generated) of the `.ova` file.
 `provision` <br/>
 Every provision script or other types of provision should be located here. The structure of the directory is up to you. If you are using an other provision directory other than the default one be sure to set it as `PROVISION_DIR` in `govm.cfg`. All `SCRIPT` values should be releative to `PROVISION_DIR`
 
