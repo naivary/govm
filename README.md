@@ -237,9 +237,14 @@ virtual-machine `cfg` files which are required to be present. These are `CPU` `R
 There are already some defaults set for you in the present [govm.cfg](.govm/govm.cfg)
 but feel free to change them.
 
-# Creating single or groups
+# Creation process
+There are two types of creation-processes [single-creation](#single-creation) and [group-creation](#group-creation). Even though a group-creation can be started with one `.cfg` it is highly recommended to use the single-creation for two reasons:
+1. security 
+2. faster creation time
 
-## Single-creation
+The creation process is handled by `vagrant`. `govm` is only the layer for the dynamic creation of the virtual-machines and some extra validation.
+
+## single-creation
 > Single-creation is the process of creating one virtual-machine with an optional provided
 > .cfg file representing the virtual-machine.
 
@@ -253,7 +258,7 @@ that you know from **Vagrant** and [more!](#Exporting) <br/>
 
 The syntax for any interaction with the virtual machine is `govm -v [options] -m [ID]`.
 
-## Group-creation
+## group-creation
 > Group-creation is the process of creating multiple virtual-machines based on a directory
 > which contains multiple .cfg files, each representin a virtual-machine with his own
 > configuration.
@@ -315,6 +320,7 @@ Every provision script or other types of provision should be located here. The s
 directory is up to you.
 
 # Errors
+Errors are something nobody likes! Thats a fact! But they will always be a part of software. The following sections are descripping how to [interpretated](#interpretation) some custome defined errors and some known [issues](#known-issues-and-possible-fixes) and possible fixes.
 
 ## Interpretation 
 If you see anytime an error message with "nil" then this means
