@@ -33,13 +33,13 @@ sudo commands without entering the password (`<username> ALL = PASSWD:ALL`).
 # Documentation
 
 ## Usage
-`-v [up|halt|start|ssh|destroy]` is setting the vagrant command you want to run (has to be present with every command.) You can also prefix any command with `g[up|halt|start|ssh|destroy]` e.g `gdestroy` to destroy a whole `group`.
+`-v [up|halt|start|ssh|destroy]` is setting the vagrant command you want to run (has to be present with every command.) You can also prefix any command with `g[up|halt|start|ssh|destroy]` e.g `gdestroy` to destroy a whole `group`. <br/>
 
-`-f [path]` is specifing the path to a `*.config` file with the *possible arguments*.
-`-g [path]` is setting the path to a directory with one or more `*.cfg` files each representing a `virtual machine` creating multiple virtual machines at once
-`-m [ID]` is setting the `virtual machine` which should be manipulated by the `-v` command.
-`-i` if this is present the group or virtual machine  that is getting `exported` as an `.ova` is set as the `main.ova`.
-`-r` if this is present it will force a `recreation` of the vm if there is a virtual machine registered but not reachable. You may also use it to `reload` a virtual machine or group.
+`-f [path]` is specifing the path to a `*.config` file with the *possible arguments*. <br/>
+`-g [path]` is setting the path to a directory with one or more `*.cfg` files each representing a `virtual machine` creating multiple virtual machines at once <br/>
+`-m [ID]` is setting the `virtual machine` which should be manipulated by the `-v` command. <br/>
+`-i` if this is present the group or virtual machine  that is getting `exported` as an `.ova` is set as the `main.ova`. <br/>
+`-r` if this is present it will force a `recreation` of the vm if there is a virtual machine registered but not reachable. You may also use it to `reload` a virtual machine or group. <br/>
 
 ## VM
 The usage is pretty straight forward. You can create a virtual machine manually using the flags.
