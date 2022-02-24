@@ -154,8 +154,8 @@ mkfs that is getting used
 on the second disk. Valid values are:
 `ext3`
 `ext4`
-`xfs`
-`default: nil`
+`xfs` <br/>
+`default: nil` 
  
 `PROVISION_VAR` <br/>
 PROVISION_VAR are variables
@@ -185,7 +185,7 @@ saved.
 NOTE: if you are using wsl
 you have to use a path
 pointing to a location in the
-windows system i.e. `/mnt/c/<user>/some/dir`
+windows system i.e. `/mnt/c/<user>/some/dir` <br/>
 `default: $HOME/.govm`
 
 `APPLIANCSTORE` <br/>
@@ -196,7 +196,7 @@ and saved. <br/>
 `BRIDGE_OPTIONS` <br/>
 Defining the possible networks virtual-box can use to bridge
 to it is an array seperated by whitespace
-e.g. (<first-network> <second-network>)
+e.g. (<first-network> <second-network>) <br/>
 `default: nil`
 
 `LOG` <br/>
@@ -215,24 +215,24 @@ has some required arguments that will
 still be required even if an other 
 `VAGRANTFILE` is used. To solve the problem
 deliver the options needed. You dont have to 
-use them but the validation is then satisfied.
+use them but the validation is then satisfied. <br/>
 `default: .govm/vagrantfile/linux`
 
 `CONFIG_DIR` <br/>
 The directory where you would
 like to store your vm-configs. 
 The default is recommended. Also the
-structure of the directories has a [meaning](#project-structure)
+structure of the directories has a [meaning](#project-structure). <br/>
 `default: ../config/`
 
 `PROVISION_DIR` <br/>
 The directory with all your
 provisions-scripts. The default
-is recommended.
+is recommended. <br/>
 `default ../provision/`
 
-In `govm.cfg` are also soem globally defined default values
-that are required to be present. These are `CPU` `RAM` `OS_IMAGE` `SCRIPT`.
+In `govm.cfg` are also some globally defined default values for the 
+virtual-machine `cfg` files which are required to be present. These are `CPU` `RAM` `OS_IMAGE` `SCRIPT`.
 There are already some defaults set for you in the present [govm.cfg](.govm/govm.cfg)
 but feel free to change them.
 
@@ -282,14 +282,36 @@ As always there are some specialities needed for windows (wsl). We tried to cove
 compared to a native linux machine.
 
 ## Disk-Size
-
+Becuase the disk-size config in vagrant is currently [experimental](https://www.vagrantup.com/docs/disks/usage) there are still some issues using it with WSL. There is a way around using Git-Bash but it is not recommended to use it if you wish to work with wsl afterwards to manage govm.
 
 # Best-practices
 Here are some best practices that you may follow. It is just a recommendation because the software was mostly tested this way and will promise
 a flawless experience.
 
 ## Project structure
+The project structure can be what ever you want. But it is recommened to use the structure which will be present after you clone the repository.
 
+`.govm` <br/>
+This directory contains directories and files that are used by the software to function properly. The only files that can be changed by you are
+`gomv.cfg` and `default.cfg`.
+
+`config`
+In this directory you can define your virtual-machine `cfg` files. If you want to create a `group` of virtual-machines
+create a directory with the name of the group and insert all `cfg` files into that new directory e.g.
+```
+📦config
+ ┣ 📂ansible
+ ┃ ┣ 📜controll.cfg
+ ┃ ┗ 📜master.cfg
+ ┣ 📂redis
+ ┃ ┣ 📜master.cfg
+ ┃ ┗ 📜replica.cfg
+ ┣ 📜test.cfg
+ ┗ 📜windows.cfg
+```
+`provision` <br/>
+Every provision script or other types of provision should be located here. The structure of the
+directory is up to you.
 
 # Errors
 
