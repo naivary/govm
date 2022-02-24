@@ -1146,7 +1146,7 @@ vmlistbridgedlifs() {
 }
 
 
-testing() {
+integrationtest() {
   if ! [[ -f ${BASEDIR}/${GOVM}/tested ]]; then
     APPSTORE=${APPLIANCESTORE}
     infobold "Running some tests to asure that everything works as planned."
@@ -1203,7 +1203,7 @@ main() {
   validateappargs;
   validateposixgroup "$@"
   bridgeoptiongen
-  testing
+  integrationtest
   GROUP=${CONFIG_DIR}/${GROUP}
   VM_CONFIG=${CONFIG_DIR}/${VM_CONFIG}
   if [[ "${VAGRANT_CMD}" == "ssh" && "${ID}" ]]; then
