@@ -13,10 +13,10 @@ currently a shell-wrapper for vagrant and virtualbox to create automatically:
 
 # Requirements
 The only requirements are [HashiCorp Vagrant](https://www.vagrantup.com/) and [Oracle VirtualBox](https://www.virtualbox.org/).
-Because we don't want to waste your time there are some pre-written [init scripts](init/) for **windows(wsl)** and **ubuntu** which will
+Because we don't want to waste your time there are some pre-written **init-scripts** for [windows(wsl)](init/wsl.sh) and [ubuntu](init/linux.sh) which will
 install all requirement and make some adjustement needed for `govm` to work properply.
 
-**wsl.sh**
+## wsl.sh
 The init script wsl.sh will install *Chocolatey, Oracle VirtualBox, HashiCorp Vagrant*. 
 It will also try to create a Host-Only adapter with the IPv4: 192.168.56.1/24. This is only
 the windows part. For HashiCorp Vagrant to run properly using wsl there are some ENV-Variables
