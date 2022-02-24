@@ -62,16 +62,16 @@ To start a single-creation you have two options:
 
 After the virtual machine is created you may interact with it by using the `ID` of the virtual-machine created by `govm`.
 You can get any `metadata-information` of the running virtual-machines by running `govm -l`. After you got the ID you can ran any command
-that you know from **Vagrant** and [more!](#Extras) <br/>
+that you know from **Vagrant** and [more!](#Exporting) <br/>
 
 The syntax for any interaction with the virtual machine is <br/>
-**govm -v [options] -m [ID]**
+`govm -v [options] -m [ID]`
 
 
 ## Group-creation
 
+## Exporting
 
-# Extras
 
 ## Error-Interpretation ##
 If you see anytime an error message with "nil" then this means
