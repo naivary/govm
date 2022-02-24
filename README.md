@@ -30,6 +30,11 @@ asked to enter a password. This is obviulsy killing the User-Experience so the i
 will also create a file at `/etc/sudoers.d/<username>` and will allow the current user to run any
 sudo commands without entering the password (`<username> ALL = PASSWD:ALL`).
 
+## linux.sh
+This init script will do the same as [wsl.sh](#wslsh) but for linux-sytems. 
+This script is created for ubuntu and may be used for other linux-distrubutions 
+that use the `apt` package manager.
+
 # Documentation
 
 ## Usage
