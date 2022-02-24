@@ -17,8 +17,8 @@ Because we don't want to waste your time there are some pre-written **init-scrip
 install all requirement and make some adjustement needed for `govm` to work properply.
 
 ## wsl.sh
-The init script wsl.sh will install *Chocolatey, Oracle VirtualBox, HashiCorp Vagrant*. 
-It will also try to create a Host-Only adapter with the IPv4: 192.168.56.1/24. This is only
+The init script wsl.sh will install **Chocolatey, Oracle VirtualBox, HashiCorp Vagrant**. 
+It will also try to create a Host-Only adapter with the `IPv4: 192.168.56.1/24`. This is only
 the windows part. For HashiCorp Vagrant to run properly using wsl there are some ENV-Variables
 needed. 
 1. `export VAGRANT_WSL_ENABLE_WINDOWS_ACCESS="1"`
