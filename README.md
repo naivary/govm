@@ -36,12 +36,17 @@ This script is created for ubuntu and may be used for other linux-distrubutions
 that use the `apt` package manager.
 
 # Documentation
+The following sections will explain in detail how to use `govm`. Before you start reading the documentation some general rules should be known to you:
+1. `vm.cfg` is always representing a virtual-machine config file. This is just for the purpose of the documentation having a uniformerly name. But you can name you config files in any way you want.
+2. `-someflag [options]` is alaways referring the options that are dclared in the [Usage](#usage) section.
+3.
+
 
 ## Usage
 `-v [up|halt|start|ssh|destroy]` is setting the vagrant command you want to run. You can also prefix any command with `g[up|halt|start|ssh|destroy]` e.g `gdestroy` to run a command like `destroy` on the whole group. <br/>
 
 `-f [path]` is specifing the path to a `*.config` file with the *possible arguments*. <br/>
-`-g [path]` is setting the path to a directory with one or more `*.cfg` files each representing a `virtual machine` creating multiple virtual machines at once <br/>
+`-g [path]` is setting the path to a directory with one or more `vm.cfg` files each representing a `virtual machine` creating multiple virtual machines at once <br/>
 `-m [ID]` is setting the `virtual machine` which should be manipulated by the `-v` command. <br/>
 `-i` if this is present the group or virtual machine  that is getting `exported` as an `.ova` is set as the `main.ova`. <br/>
 `-r` if this is present it will force a `recreation` of the vm if there is a virtual machine registered but not reachable. You may also use it to `reload` a virtual machine or group. <br/>
@@ -56,13 +61,11 @@ If you rungthe command `govm -v [options]` without specifiying `-f`, `-g` or `-m
 > to serve your purpose.
 
 There are two types of `.cfg files`.
-1. `*.cfg` which is representing a virtual machine and the [options](#vmcfg) is should have after it has been created.
-2. [govm.cfg](#govmcfg). This file is controlling the software as a whole for example setting default values or where the virtual machine metadata should be saved.
+1. `vm.cfg` which is representing a virtual machine and the possible [configurations](#vmcfg) it should have.
+2. `govm.cfg` . This [file](#govmcfg) is controlling the software as a whole e.g. metadata and storing information.
 
 ## vm.cfg 
-> *.cfg files are setting the options with which the virtual-machine
-> should be created. The name of file does not have to be vm.cfg it can be anthing
-> but has to have the extension .cfg.
+> vm.cfg are representing a virtual-machine and his defined options.
 
 There are lots of options to that can be defined to create a virtual-machine based on yout needs. In this section you will learn about all possible options. <br/>
 `CPU` <br/>
@@ -164,7 +167,7 @@ on the second disk. Valid values are:
 `xfs` <br/>
 `default: nil` 
  
-`PROVISION_VAR` <br/>
+`PROVISION_VAR (default: ())` <br/>
 PROVISION_VAR are variables
 that you want to access 
 in your provision script.
@@ -176,9 +179,6 @@ then this will be taken as key and value like this
 ("something") -> {something => something}
 SPECIAL-VARIABLES:
 1. os_user: if this is set this users home-directory will be used as the mounting point in the virtual-machine
-
-`default: ()`
-
 
 
 ## govm.cfg
