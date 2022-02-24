@@ -2,11 +2,7 @@
 vagrant-wrapper or govm (which is called govm because it will be implemented in go in the future with a proper API) is 
 currently a shell-wrapper for vagrant and virtualbox to create automatically:
 - one highly configurable virtual machine
-- run any action you know from vagrant on this machine
-  - ssh
-  - destroy
-  - start
-  - halt
+- run any action you know from vagrant on these machines
 - create a group of virtual machines with multiple config-files reperesent each virtual machine
 - manage the group with the known commands (destroy/start/halt)
 - export a group or one virtual machine as an .ova file
