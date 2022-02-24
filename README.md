@@ -68,31 +68,30 @@ There are two types of `.cfg files`.
 > vm.cfg are representing a virtual-machine and his defined options.
 
 There are lots of options to that can be defined to create a virtual-machine based on yout needs. In this section you will learn about all possible options. <br/>
-`CPU` <br/>
+`CPU: nil` <br/>
 Quantity of proceccors 
 for the virtual-machine. Has to be 1
 or bigger but less than 100
 
-`RAM` <br/>
+`RAM: nil` <br/>
 Amaount of memory for the virtual-machine. 
 min: 512 MB; max: 16000 MB.
 
-`OS_IMAGE` <br/>
+`OS_IMAGE: nil` <br/>
 base box that vagrant should use 
 for setting the operating system.
 If you use windows be sure that
 the `OS_TYPE` is also set to windows.
 All possible base-boxes can be found [here](https://app.vagrantup.com/boxes/search?provider=virtualbox)
 
-`OS_TYPE` <br/>
+`OS_TYPE: linux` <br/>
 OS_TYPE is informing the application
 which type of operating-system you are
 using. This is needed because as always windows
 needs some special configurations in the vagrantfile.
 Valid values are "linux" and "windows"
-default: linux
 
-`SCRIPT` <br/>
+`SCRIPT: nil` <br/>
 Defining the provision script that shall run 
 in the virtual-machine. If you wish to
 have the minimum of provision
@@ -100,21 +99,19 @@ its recommended to take provision/default.sh
 which is only doing an update and upgrade in ubuntu.
 Every path has to be set relative to the `PROVISION_DIR`.
 
-`HOST_ONLY_IP` <br/>
+`HOST_ONLY_IP: 192.168.56.2` <br/>
 Defining the ip of the host-only-virtual-adapter 
 of the virtual-machine.
 NOTE: 192.168.56.2 is reserved for 
 the default virtual-machine. 
 Its recommended to never use it.
-default: 192.168.56.2
 
-`VM_NAME` <br/>
+`VM_NAME: $HOST_ONLY_IP+ID` <br/>
 The name of the virtual-machine.
 Take a describtive name that is representing 
 the purpose of the virtual-machine
-`default: <HOST_ONLY_IP>_<ID>`
 
-`SYNC_FOLDER` <br/> 
+`SYNC_FOLDER: $VMSTORE/ID/sync_folder` <br/> 
 The directory that shall be mounted 
 from host to guest. The default 
 is a created directory called
@@ -124,7 +121,7 @@ of the guest-machine mounted to
 If you wish the default behavior
 comment out the option.
 
-`DISK_SIZE_PRIMARY` <br/>
+`DISK_SIZE_PRIMARY: 40GB` <br/>
 here you can set the main 
 disk size in the virtual-machine  
 its recommended to have a 
@@ -133,18 +130,16 @@ NOTE: Because this feature is currently
 experimental there are some issues with `wsl`.
 Because of this it is not recommend to use it with `wsl`.
 For more Information read [Disk size](#Disk-Size) <br/>
-`default: 40GB`
 
-`DISK_SIZE_SECOND` <br/>
+`DISK_SIZE_SECOND: nil` <br/>
 If you would like to have
 a second disk attached to your
 virtual machine you can 
 set a disk-size here
 otherwise there is only
 one attached <br/>
-`default: nil`
 
-`MOUNTING_POINT` <br/>
+`MOUNTING_POINT (default: nil)` <br/>
 Where shall the second disk be mounted?
 Note the path has to be always an absolut
 path. It is not allowed to mount to:
@@ -156,16 +151,14 @@ path. It is not allowed to mount to:
 IMPORTANT: always start your path
 with a double // if using git-bash. This prevents that the
 path is getting converted by mingw. <br/>
-`default: nil`
 
-`FILE_SYSTEM` <br/>
+`FILE_SYSTEM (default: nil)` <br/>
 FILE_SYSTEM is setting the
 mkfs that is getting used 
 on the second disk. Valid values are:
 `ext3`
 `ext4`
 `xfs` <br/>
-`default: nil` 
  
 `PROVISION_VAR (default: ())` <br/>
 PROVISION_VAR are variables
@@ -305,7 +298,7 @@ The project structure can be what ever you want. But it is recommened to use the
 
 `.govm` <br/>
 This directory contains directories and files that are used by the software to function properly. The only files that can be changed by you are
-`gomv.cfg` and `default.cfg`.
+`govm.cfg` and `default.cfg`.
 
 `config`
 In this directory you can define your virtual-machine `cfg` files. If you want to create a `group` of virtual-machines
