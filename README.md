@@ -109,13 +109,13 @@ The name of the virtual-machine.
 Take a describtive name that is representing 
 the purpose of the virtual-machine
 
-`SYNC_FOLDER: $VMSTORE/ID/sync_folder -opt` <br/> 
+`SYNC_DIR: $VMSTORE/ID/SYNC_DIR -opt` <br/> 
 The directory that shall be mounted 
 from host to guest. The default 
 is a created directory called
-`sync_folder` in the home directory
+`SYNC_DIR` in the home directory
 of the guest-machine mounted to
-`VMSTORE/GOVM-ID/sync_folder`.
+`VMSTORE/GOVM-ID/SYNC_DIR`.
 If you wish the default behavior
 comment out the option.
 

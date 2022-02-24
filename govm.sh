@@ -16,6 +16,8 @@ usage() {
   echo "-i if this is present the group/virtual-machine that is getting exported is set as the main.ova"
   echo "which is getting used by import.ps1/exe for automatically setting up importing the .ova file"
   echo "-r if this is present it will force a recreation of the vm if there is a virtual machine registered but not reachable"
+  echo "-l is listing all virtual-machines that have been created by govm and should be used as govm -l"
+  echo "For a detailed documentation visit: https://github.com/No1Lik3U/vagrant-wrapper#documentation"
 }
 
 while getopts "f:g:v:m:lrid" OPT; do
