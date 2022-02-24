@@ -50,7 +50,7 @@ If you rungthe command `govm -v [options]` without specifiying `-f`, `-g` or `-m
 > Config (cfg) files are the way that govm can be manipulated and controlled 
 > to serve your purpose.
 There are two types of `.cfg files`.
-1. `*.cfg` which is representing a virtual machine and the [options](#config-options) is should have after it has been created.
+1. `*.cfg` which is representing a virtual machine and the [options](#vmcfg) is should have after it has been created.
 2. [govm.cfg](#govmcfg). This file is controlling the software as a whole for example setting default values or where the virtual machine metadata should be saved.
 
 ## vm.cfg 
