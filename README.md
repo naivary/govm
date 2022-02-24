@@ -9,10 +9,10 @@ currently a shell-wrapper for vagrant and virtualbox to create automatically:
 
 # Requirements
 The only requirements are [HashiCorp Vagrant](https://www.vagrantup.com/) and [Oracle VirtualBox](https://www.virtualbox.org/).
-Because we don't want to waste your time there are some pre-written **init-scripts** for [windows(wsl)](init/wsl.sh) and [ubuntu](init/linux.sh) which will
+Because we don't want to waste your time there are some pre-written **init-scripts** for [wsl](init/wsl.sh) and [ubuntu](init/linux.sh) which will
 install all requirement and make some adjustement needed for `govm` to work properply.
 
-## wsl.sh
+## init: wsl
 The init script wsl.sh will install `Chocolatey`, `Oracle VirtualBox`, `HashiCorp Vagrant`. 
 It will also try to create a `Host-Only Ethernt Adapter` with the `IPv4: 192.168.56.1/24`. This is only
 the windows part. For HashiCorp Vagrant to run properly using wsl there are some `env-variables`
@@ -26,7 +26,7 @@ asked to enter a password. This is obviulsy killing the User-Experience so the i
 will also create a file at `/etc/sudoers.d/<username>` and will allow the current user to run any
 sudo commands without entering the password `<username> ALL = PASSWD:ALL`.
 
-## linux.sh
+## init: ubuntu
 This init script will do the same as [wsl.sh](#wslsh) but for linux-sytems. 
 This script is created for ubuntu and may be used for other linux-distrubutions 
 that use the `apt` package manager.
@@ -46,7 +46,8 @@ The following sections will explain in detail how to use `govm`. Before you star
 `-g [path]` is setting the path to a directory with one or more `vm.cfg` files each representing a virtual machine creating multiple virtual machines at once <br/>
 `-m [GOVM-ID]` is setting the virtual machine which should be manipulated by the `-v` command. <br/>
 `-i` if this is present the group or virtual machine  that is getting `exported` as an `.ova` is set as the `main.ova`. <br/>
-`-r` if this is present it will force a `recreation` of the vm if there is a virtual machine registered but not reachable. You may also use it to `reload` a virtual machine or group. <br/>
+`-r` if this is present it will force a `recreation` of the vm if there is a virtual machine registered but not reachable. You may also use it to `reload` a virtual machine or group. 
+`-l` this flag can be used without `-v`. It will list all virtual-machine created by `govm` <br/>
 
 Every command should but does not have to start with: `govm -v [options]`. Afterwards you can specifiy any other flag.
 This way every command is properly structured and human readable.
