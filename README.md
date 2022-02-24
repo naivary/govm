@@ -143,6 +143,7 @@ path. It is not allowed to mount to:
 - /
 - /boot
 - /var
+
 IMPORTANT: always start your path
 with a double // if using git-bash. This prevents that the
 path is getting converted by mingw. <br/>
