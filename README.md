@@ -1,4 +1,4 @@
-# Purpose
+# govm
 vagrant-wrapper or govm (which is called govm because it will be implemented in go in the future with a proper API) is 
 currently a shell-wrapper for vagrant and virtualbox to create automatically:
 * one highly configurable virtual machine
