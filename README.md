@@ -64,8 +64,6 @@ There are two types of `.cfg files`.
 ## vm.cfg 
 > vm.cfg are representing the configuration of the given virtual-machine.
 
-There are lots of options that can be defined to create a virtual-machine based on your needs. In this section you will learn about all possible options. <br/>
-
 `CPU: govm.CPU -opt` <br/>
 Quantity of proceccors 
 for the virtual-machine. 
@@ -170,7 +168,7 @@ If you just declare an string in the array like ("something")
 then this will be taken as key and value like this: ("something") -> {something => something}
 
 SPECIAL-VARIABLES:
-1. os_user: if this is set this users home-directory will be used as the mounting point in the virtual-machine
+1. `os_user`: if this is set this users home-directory will be used as the mounting point in the virtual-machine
 
 
 ## govm.cfg
@@ -330,6 +328,9 @@ Running the init script will install all requirements and setup the environment 
 1. Use govm after a reboot of the local machine once the init script is finished.
 2. Deactive and activate the `VirtualBox Host-Only Ethernet Adapter` and reboot your local machine afterwards.
 3. Delete all `VirtualBox Host-Only Ethernet Adapter` and create one without a `dhcp-server` and with the `IPv4 192.168.56.1/24`.
+
+## main.ova
+
 
 ## Known issues and possible fixes
 
