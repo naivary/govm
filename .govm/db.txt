@@ -1,1 +1,2 @@
 ID:Name:OS:IP:Memory:CPU
+5f360de315:govm:ubuntu/trusty64:192.168.56.2:1048:2

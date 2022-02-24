@@ -300,7 +300,7 @@ The project structure can be what ever you want. But it is recommened to use the
 This directory contains directories and files that are used by the software to function properly. The only files that can be changed by you are
 `govm.cfg` and `default.cfg`.
 
-`config`
+`config` <br/>
 In this directory you can define your virtual-machine `cfg` files. If you want to create a `group` of virtual-machines
 create a directory with the name of the group and insert all `cfg` files into that new directory e.g.
 ```
@@ -315,8 +315,8 @@ create a directory with the name of the group and insert all `cfg` files into th
  ┗ 📜windows.cfg
 ```
 `provision` <br/>
-Every provision script or other types of provision should be located here. The structure of the
-directory is up to you.
+Every provision script or other types of provision should be located here. <br/> 
+The structure of the directory is up to you.
 
 # Errors
 Errors are something nobody likes! Thats a fact! But they will always be a part of software. The following sections are descripping how to [interpretated](#interpretation) some custome defined errors and some known [issues](#known-issues-and-possible-fixes) and possible fixes.
