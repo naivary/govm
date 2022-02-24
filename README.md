@@ -317,14 +317,14 @@ the directory name will be used as the [filename](#how-is-the-ova-filename-gener
 Every provision script or other types of provision should be located here. The structure of the directory is up to you. If you are using an other provision directory other than the default one be sure to set it as `PROVISION_DIR` in `govm.cfg`. All `SCRIPT` values should be releative to `PROVISION_DIR`
 
 # Errors
-Errors are something nobody likes! Thats a fact! But they will always be a part of software. The following sections are descripping how to [interpretated](#interpretation) some custome defined errors and some known [issues](#known-issues-and-possible-fixes) and possible fixes.
+Errors are something nobody likes! Thats a fact! But they will always be a part of software. The following sections are describing how to [interpretated](#interpretation) some custome defined errors and some known [issues](#known-issues-and-possible-fixes) and possible fixes.
 
 ## Interpretation 
-If you see anytime an error message with "nil" then this means
+If you see anytime an error message with `nil` then this means
 that some option was not set which is required if you are using
 one other option for example: if you would like to have
-an additional disk with the option DISK_SIZE_SECOND but your are not
-setting the FILE_SYSTEM for it, then you will see that type of error message.
+an additional disk with the option `DISK_SIZE_SECOND` but your are not
+setting the `FILE_SYSTEM` for it, then you will see that type of error message.
 
 ## Init
 Running the init script will install all requirements and setup the environment for `govm` to work properly. After a reboot of your local machine you can use govm. In some cases it may occur an error that vagrant is not able to start the virtual-machine. There are two solutions for this error:
