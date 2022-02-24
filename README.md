@@ -137,15 +137,15 @@ one attached
 
 `MOUNTING_POINT` <br/>
 Where shall the second disk be mounted?
-note the path has to be always an absolut
-path. Tt is not allowed to mount to:
+Note the path has to be always an absolut
+path. It is not allowed to mount to:
 - /root
 - /
 - /boot
 - /var
 IMPORTANT: always start your path
 with a double // if using git-bash. This prevents that the
-path is getting converted by mingw.
+path is getting converted by mingw. <br/>
 `default: nil`
 
 `FILE_SYSTEM` <br/>
@@ -169,11 +169,72 @@ then this will be taken as key and value like this
 ("something") -> {something => something}
 SPECIAL-VARIABLES:
 1. os_user: if this is set this users home-directory will be used as the mounting point in the virtual-machine
+
 `default: ()`
 
 
 
 ## govm.cfg
+> govm.cfg is setting metadata information
+> that are needed for the software to function.
+
+`VMSTORE` <br/>
+The location where the metadata 
+of every created virtual-machine is getting 
+saved. 
+NOTE: if you are using wsl
+you have to use a path
+pointing to a location in the
+windows system i.e. `/mnt/c/<user>/some/dir`
+`default: $HOME/.govm`
+
+`APPLIANCSTORE` <br/>
+The path where the .ova files will be created
+and saved. <br/> 
+`default: $HOME/.govm_appliance`
+
+`BRIDGE_OPTIONS` <br/>
+Defining the possible networks virtual-box can use to bridge
+to it is an array seperated by whitespace
+e.g. (<first-network> <second-network>)
+`default: nil`
+
+`LOG` <br/>
+The path wehere the debugging 
+logging is made the default behavior 
+is the logging to the newly created
+virtual-machine directore in VMSTORE.
+if you wished that kind of behavior 
+set LOG to /log. Otherwise set a
+log-path you would like to have
+
+`VAGRANTFILE` <br/>
+Rhe path to the vagrantfile 
+that you would like to use. govm 
+has some required arguments that will
+still be required even if an other 
+`VAGRANTFILE` is used. To solve the problem
+deliver the options needed. You dont have to 
+use them but the validation is then satisfied.
+`default: .govm/vagrantfile/linux`
+
+`CONFIG_DIR` <br/>
+The directory where you would
+like to store your vm-configs. 
+The default is recommended. Also the
+structure of the directories has a [meaning](#project-structure)
+`default: ../config/`
+
+`PROVISION_DIR` <br/>
+The directory with all your
+provisions-scripts. The default
+is recommended.
+`default ../provision/`
+
+In `govm.cfg` are also soem globally defined default values
+that are required to be present. These are `CPU` `RAM` `OS_IMAGE` `SCRIPT`.
+There are already some defaults set for you in the present [govm.cfg](.govm/govm.cfg)
+but feel free to change them.
 
 # Creating single or groups
 
