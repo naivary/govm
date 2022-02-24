@@ -18,18 +18,17 @@ install all requirement and make some adjustement needed for `govm` to work prop
 
 ## wsl.sh
 The init script wsl.sh will install **Chocolatey, Oracle VirtualBox, HashiCorp Vagrant**. 
-It will also try to create a Host-Only adapter with the `IPv4: 192.168.56.1/24`. This is only
-the windows part. For HashiCorp Vagrant to run properly using wsl there are some ENV-Variables
+It will also try to create a `Host-Only Ethernt Adapter` with the `IPv4: 192.168.56.1/24`. This is only
+the windows part. For HashiCorp Vagrant to run properly using wsl there are some **env-variables**
 needed. 
 1. `export VAGRANT_WSL_ENABLE_WINDOWS_ACCESS="1"`
 2. `export PATH="$PATH:/mnt/c/Program Files/Oracle/VirtualBox"` 
 
-These ENV-Variables will be appended to your `~/.bashrc` so they will be permanently set.
+These env-Variables will be appended to your `~/.bashrc` so they will be permanently set.
 Becuase govm.sh is using some `sudo` commands for removing and creating folders you may be
 asked to enter a password. This is obviulsy killing the User-Experience so the init script 
 will also create a file at `/etc/sudoers.d/<username>` and will allow the current user to run any
 sudo commands without entering the password (`<username> ALL = PASSWD:ALL`).
-
 
 # Documentation
 
@@ -43,15 +42,26 @@ sudo commands without entering the password (`<username> ALL = PASSWD:ALL`).
 `-r` if this is present it will force a `recreation` of the vm if there is a virtual machine registered but not reachable. You may also use it to `reload` a virtual machine or group. <br/>
 
 # Config
-Config files are the way that govm can be manipulated and controlled to serve your purpose. There are two types of `vm.cfg` which configure the options for the `virtual machines` you would like to create and `govm.cfg` which is located at `vagrant-wrapper/.govm/govm.cfg/`. This file is controlling the software as a whole for examples setting default values or where the virtual machine `metadata` should be saved.
+Config files are the way that govm can be manipulated and controlled to serve your purpose. There are two types of `.cfg-files`
+1. `vm.cfg` which configure the options for the `virtual machines` you would like to create.
+2. [govm.cfg](#govmcfg). This file is controlling the software as a whole for example setting default values or where the virtual machine `metadata` should be saved.
+
 ## default.cfg
 
 ## govm.cfg
 
-
-
 ## Single-creation
-If you would like to create an
+If you would like to create just one virtual-machine then you habe two options:
+1. You can run `govm -v up`. This will create a virtual machine based on the [default.cfg](.govm/default.cfg).
+2. You can run `govm -v up -f your/vm/config/path`. This will create a virtual-machine based on the `.cfg` that you provided.
+
+After the virtual machine is created you may interact with it by using the `ID` of the virtual-machine created by `govm`.
+You can get any `metadata-information` of the running virtual-machines by running `govm -l`. After you got the ID you can ran any command
+that you know from **Vagrant** and more! <br/>
+
+The syntax for any interaction with the virtual machine is <br/>
+**govm -v [options] -m [ID]**
+
 
 ## Group-creation
 
