@@ -3,19 +3,18 @@ vagrant-wrapper or govm (which is called govm because it will be implemented in 
 currently a shell-wrapper for vagrant and virtualbox to create automatically:
 - one highly configurable virtual machine
 - run any action you know from vagrant on these machines
-- create a group of virtual machines with multiple config-files reperesent each virtual machine
+- create a group of virtual machines with multiple config-files each representing a virtual machine
 - manage the group with the known commands (destroy/start/halt)
 - export a group or one virtual machine as an .ova file
 
 # Requirements
 The only requirements are [HashiCorp Vagrant](https://www.vagrantup.com/) and [Oracle VirtualBox](https://www.virtualbox.org/).
 Because we don't want to waste your time there are some pre-written **init-scripts** for [wsl](init/wsl.sh) and [ubuntu](init/linux.sh) which will
-install all requirement and make some adjustement needed for `govm` to work properply.
+install all requirement and make some adjustement needed for `govm` to work properply. If you decide to run one of the init scripts be sure to reboot your local machine and then start using govm. DO NOT USE govm directly after using the init script! There may occur an error which is discussed in [this](#init) section.
 
 ## init: wsl
 The init script wsl.sh will install `Chocolatey`, `Oracle VirtualBox`, `HashiCorp Vagrant`. 
-It will also try to create a `Host-Only Ethernt Adapter` with the `IPv4: 192.168.56.1/24`. This is only
-the windows part. For HashiCorp Vagrant to run properly using wsl there are some `env-variables`
+It will also try to create a `Host-Only Ethernt Adapter` with the `IPv4: 192.168.56.1/24` but it may fail because actually a reboot is needed before using VirtualBox. Because of this it may occur an error which can be [solved](#init). This is only the windows part. For HashiCorp Vagrant to run properly using wsl there are some `env-variables`
 needed. 
 1. `export VAGRANT_WSL_ENABLE_WINDOWS_ACCESS="1"`
 2. `export PATH="$PATH:/mnt/c/Program Files/Oracle/VirtualBox"` 
@@ -324,6 +323,11 @@ one other option for example: if you would like to have
 an additional disk with the option DISK_SIZE_SECOND but your are not
 setting the FILE_SYSTEM for it, then you will see that type of error message.
 
+## Init
+Running the init script will install all requirements and setup the environment for the proper using of `govm`. After a reboot of your local machine you can use govm. In some cases it may occur an error that vagrant is not able to start the virtual-machine. There are two solutions for this error:
+1. Use govm after a reboot of the local machine once the init script is finished.
+2. Deactive and activate the `VirtualBox Host-Only Ethernet Adapter` and reboot your local machine afterwards.
+3. Delete all `VirtualBox Host-Only Ethernet Adapter` and create one without a `dhcp-server` and with the `IPv4 192.168.56.1/24`.
 
 ## Known issues and possible fixes
 
