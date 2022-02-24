@@ -23,12 +23,25 @@ needed.
 1. `export VAGRANT_WSL_ENABLE_WINDOWS_ACCESS="1"`
 2. `export PATH="$PATH:/mnt/c/Program Files/Oracle/VirtualBox"` 
 
-These ENV-Variables will be appended to your `~/.bashrc` so the will be permanently set.
+These ENV-Variables will be appended to your `~/.bashrc` so they will be permanently set.
 Becuase govm.sh is using some `sudo` commands for removing and creating folders you may be
-asked to enter a password. Because this is killing the User-Experience it will also
-create an file `/etc/sudoers.d/<username>` and will allow the current user to run any
-sudo commands without entering the password.
+asked to enter a password. This is obviulsy killing the User-Experience so the init script 
+will also create a file at `/etc/sudoers.d/<username>` and will allow the current user to run any
+sudo commands without entering the password (`<username> ALL = PASSWD:ALL`).
+
+
 # Documentation
+
+`-v (up/halt/start/ssh/destroy)` is setting the vagrant command you want to run (has to be present with every command.) You can also prefix any command with `g` e.g `gdestroy` to destroy a whole group.
+
+-f [path] is specifing the path to a `*.config` file with the valid parameters.
+`-g [path] is setting the path to a directory with one or more *.cfg files to create a group of virtual-machines at once`
+-m [govm-ID] is setting the Machine
+ 
+-i if this is present the group/virtual-machine that is getting exported is set as the main.ova
+which is getting used by import.ps1/exe for automatically setting up importing the .ova file
+-r if this is present it will force a recreation of the vm if there is a virtual machine registered but not reachable
+
 
 ## Usage ##
 -f [path] is specifing the path to a *.config file with the parameters CPU, RAM, OS_IMAGE, IP and SCRIPT  
