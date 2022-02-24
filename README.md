@@ -1,16 +1,32 @@
 # Purpose
 vagrant-wrapper or govm (which is called govm because it will be implemented in go in the future with a proper API) is 
-currently a shell-wrapper for vagrant to:
-* create a highly configurable virtual machine
-* run any action you know from vagrant
+currently a shell-wrapper for vagrant to create automatically:
+* one highly configurable virtual machine
+* run any action you know from vagrant on this machine
   * ssh
   * destroy
   * start
   * halt
-* create a group of virtual machines with multiple config-files
-* manage the group with the know commands destroy/start/halt
+* create a group of virtual machines with multiple config-files reperesent each virtual machine
+* manage the group with the known commands (destroy/start/halt)
 * export a group or one virtual machine as an .ova file
 
+# Requirements
+The only requirement that is needed is **HashiCorp Vagrant** and **Oracle VirtualBox**.
+Because of these requirements there are also some *init scripts* for **windows (wsl)** and **ubuntu**;
+
+**wsl.sh**
+The init script wsl.sh will install *Chocolatey, Oracle VirtualBox, HashiCorp Vagrant*. 
+It will also try to create a Host-Only adapter with the IPv4: 192.168.56.1/24. This is only
+the windows part. For HashiCorp Vagrant to run properly using wsl there are some ENV-Variables
+needed. 
+1. `export VAGRANT_WSL_ENABLE_WINDOWS_ACCESS="1"`
+2. `export PATH="$PATH:/mnt/c/Program Files/Oracle/VirtualBox"`
+These ENV-Variables will be appended to your `~/.bashrc` so the will be permanently set.
+Becuase govm.sh is using some `sudo` commands for removing and creating folders you may be
+asked to enter a password. Because this is killing the User-Experience it will also
+create an file `/etc/sudoers.d/<username>` and will allow the current user to run any
+sudo commands without entering the password.
 # Documentation
 
 ## Usage ##
