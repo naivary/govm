@@ -157,6 +157,7 @@ on the second disk. Valid values are:
 - `ext3`
 - `ext4`
 - `xfs` <br/>
+
 This variable is required if `DISK_SIZE-SECOND` is set otherwise it is getting ignored.
  
 `PROVISION_VAR: () -opt` <br/>
