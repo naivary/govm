@@ -559,8 +559,8 @@ prepvenv() {
   fi
 
   if [[ ${SYNC_DIR} == "" ]]; then
-    makedir "${VMSTORE}/${ID}/SYNC_DIR"
-    SYNC_DIR="${VMSTORE}/${ID}/SYNC_DIR"
+    makedir "${VMSTORE}/${ID}/sync_dir"
+    SYNC_DIR="${VMSTORE}/${ID}/sync_dir"
   fi
 
   if [[ "${VM_NAME}" == "" ]]; then

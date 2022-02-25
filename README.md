@@ -277,7 +277,7 @@ After the first part of the name is calculated based on the rules described abov
 `main.ova` is a special kind of `.ova` file. This file is the main ova file which will be used by [import.exe](.govm/pkg/exe/import.exe). `import.exe` will automatically import `main.ova` into `VirtualBox`. This is especially useful if you have multiple computers that all can import with one click the `main.ova` and are ready to go.  
 
 ## Testing
-The first valid command that you will run will trigger an `integrationtest` which is assuring that every functionality is working properly. If the testing was successfull an empty file named `tested` will be created, which is telling govm that the integrationtest was already ran successfully.
+The first valid command that you will run will trigger an `integrationtest` which is assuring that every functionality is working properly. If the testing was successfull an empty file named `tested` will be created, which is telling govm that the integrationtest was already ran successfully. Don't worry you will see some error messages that are intentionally or known issues that will not influence any functionalities.
 
 # WSL
 As always there are some specialities needed for windows (wsl). We tried to cover as much as possible but still there are some limitation
