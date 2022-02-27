@@ -61,7 +61,7 @@ Config files are the way that govm can be manipulated and controlled to serve yo
 2. `govm.cfg` . This [file](#govmcfg) is controlling the software as a whole e.g. metadata and storing information.
 
 ## vm.cfg 
-vm.cfg are representing the configuration of a virtual-machine that you would like to create.
+In the following you will be introduced to all the config options with a detailed explanation what the option will affect.
 
 `CPU: govm.CPU -opt` <br/>
 Quantity of proceccors 
