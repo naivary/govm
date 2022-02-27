@@ -7,6 +7,7 @@ currently a shell-wrapper for vagrant and virtualbox to create automatically:
 - manage the group with the known commands (destroy/start/halt)
 - export a group or one virtual machine as an .ova file
 - easy import of [main.ova](#mainova) file with a `.exe` file.
+- providing your own `Vagrantfile`
 
 # Requirements
 The only requirements are [HashiCorp Vagrant](https://www.vagrantup.com/) and [Oracle VirtualBox](https://www.virtualbox.org/).
