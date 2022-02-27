@@ -50,7 +50,9 @@ The following sections will explain in detail how to use `govm`. Before you star
 `-l` listing all virtual-machine created by `govm` <br/>
 
 If you wish to list all virtual-machines with some additional information run `gomv -l`. <br/>
+
 Every command should start as following `govm -v [options]`. This way every command is properly structured and human readable. <br/>
+
 If you run the command `govm -v [options]` without specifiying `-f`, `-g` or `-m` govm will run the defined command on the `default.cfg` virtual-machine. <br/>
 
 # Config
