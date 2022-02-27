@@ -1,5 +1,21 @@
 #!/bin/bash
 
+# Copyright etomer GmbH 
+# Author Sayed Mustafa Hussaini 
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
 trap trapexit INT;
 
 usage() {
@@ -130,9 +146,10 @@ SUPPORTED_OS_TYPES=(
   "linux"
   "windows"
 )
+
 # init is setting all best-practice-standards 
 # needed for the shell-script to run without
-# any problems
+# any problems and catch errors 
 init() {
   export PATH="${PATH}"
   export LANG=C.UTF-8
@@ -144,14 +161,6 @@ init() {
   # set -x
   set -u
   # UTF-8 as standard in the shell-Environment
-}
-
-
-ads() {
-  whitebold "Thank you for using govm!"  
-  whitebold "For the usage read the README file."
-  whitebold "If you would like to support me, star"
-  whitebold "the repository!"
 }
 
 error() {
@@ -176,7 +185,9 @@ whitebold() {
 
 # predefault is setting
 # all defaults that do not
-# dependent on govm.cfg
+# dependent on govm.cfg.
+# All other defaults that have
+# a dependencie can be set int postdefault
 predefault() {
   # appliaction
   ALREADY_CREATED_VMS=()
@@ -233,28 +244,34 @@ predefault() {
   OS_PASSWORD=${OS_PASSWORD:-""}
 }
 
-# postdefault is setting
-# all defaults that depend
-# on govm.cfg or other
-# dependencies that are not 
-# yet been set
-# postdefault() {}
+# postdefault is setting all
+# defaults that have a dependencie 
+# on govm.cfg values
+# postdefault(){}
 
-
+# osdefault is checking ig the current
+# used system is an wsl system or native linux
+# distrubution and if it is an wsl system it converts 
+# some paths to a windows path for the virtualbox api
+# so it will work properly
 osdefault() {
   if [[ "${CURRENT_OS}" == "microsoft" ]]; then
     APPLIANCESTORE="$(wslpath -w ${APPLIANCESTORE})"
   fi
 }
 
-
+# clearoptionalargs is setting
+# some optional arguments
+# to empty strings
 clearoptionalargs() {
   DISK_SIZE_SECOND=""
   DISK_SIZE_PRIMARY=""
   SYNC_DIR=""
 }
 
-
+# rmgovm is removing
+# the meta-data if a already
+# created virtual-machine
 rmgovm() {
   if [[ -d "${VMSTORE}/${ID}" ]]; then
     rmdirrf "${VMSTORE}/${ID}";
@@ -282,10 +299,17 @@ clean() {
   success "Destroyed ${ID}!"
 }
 
+
+# leftcut is cutting out the
+# value on the leftside 
+# of a colon seperated string
 leftcut() {
   LEFTSIDE="$(cut -d ':' -f 1 <<< ${1})"
 }
 
+# rightcut is cutting out the
+# value on the rightside 
+# of a colon seperated string
 rightcut() {
   RIGHTSIDE="$(cut -d ':' -f 2 <<< ${1})"
 }
@@ -329,6 +353,9 @@ getip() {
   fi
 }
 
+# govmpath is setting the path
+# to the current virtual-machine
+# and his metadata in the $VMSTORE
 govmpath() {
   GOVM_PATH="${VMSTORE}/${ID}/${GOVM}"
 }
@@ -341,6 +368,9 @@ rmip() {
   fi
 }
 
+# makedir is creating
+# all nonexisting directories
+# of a given path
 makedir() {
   mkdir -p -- "${1}"
 }
@@ -352,16 +382,23 @@ rmdirrf() {
   sudo rm -rf "${1}"
 }
 
+# isvmrunning is checking if the virtual-machine
+# is already up and running
 isvmrunning() {
   vboxmanage.exe list runningvms | grep -q -w "${1}" 
   echo "$?"
 }
 
+# isvmexting check if the virtual-machine
+# exists in virtualbox
 isvmexisting() {
   vboxmanage.exe list vms | grep -q -w "${1}"
   echo "$?"
 }
 
+# appliancesemver is generating an filename
+# for the .ova file based on the rules described in the documentation: 
+# https://github.com/No1Lik3U/vagrant-wrapper#how-is-the-ova-filename-generated
 appliancesemver() {
   APPLIANCE_NAME=${1}
   VERSION=1
@@ -383,6 +420,8 @@ appliancesemver() {
   
 }
 
+# trapexutup is cleaning a single-creation
+# of a virtual-machine by destroying it
 trapexitup() {
   vagrant destroy --force &> "${LOG_PATH}/${TIMESTAMP}_destroy.log"
   rmgovm;
@@ -391,6 +430,10 @@ trapexitup() {
   infobold "Cleaned ${1}"
 }
 
+# trapexit will be triggered if the user
+# is using CRTL+C. It will only run an
+# action if it is an up or gup operation
+# otherwise its just ignoring the call
 trapexit() {
   if [[ "${VAGRANT_CMD}" == "up" ]]; then
     infobold "Graceful exiting. Trying to clean as much as possible...";
@@ -403,10 +446,16 @@ trapexit() {
   fi
 }
 
+# trapexitgroup is cleaning
+# all created virtual-machines by
+# destroying them and deleting the 
+# directory in $VMSTORE.
 trapexitgroup() {
   for CFG in ${ALREADY_CREATED_VMS[@]}
   do
+    # get config-file
     leftcut ${CFG}
+    # get of the config-file
     rightcut ${CFG}
     VM_CONFIG=${LEFTSIDE}    
     ID=${RIGHTSIDE}
@@ -417,20 +466,25 @@ trapexitgroup() {
   done
 }
 
+# successexit is inserting the
+# newly created virtual-machine
+# to the db.txt for future interactions
+# and listing purposes. BEfore inserting the
+# new data it will also insert an empty line
+# if one is needed because otherwise the appending 
+# will not work properly
 successexit() {
   infobold "Finishing touches...";
   sed -i -e '$a\' "${DB}"
   echo "${ID}:${VM_NAME}:${OS_IMAGE}:${HOST_ONLY_IP}:${RAM}:${CPU}" >> "${DB}";
   success "VM ${ID} is set and ready to go :)"
-  ads;
 }
 
-gsuccessexit() {
-  infobold "Finishing touches...";
-  echo "${ID}:${VM_NAME}:${OS_IMAGE}:${HOST_ONLY_IP}:${RAM}:${CPU}" >> "${DB}";
-  success "VM ${ID} is set and ready to go :)"
-}
-
+# hashtablegen is creating an comma 
+# seperated string with the given 
+# key:value pairs which will be used by
+# the vagrantfile to create an actual
+# ruby hash
 hashtablegen() {
   HASH_TABLE_STRING=${PROVISION_VARIABLES[@]}
   local i=0
@@ -462,6 +516,9 @@ hashtablegen() {
   fi
 }
 
+# bridgeoptiongen is creating a string which is seperated 
+# by commas which will then be used by the vagrantfile to create 
+# an actual ruby arr for the bridge options
 bridgeoptiongen() {
   local i=0
   if [[ ${#BRIDGE_OPTIONS[@]} -gt 0 ]]; then
@@ -482,6 +539,9 @@ bridgeoptiongen() {
   fi
 }
 
+# setvenv is exporting 
+# all neded env-variables
+# for the current shell-session
 setvenv() {
   export CPU;
   export RAM;
@@ -500,6 +560,9 @@ setvenv() {
   export SYNC_USER
 }
 
+# resetvenv is deleting all
+# exported env-variables of
+# the current shell-session
 resetvenv() {
   export -n CPU;
   export -n RAM;
@@ -518,6 +581,9 @@ resetvenv() {
 
 }
 
+# setvfile is setting the
+# vagrantfile that should 
+# be used for the 
 setvfile() {
   if [[ "${OS_TYPE}" == "windows" ]]; then
     VAGRANTFILE=${BASEDIR}/${GOVM}/vagrantfile/windows
@@ -721,6 +787,8 @@ validaterequiredvmargs() {
   fi
 }
 
+# validateoptionalvmargs is validating 
+# the optional parameters of the config-file
 validateoptionalvmargs() {
   local config_name=$(basename "${VM_CONFIG}")
   infobold "Validating optional arguments values of ${config_name}..."
@@ -878,12 +946,17 @@ createvenv() {
   setvenv;
 }
 
+# createvm is creating the
+# virtual machine using vagrant up 
 createvm() {
   infobold "Creating Virtual-Machine ${ID}. This may take a while..."
-  # vagrant up &> ${LOG_PATH}/"${TIMESTAMP}_up.log" 
-  vagrant up
+  vagrant up &> ${LOG_PATH}/"${TIMESTAMP}_up.log" 
 }
 
+# up is creating a virtual-machine with vagrant up. 
+# Before creating the virtual-machine it will also 
+# validate the the used config file for the creation 
+# and create the needed environment for vagrant to run properly.
 up() {
   validatevmcfg;
   sourcefile "${VM_CONFIG}";
@@ -958,7 +1031,7 @@ groupup() {
   postvenv;
   cd ${GOVM_PATH};
   ALREADY_CREATED_VMS+=("${1}:${ID}")
-  createvm && gsuccessexit || error "Something went wrong. Debbuging information can be found at ${LOG_PATH}."
+  createvm && successexit || error "Something went wrong. Debbuging information can be found at ${LOG_PATH}."
 }
 
 # group is creating
@@ -1122,6 +1195,11 @@ list() {
   column ${DB} -t -s ":" 
 }
 
+# vmexport is exporting a single virtual-machine
+# or a group of virtual-machines as an .ova file to
+# the $APPLIANCESTORE. It is also checking if a wsl
+# system is used and is converting the path to a 
+# windowspath for a proper function
 vmexport() {
   local dir=${1}
   local type=${2}
@@ -1145,11 +1223,17 @@ vmexport() {
   fi
 }
 
+# vmlistbridgedlifs is listing all
+# posbbile bridge-options that the user
+# can use for the bridge-network in virtualbox
 vmlistbridgedlifs() {
   vboxmanage.exe list bridgedifs | grep -w "Name:" | tr -s " " 
 }
 
-
+# integreationtest will test all functionalities in the app
+# by simulating an example usage of an end-user
+# for this the default.cfg and
+# an example group located at .govm/config 
 integrationtest() {
   if ! [[ -f ${BASEDIR}/${GOVM}/tested ]]; then
     APPSTORE=${APPLIANCESTORE}
