@@ -36,4 +36,9 @@ if ! sudo grep -w -q "${USER} ALL = (ALL) NOPASSWD:ALL" /etc/sudoers.d/musti; th
   echo "${USER} ALL = (ALL) NOPASSWD:ALL" | sudo tee -a /etc/sudoers.d/musti
 fi
 
+if ! [[ -f ../../govm ]]; then
+  cp govm.sh ./govm
+fi
+
+
 success "Wait for the windows-powershell-prompt to close automatically and you are ready to go!"
