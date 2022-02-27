@@ -263,7 +263,7 @@ There are some variables which will be exported into the current shell-session v
 
 ### Custome variables
 Of course govm can't cover all options that a user may want to have. Because of this the `PROVISION_VARIABLES` were introduced. Here you can declare based on the syntax explained [here](#vmcfg) your custome variables that you would like to use in your `Vagrantfile`. Because the `PROVISION_VARIABLES` are a string which has to be converted into a ruby `hash` before they can be used in the `Vagrantfile`. For this you have to paste the snippet into tou `Vagrantfile` before configuring any configuration for the virtual-machine:
-```
+```ruby
 hash_string=ENV["HASH_TABLE_STRING"]
 hash_arr = hash_string.split(',')
 hash = {}
