@@ -549,15 +549,15 @@ setvenv() {
   export SCRIPT;
   export HOST_ONLY_IP;
   export VM_NAME;
-  export DISK_SIZE_PRIMARY
-  export DISK_SIZE_SECOND
-  export MOUNTING_POINT
-  export FILE_SYSTEM
-  export HASH_TABLE_STRING
-  export BRIDGE_OPTION_STRING
+  export DISK_SIZE_PRIMARY;
+  export DISK_SIZE_SECOND;
+  export MOUNTING_POINT;
+  export FILE_SYSTEM;
+  export HASH_TABLE_STRING;
+  export BRIDGE_OPTION_STRING;
   export VAGRANT_EXPERIMENTAL="disks"
   export SYNC_DIR;
-  export SYNC_USER
+  export SYNC_USER;
 }
 
 # resetvenv is deleting all
@@ -570,12 +570,12 @@ resetvenv() {
   export -n SCRIPT;
   export -n HOST_ONLY_IP;
   export -n VM_NAME;
-  export -n DISK_SIZE_PRIMARY
-  export -n DISK_SIZE_SECOND
-  export -n MOUNTING_POINT
-  export -n FILE_SYSTEM
-  export -n HASH_TABLE_STRING
-  export -n BRIDGE_OPTION_STRING
+  export -n DISK_SIZE_PRIMARY;
+  export -n DISK_SIZE_SECOND;
+  export -n MOUNTING_POINT;
+  export -n FILE_SYSTEM;
+  export -n HASH_TABLE_STRING;
+  export -n BRIDGE_OPTION_STRING;
   export -n SYNC_DIR;
   export -n SYNC_USER
 

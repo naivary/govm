@@ -256,7 +256,22 @@ After the first part of the name is calculated a versioning will be calculated. 
 `main.ova` is a special kind of `.ova` file. This file is the main ova file which will be used by [import.exe](.govm/pkg/exe/import.exe). `import.exe` will automatically import `main.ova` into `VirtualBox`. This is especially useful if you have multiple computers that all can import with one click the `main.ova` and are ready to go with the prepared virtual-machine `Environemt`.
 
 ## Custome Vagrantfile
-With `govm` you can also provide your own custome `Vagrantfile` that should be used instead of the [default](.govm/vagrantfile/) vagrantfiles. If you would like to use a custome Vagrantfile there are some rules that you have to follow for a proper integration of your custome `Vagrantfile`.
+With `govm` you can also provide your own custome `Vagrantfile` that should be used instead of the [default](.govm/vagrantfile/) vagrantfiles. If you would like to use a custome Vagrantfile there are some rules that you have to follow for a proper integration of your custome `Vagrantfile`. 
+
+### govm variables
+There are some variables which will be exported into the current shell-session via the `export` keyword. These variables can be accesses in your `Vagrantfile` by using `ENV["VARIABLE_NAME"]`. The variables which are accessible are all config parameters which you can set in the [vm.cfg](#vmcfg).
+
+### Custome variables
+Of course govm can't cover all options that a user may want to have. Because of this the `PROVISION_VARIABLES` were introduced. Here you can declare based on the syntax explained [here](#vmcfg) your custome variables that you would like to use in your `Vagrantfile`. Because the `PROVISION_VARIABLES` are a string which has to be converted into a ruby `hash` before they can be used in the `Vagrantfile`. For this you have to paste the snippet into tou `Vagrantfile` before configuring any configuration for the virtual-machine:
+```
+hash_string=ENV["HASH_TABLE_STRING"]
+hash_arr = hash_string.split(',')
+hash = {}
+hash_arr.each do |e|
+  pair = e.split(':')
+  hash[pair[0]] = pair[1]
+end
+```
 
 ## Testing
 The first valid command that you will run will trigger an `integrationtest` which is assuring that every functionality is working properly. If the testing was successfull an empty file named `tested` will be created, which is informing `govm` that the `integrationtest` was already ran successfully. Don't worry you will see some error messages that are intentionally or known issues that will not influence any functionalities.
