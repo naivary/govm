@@ -49,9 +49,9 @@ The following sections will explain in detail how to use `govm`. Before you star
 `-r` if present it will force a `recreation` of the virtual-machine if there is a virtual-machine registered but not reachable. You may also use it to <br/> `reload` a virtual machine or group. <br/> 
 `-l` listing all virtual-machine created by `govm` <br/>
 
-If you wish to list all virtual-machines with some additional information run `gomv -l`
-Every command should start as following `govm -v [options]`. This way every command is properly structured and human readable.
-If you run the command `govm -v [options]` without specifiying `-f`, `-g` or `-m` govm will run the defined command on the `default.cfg` virtual-machine.
+If you wish to list all virtual-machines with some additional information run `gomv -l`. <br/>
+Every command should start as following `govm -v [options]`. This way every command is properly structured and human readable. <br/>
+If you run the command `govm -v [options]` without specifiying `-f`, `-g` or `-m` govm will run the defined command on the `default.cfg` virtual-machine. <br/>
 
 # Config
 Config files are the way that govm can be manipulated and controlled to serve your purpose. There are two types of `.cfg files`.
