@@ -262,7 +262,7 @@ With `govm` you can also provide your own custome `Vagrantfile` that should be u
 There are some variables which will be exported into the current shell-session via the `export` keyword. These variables can be accesses in your `Vagrantfile` by using `ENV["VARIABLE_NAME"]`. The variables which are accessible are all config parameters which you can set in the [vm.cfg](#vmcfg).
 
 ### Custome variables
-Of course govm can't cover all options that a user may want to have. Because of this the `PROVISION_VARIABLES` were introduced. Here you can declare based on the syntax explained [here](#vmcfg) your custome variables that you would like to use in your `Vagrantfile`. Because the `PROVISION_VARIABLES` are a string which has to be converted into a ruby `hash` before they can be used in the `Vagrantfile`. For this you have to paste the snippet into tou `Vagrantfile` before configuring any configuration for the virtual-machine:
+Of course govm can't cover all options that a user may want to have. Because of this the `PROVISION_VARIABLES` were introduced. Here you can declare based on the syntax explained [here](#vmcfg) your custome variables that you would like to use in your `Vagrantfile`. Because the `PROVISION_VARIABLES` are a string which has to be converted into a ruby `hash` before they can be used in the `Vagrantfile` you have to paste the code-snippet into your `Vagrantfile` before configuring antyhing.
 ```ruby
 hash_string=ENV["HASH_TABLE_STRING"]
 hash_arr = hash_string.split(',')
