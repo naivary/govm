@@ -37,7 +37,7 @@ if ! sudo grep -w -q "${USER} ALL = (ALL) NOPASSWD:ALL" /etc/sudoers.d/musti; th
 fi
 
 if ! [[ -f ../../govm ]]; then
-  cp govm.sh ./govm
+  cp ../../govm.sh ../../govm
 fi
 
 

@@ -49,7 +49,7 @@ The following sections will explain in detail how to use `govm`. Before you star
 `-r` if present it will force a `recreation` of the virtual-machine if there is a virtual-machine registered but not reachable. You may also use it to  `reload` a virtual machine or group.  
 `-l` listing all virtual-machine created by `govm` <br/>
 
-If you wish to list all virtual-machines with some additional information run `gomv -l`. <br/>
+If you wish to list all virtual-machines with some additional information run `govm -l`. <br/>
 
 Every command should start as following `govm -v [options]`. This way every command is properly structured and human readable. <br/>
 
@@ -242,6 +242,10 @@ Type-2 virtualization to import the create Environment.
 This feature is a great way to create an `Environment`, have it saved as an `.ova` file and thne used it with any Type-2-Provider. 
 This is giving you the possibility to keep your `GUI` clean from **dead virtual-machines**. 
 
+## Custome Vagrantfile
+With `govm` you can also provide your own custome `Vagrantfile` that should be used instead of the [default](.govm/vagrantfile/) vagrantfiles. If you would like to use a custome Vagrantfile there are some rules that you have to follow for a proper integration of your custome `Vagrantfile`.
+
+
 ### How is the .ova filename generated?
 
 For a single-export `govm -v export -f some/cfg/file` its straightforward: The name of the virtual-machine will be used.
@@ -253,7 +257,7 @@ After the first part of the name is calculated a versioning will be calculated. 
 `main.ova` is a special kind of `.ova` file. This file is the main ova file which will be used by [import.exe](.govm/pkg/exe/import.exe). `import.exe` will automatically import `main.ova` into `VirtualBox`. This is especially useful if you have multiple computers that all can import with one click the `main.ova` and are ready to go with the prepared virtual-machine `Environemt`.
 
 ## Testing
-The first valid command that you will run will trigger an `integrationtest` which is assuring that every functionality is working properly. If the testing was successfull an empty file named `tested` will be created, which is informing `gomv` that the `integrationtest` was already ran successfully. Don't worry you will see some error messages that are intentionally or known issues that will not influence any functionalities.
+The first valid command that you will run will trigger an `integrationtest` which is assuring that every functionality is working properly. If the testing was successfull an empty file named `tested` will be created, which is informing `govm` that the `integrationtest` was already ran successfully. Don't worry you will see some error messages that are intentionally or known issues that will not influence any functionalities.
 
 # WSL
 As always there are some specialities needed for `windows (wsl)`. We tried to cover as much as possible but still there are some limitation
