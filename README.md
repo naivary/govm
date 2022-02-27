@@ -12,7 +12,9 @@ currently a shell-wrapper for vagrant and virtualbox to create automatically:
 # Requirements
 The only requirements are [HashiCorp Vagrant](https://www.vagrantup.com/) and [Oracle VirtualBox](https://www.virtualbox.org/).
 Because we don't want to waste your time, there are some pre-written **init-scripts** for [wsl](init/wsl.sh) and [ubuntu](init/linux.sh) which will
-install all requirements and make some adjustements needed for `govm` to work properply. If you decide to run one of the init scripts be sure to reboot your local machine and then start using govm. DO NOT USE govm directly after using the init script! There may occur an error which is discussed in [this](#init) section (even though you did not use govm directly afterwards).
+install all requirements and make some adjustements needed for `govm` to work properply. If you decide to run one of the init scripts be sure to reboot your local machine and then start using govm. 
+
+IMPORTANT: do not use govm directly after using the init script! There may occur an error which is discussed in [this](#init) section (even though you did not use govm directly afterwards).
 
 ## init: wsl
 The init script wsl.sh will install `Chocolatey`, `Oracle VirtualBox` and `HashiCorp Vagrant`. 
