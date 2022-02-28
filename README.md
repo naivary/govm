@@ -102,7 +102,7 @@ for the virtual-machine.
 NOTE: 192.168.56.2 is reserved for 
 the default virtual-machine so do not use it!
 
-`VM_NAME: $HOST_ONLY_IP+$GOVM-ID -opt` <br/>
+`VM_NAME: $GOVM-ID -opt` <br/>
 Name of the virtual-machine.
 
 `SYNC_DIR: $VMSTORE/$GOVM-ID/SYNC_DIR -opt` <br/> 
@@ -186,14 +186,10 @@ e.g. ("first network" "second network") <br/>
 `LOG: govm.VMSTORE/$GOVM-ID/logs -opt` <br/>
 Location wehere the logging is made. 
 
-`VAGRANTFILE: .govm/vagrantfile/linux -opt` <br/>
-Location to the vagrantfile 
-that you would like to use. govm 
-has some required arguments that will
-still be required even if an other 
-`VAGRANTFILE` is used. To solve the problem
-deliver the options needed (only `HOST_ONLY_IP`). You dont have to 
-use them in your vagrantfile but the validation is then satisfied. <br/>
+`VAGRANTFILE_DIR: .govm/vagrantfiles -opt` <br/>
+Location of all your custome vagrantfiles. If you change
+be sure that there are some vagrantfiles that can be used otherwise 
+the linux [default](.govm/vagrantfile/linux) will be used.
 
 `CONFIG_DIR: vagrant-wrapper/config -opt` <br/>
 Directory where you would
@@ -297,7 +293,7 @@ The project structure can be what ever you want. But it is recommened to use the
 This directory contains directories and files that are used by the software to function properly. The only files that should be changed by you are
 `govm.cfg` and `default.cfg`.
 
-`config` <br/>
+`configs` <br/>
 In this directory you can define your virtual-machine `cfg` files. If you want to create a `group` of virtual-machines
 create a directory with the name of the group and insert all `cfg` files into that new directory e.g.
 ```
@@ -316,6 +312,9 @@ the directory name will be used as the [filename](#how-is-the-ova-filename-gener
 `provision` <br/>
 Every provision script or other types of provision should be located here. The structure of the directory is up to you. If you are using an other provision directory other than the default one be sure to set it as `PROVISION_DIR` in `govm.cfg`. All `SCRIPT` values in any `vm.cfg` file should be releative to `PROVISION_DIR`
 
+`vagrantfiles` <br/>
+If you would like to use an custome made [vagrantfiles](#custome-vagrantfile) should be located here. The directory is not important to govm but be sure to set the corret `VAGRANTFILE_DIR`.
+h
 ## Naming
 Because the names of your directories in the config direcroty and virtual-machine names [matter](#how-is-the-ova-filename-generated) it is a good idea to choose the names that they represent the purpose of the virtual-machine or the group like you can see in the example tree-structure above.
 

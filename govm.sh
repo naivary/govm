@@ -90,6 +90,7 @@ VALID_CONFIG_PARAMS_VM=(
     "DISK_SIZE_SECOND"
     "MOUNTING_POINT"
     "FILE_SYSTEM"
+    "VAGRANTFILE"
 )
 
 OPTIONAL_CONFIG_PARAMS_VM=(
@@ -100,16 +101,16 @@ OPTIONAL_CONFIG_PARAMS_VM=(
   "SCRIPT"
   "SYNC_DIR"
   "VM_NAME"
+  "CUSTOME_VARIABLES"
   "DISK_SIZE_PRIMARY"
   "DISK_SIZE_SECOND"
   "MOUNTING_POINT"
   "FILE_SYSTEM"
-  "CUSTOME_VARIABLES"
 )
 
 VALID_CONFIG_PARAMS_APP=(
   "VMSTORE"
-  "VAGRANTFILE"
+  "VAGRANTFILE_DIR"
   "PROVISION_DIR"
   "CONFIG_DIR"
   "APPLIANCESTORE"
@@ -123,7 +124,7 @@ VALID_CONFIG_PARAMS_APP=(
 
 OPTIONAL_CONFIG_PARAMS_APP=(
   "VMSTORE"
-  "VAGRANTFILE"
+  "VAGRANTFILE_DIR"
   "PROVISION_DIR"
   "CONFIG_DIR"
   "APPLIANCESTORE"
@@ -206,25 +207,25 @@ predefault() {
   PROVISION_DIR_NAME="provision"
   CURRENT_OS=$(uname -r | sed -n 's/.*\( *Microsoft *\).*/\1/ip')
   MAIN_OVA=${MAIN_OVA:-"false"}
+  VAGRANTFILE_TYPE="default"
 
   # govm.cfg
   GOVM_CONFIG="${BASEDIR}/${GOVM}/govm.cfg"
   GOVM_NAME="$(basename ${GOVM_CONFIG})"
   PROVISION_DIR=${PROVISION_DIR:-"${BASEDIR}/${PROVISION_DIR_NAME}"}
   CONFIG_DIR=${CONFIG_DIR:-"${BASEDIR}/configs"}
-  VAGRANTFILE=${VAGRANTFILE:-${BASEDIR}/${GOVM}/vagrantfile/linux}
+  VAGRANTFILE_DIR=${VAGRANTFILE_DIR:-${BASEDIR}/${GOVM}/vagrantfiles}
+  VAGRANTFILE=${VAGRANTFILE:-linux}
   VMSTORE=${VMSTORE:-${HOME}/${GOVM}}
   APPLIANCESTORE=${APPLIANCESTORE:-${HOME}/"${GOVM}_appliance"}
   LOG=${LOG:-"/log"}
   SCRIPT=${SCRIPT:-"nil"}
-  BRIDGE_OPTIONS=${BRIDGE_OPTIONS:-()}
+  BRIDGE_OPTIONS=()
 
   # vm.cfg
-  HASH_TABLE_STRING=${HASH_TABLE_STRING:-"govm:govm"}
   GROUP=${GROUP:-""}
   VM_CONFIG=${VM_CONFIG:-"${BASEDIR}/${GOVM}/${DEFAULT_VM}"}
   SCRIPT_VAGRANT=${PROVISON_DIR_NAME}/${SCRIPT_NAME}
-  CUSTOME_VARIABLES=${CUSTOME_VARIABLES:-()}
   OS_TYPE=${OS_TYPE:-linux}
   SYNC_USER=${SYNC_USER:-"vagrant"}
   getid 192.168.56.2
@@ -236,18 +237,13 @@ predefault() {
   DISK_SIZE_PRIMARY=${DISK_SIZE_PRIMARY:-""}
   MOUNTING_POINT=${MOUNTING_POINT:-"nil"}
   FILE_SYSTEM=${FILE_SYSTEM:-"nil"}
-  GIT_USERNAME=${GIT_USERNAME:-""}
-  GIT_PASSWORD=${GIT_PASSWORD:-""}
-  GIT_EMAIL=${GIT_EMAIL:-""}
-  GIT_NAME=${GIT_NAME:-""}
-  OS_USERNAME=${OS_USERNAME:-""}
-  OS_PASSWORD=${OS_PASSWORD:-""}
+  CUSTOME_VARIABLES=("govm:govm")
 }
 
 # postdefault is setting all
 # defaults that have a dependencie 
 # on govm.cfg values
-# postdefault(){}
+# postdefault() {}
 
 # osdefault is checking ig the current
 # used system is an wsl system or native linux
@@ -257,6 +253,23 @@ predefault() {
 osdefault() {
   if [[ "${CURRENT_OS}" == "microsoft" ]]; then
     APPLIANCESTORE="$(wslpath -w ${APPLIANCESTORE})"
+  fi
+}
+
+# vagrantfiledefault is checking
+# if the vagrantfile that is getting
+# used is a default or a custome
+# vagrantfile 
+vagrantfiledefault() {
+  if ! [[ "${VAGRANTFILE_DIR}" == "${BASEDIR}/${GOVM}/vagrantfiles" ]]; then
+    OPTIONAL_CONFIG_PARAMS_VM+=("HOST_ONLY_IP")
+    OPTIONAL_CONFIG_PARAMS_APP+=("BRIDGE_OPTIONS")
+    REQUIRED_PARAMS_CONFIG_VM=$(( ${#VALID_CONFIG_PARAMS_VM[@]} - ${#OPTIONAL_CONFIG_PARAMS_VM[@]} ))
+    REQUIRED_PARAMS_CONFIG_APP=$(( ${#VALID_CONFIG_PARAMS_APP[@]} - ${#OPTIONAL_CONFIG_PARAMS_APP[@]} ))
+    VAGRANTFILE_TYPE="custome"
+  else 
+    OPTIONAL_CONFIG_PARAMS_VM+=("VAGRANTFILE")
+    REQUIRED_PARAMS_CONFIG_VM=$(( ${#VALID_CONFIG_PARAMS_VM[@]} - ${#OPTIONAL_CONFIG_PARAMS_VM[@]} ))
   fi
 }
 
@@ -486,8 +499,9 @@ successexit() {
 # the vagrantfile to create an actual
 # ruby hash
 hashtablegen() {
-  local HASH_TABLE_STRING=${CUSTOME_VARIABLES[@]}
+  CUSTOME_VARIABLES_STRING=""
   local i=0
+
   if [[ ${#CUSTOME_VARIABLES[@]} -gt 0 ]]; then
     for PAIR in "${CUSTOME_VARIABLES[@]}"
     do
@@ -503,13 +517,12 @@ hashtablegen() {
       fi
 
       if [[ ${i} -eq 0 ]]; then
-        HASH_TABLE_STRING="${PAIR}" 
+        CUSTOME_VARIABLES_STRING="${PAIR}" 
       else
-        HASH_TABLE_STRING="${HASH_TABLE_STRING},${PAIR}" 
+        CUSTOME_VARIABLES_STRING="${CUSTOME_VARIABLES_STRING},${PAIR}" 
       fi
       i=$((i+1))
     done
-    CUSTOME_VARIABLES=${HASH_TABLE_STRING}
   else
     error "Empty CUSTOME_VARIABLES Array: ${CUSTOME_VARIABLES}"
     error "If you dont want to have any comment it out"
@@ -521,19 +534,23 @@ hashtablegen() {
 # by commas which will then be used by the vagrantfile to create 
 # an actual ruby arr for the bridge options
 bridgeoptiongen() {
+
+  if [[ "${VAGRANTFILE_TYPE}" == "custome" ]]; then
+    return 0
+  fi
+  echo "here"
   local i=0
-  local BRIDGE_OPTION_STRING=""
+  BRIDGE_OPTIONS_STRING=""
   if [[ ${#BRIDGE_OPTIONS[@]} -gt 0 ]]; then
     for VALUE in "${BRIDGE_OPTIONS[@]}"
     do
       if [[ ${i} -eq 0 ]]; then
-        BRIDGE_OPTION_STRING="${VALUE}" 
+        BRIDGE_OPTIONS_STRING="${VALUE}" 
       else
-        BRIDGE_OPTION_STRING="${BRIDGE_OPTION_STRING},${VALUE}" 
+        BRIDGE_OPTIONS_STRING="${BRIDGE_OPTIONS_STRING},${VALUE}" 
       fi
       i=$((i+1))
     done
-    BRIDGE_OPTIONS=${BRIDGE_OPTION_STRING}
   else
     error "Empty BRIDGE_OPTIONS Array!"
     infobold "Your options are:"
@@ -556,8 +573,8 @@ setvenv() {
   export DISK_SIZE_SECOND;
   export MOUNTING_POINT;
   export FILE_SYSTEM;
-  export CUSTOME_VARIABLES;
-  export BRIDGE_OPTIONS;
+  export CUSTOME_VARIABLES_STRING;
+  export BRIDGE_OPTIONS_STRING;
   export VAGRANT_EXPERIMENTAL="disks"
   export SYNC_DIR;
   export SYNC_USER;
@@ -577,7 +594,8 @@ resetvenv() {
   export -n DISK_SIZE_SECOND;
   export -n MOUNTING_POINT;
   export -n FILE_SYSTEM;
-  export -n CUSTOME_VARIABLES;
+  export -n CUSTOME_VARIABLES_STRING;
+  export -n BRIDGE_OPTIONS_STRING;
   export -n BRIDGE_OPTIONS;
   export -n SYNC_DIR;
   export -n SYNC_USER;
@@ -588,7 +606,7 @@ resetvenv() {
 # vagrantfile that should 
 # be used for the 
 setvfile() {
-  if [[ "${OS_TYPE}" == "windows" ]]; then
+  if [[ "${OS_TYPE}" == "windows" && "${VAGRANTFILE_TYPE}" == "default" ]]; then
     VAGRANTFILE=${BASEDIR}/${GOVM}/vagrantfile/windows
   fi
 }
@@ -601,13 +619,13 @@ createcfg() {
   cd ${BASEDIR} 
   REALPATH_VM_CONFIG=$(realpath ${VM_CONFIG})
   cp ${REALPATH_VM_CONFIG} ${GOVM_PATH}/vm.cfg
-sed -i '/[^\S\r\n]*CUSTOME_VARIABLES=/d' ${GOVM_PATH}/vm.cfg
+
 cat << EOF >> ${GOVM_PATH}/vm.cfg
 # CREATED BY GOVM. DO NOT EDIT DATA! 
 SYNC_DIR=${SYNC_DIR}
 ID=${ID}
 LOG_PATH=${LOG_PATH}
-CUSTOME_VARIABLES="${CUSTOME_VARIABLES}"
+CUSTOME_VARIABLES_STRING="${CUSTOME_VARIABLES_STRING}"
 EOF
 }
 
@@ -633,7 +651,7 @@ prepvenv() {
   fi
 
   if [[ "${VM_NAME}" == "" ]]; then
-    VM_NAME="${HOST_ONLY_IP}_${ID}"
+    VM_NAME="${ID}"
   fi
   SCRIPT_NAME=$(basename ${SCRIPT})
 }
@@ -696,10 +714,11 @@ validatevmcfg() {
         fi
       fi
     done < ${VM_CONFIG}
+
   if [[ ${#GIVEN_PARAMS_REQUIRED[*]} -eq ${REQUIRED_PARAMS_CONFIG_VM} ]]; then
     success "Valid Syntax and Arguments for ${config_name}" 
   else 
-    error "Not Enough Arguments"
+    error "Not Enough Arguments: ${VM_CONFIG}"
     error "Valid-Arguments: ${VALID_CONFIG_PARAMS_VM[*]}"
     error "Optional: ${OPTIONAL_CONFIG_PARAMS_VM[*]}"
     exit 1
@@ -750,6 +769,9 @@ validateappcfg() {
     else 
       error "Not Enough Arguments"
       error "Expected: ${VALID_CONFIG_PARAMS_APP[*]}"
+      infobold "Be sure that if you are using the default VAGRANTFILE_DIR"
+      infobold "that the BRIDGE_OPTIONS has to be set. Here are the possible options:"
+      vmlistbridgedlifs
       exit 1
     fi
 
@@ -777,13 +799,17 @@ validaterequiredvmargs() {
   elif ! [[ -s "${PROVISION_DIR}/${SCRIPT}" ]]; then
     error "Shell-script not found or empty: ${PROVISION_DIR}/${SCRIPT}";
     exit 1;
-  elif ! [[ "${HOST_ONLY_IP}" =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
-    error "Invalid IP-Adress";
-    exit 1;
-  elif ! [[ "${SUPPORTED_OS_TYPES[@]}" =~ "${OS_TYPE}" ]]; then
+  elif [[ "${VAGRANTFILE_TYPE}" == "default" ]]; then
+    if ! [[ "${HOST_ONLY_IP}" =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
+      error "Invalid IP-Adress";
+      exit 1;
+    fi
+  fi
+
+  if ! [[ "${SUPPORTED_OS_TYPES[@]}" =~ "${OS_TYPE}" ]]; then
     error "os is not currently supported: ${OS_TYPE}"
     exit 1
-  elif ! validateip;then
+  elif ! validateip; then
     exit 1
   elif validateoptionalvmargs; then
     success "Valid values!" 
@@ -815,7 +841,7 @@ validateoptionalvmargs() {
     if ! [[ -d "${SYNC_DIR}" ]]; then
       makedir "${SYNC_DIR}"
     fi
-  elif [[ "${CUSTOME_VARIABLES}" ]]; then
+  elif [[ ${#CUSTOME_VARIABLES[@]} -gt 0 ]]; then
     hashtablegen
   elif [[ "${VM_NAME}" ]]; then
     if ! [[ "${VM_NAME}" =~ ^([A-Za-z0-9_.-]+)$ ]]; then
@@ -823,6 +849,14 @@ validateoptionalvmargs() {
       exit 1
     fi
   fi
+
+  if [[ -f "${VAGRANTFILE_DIR}/${VAGRANTFILE}" && -s "${VAGRANTFILE_DIR}/${VAGRANTFILE}" ]]; then
+    VAGRANTFILE=${VAGRANTFILE_DIR}/${VAGRANTFILE}
+  else 
+    error "VAGRANTFILE is empty or not found: ${VAGRANTFILE}"
+    exit 1
+  fi
+
 }
 
 # validateappargs is checking if 
@@ -836,13 +870,13 @@ validateappargs() {
     makedir "${LOG}"
   elif ! [[ -d ${APPLIANCESTORE} ]]; then 
     makedir "${APPLIANCESTORE}"
-  elif ! [[ -f ${VAGRANTFILE} && -s ${VAGRANTFILE} ]]; then
-    infobold "${VAGRANTFILE} is not existing or is empty. Using default Vagrantfile."
-    VAGRANTFILE=${BASEDIR}/${GOVM}/vagrantfile/linux
   elif ! [[ -d ${CONFIG_DIR} ]]; then
     makedir "${CONFIG_DIR}"
   elif ! [[ -d ${PROVISION_DIR} ]]; then
     makedir "${PROVISION_DIR}"
+  elif ! [[ -d ${VAGRANTFILE_DIR} ]]; then
+    error "VAGRANTFILE_DIR does not exist: ${VAGRANTFILE_DIR}"
+    exit 1
   else
     success "Valid GOVM-Values!"
   fi
@@ -860,6 +894,9 @@ validateappargs() {
 # can be forced with -d flag
 validateip() {
   # check if ip is used in any way
+  if [[ "${VAGRANTFILE_TYPE}" == "custome" ]]; then
+    return 0
+  fi 
   # NOTE: for git bash it is really 
   # complicated. it is a success even though
   # some of the packages are not received
@@ -953,7 +990,8 @@ createvenv() {
 # virtual machine using vagrant up 
 createvm() {
   infobold "Creating Virtual-Machine ${ID}. This may take a while..."
-  vagrant up &> ${LOG_PATH}/"${TIMESTAMP}_up.log" 
+  # vagrant up &> ${LOG_PATH}/"${TIMESTAMP}_up.log" 
+  vagrant up
 }
 
 # up is creating a virtual-machine with vagrant up. 
@@ -1289,6 +1327,7 @@ integrationtest() {
 main() {
   predefault
   init;
+  vagrantfiledefault;
   validateappcfg;
   sourcefile ${GOVM_CONFIG};
   validateappargs;
