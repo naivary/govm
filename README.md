@@ -1,13 +1,13 @@
 # govm
 vagrant-wrapper or govm (which is called govm because it will be implemented in go in the future with a proper API) is 
-currently a shell-wrapper for vagrant and virtualbox to create automatically:
-- one highly configurable virtual machine
+currently a shell-wrapper for vagrant with virtualbox as provider. It has a lot of functions: 
+- create one single virtual-machine with a [single-creation](#single-creation)
 - run any action you know from vagrant on these machines
-- create a group of virtual machines with multiple config-files each representing a virtual machine
-- manage the group with the known commands (destroy/start/halt)
-- export a group or one virtual machine as an .ova file
-- easy import of [main.ova](#mainova) file with a `.exe` file.
-- providing your own `Vagrantfile`
+- create a group of virtual machines with multiple config-files each representing a virtual machine with a [group-creation](#group-creation)
+- manage the group with the known commands (destroy/start/halt) with some syntax sugar
+- [export](#exporting) a group or one virtual machine as an .ova file
+- easy import of [main.ova](#mainova) file with a [.exe](.govm/pkg/exe/import.exe) file
+- configure everthing that govm is  controlling via [govm.cfg](#govmcfg)
 
 # Requirements
 The only requirements are [HashiCorp Vagrant](https://www.vagrantup.com/) and [Oracle VirtualBox](https://www.virtualbox.org/).
