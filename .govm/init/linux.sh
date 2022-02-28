@@ -27,8 +27,7 @@ else
   infobold "Adding needed ENV-Variables..."
   echo "# CREATED BY GOVM. DO NOT EDIT" >> ${BASHFILE}
   echo "# BEGIN" >> ${BASHFILE}
-  echo "export VAGRANT_WSL_ENABLE_WINDOWS_ACCESS=\"1\"" >> "${BASHFILE}"
-  echo "export PATH=\"\$PATH:/mnt/c/Program Files/Oracle/VirtualBox:${HOME}/vagrant-wrapper/govm\"" >> "${BASHFILE}"
+  echo "export PATH=\"\$PATH:${HOME}/vagrant-wrapper\"" >> "${BASHFILE}"
   echo "# END" >> ${BASHFILE}
   echo "" >> ${BASHFILE}
 fi
