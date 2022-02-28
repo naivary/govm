@@ -1,0 +1,36 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+
+Vagrant.configure("2") do |config|
+
+
+  # creating hash from the given hash_string
+  hash_string=ENV["CUSTOME_VARIABLES_STRING"]
+  hash_arr = hash_string.split(',')
+  hash = {}
+  hash_arr.each do |e|
+    pair = e.split(':')
+    hash[pair[0]] = pair[1]
+  end
+
+  config.vm.boot_timeout = 700
+
+  # Port forward WinRM (Windows Remote Management) and RDP
+  config.vm.network :forwarded_port, guest: 3389, host: 3389, id: "rdp", auto_correct: true
+  config.vm.network :forwarded_port, guest: 5985, host: 5985, id: "winrm", auto_correct: true
+
+  # winrm config, uses modern.ie default user/password.
+  # If other credentials are used must be changed here
+  config.vm.communicator = "winrm"
+  config.winrm.username = "IEUser"
+  config.winrm.password = "Passw0rd!"
+  config.winrm.host = "localhost"
+  config.winrm.timeout = 180
+
+  config.ssh.username = "IEUser"
+  config.ssh.password = "Passw0rd!"
+  config.ssh.extra_args = "cmd"  # cmd or powershell
+  config.vm.guest = :windows
+
+end
