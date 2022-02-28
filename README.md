@@ -149,7 +149,7 @@ mkfs for the second disk. Valid values are:
 
 This variable is required if `DISK_SIZE-SECOND` is set otherwise it is getting ignored.
  
-`PROVISION_VAR: () -opt` <br/>
+`CUSTOME_VARIABLES: () -opt` <br/>
 Variables that you want to access 
 in your provision script.
 It is an array seperated with 
@@ -161,6 +161,9 @@ then this will be taken as key and value i.e.
 SPECIAL-VARIABLES:
 1. `os_user`: if this is set this users home-directory will be used as the `SYNC_DIR`.
 
+`VAGRANTFILE: .govm/vagrantfiles/linux` <br/>
+`Vagrantfile` that should be used for the virtual-machine. It has to be 
+relative to the `govm.VAGRANTFILE_DIR`.
 
 ## govm.cfg
 In the following you will be introduced to all the config options with a detailed explanation what the option will affect.
