@@ -534,11 +534,10 @@ hashtablegen() {
 # by commas which will then be used by the vagrantfile to create 
 # an actual ruby arr for the bridge options
 bridgeoptiongen() {
-
+  local i=0
   if [[ "${VAGRANTFILE_TYPE}" == "custome" ]]; then
     return 0
   fi
-  local i=0
   BRIDGE_OPTIONS_STRING=""
   if [[ ${#BRIDGE_OPTIONS[@]} -gt 0 ]]; then
     for VALUE in "${BRIDGE_OPTIONS[@]}"
@@ -652,6 +651,7 @@ prepvenv() {
   if [[ "${VM_NAME}" == "" ]]; then
     VM_NAME="${ID}"
   fi
+
   SCRIPT_NAME=$(basename ${SCRIPT})
 }
 
@@ -663,7 +663,7 @@ prepvenv() {
 postvenv() {
   setvenv;
   setvfile
-  cp "${VAGRANTFILE}" "${GOVM_PATH}/Vagrantfile"
+  cp "${VAGRANTFILE_DIR}/${VAGRANTFILE}" "${GOVM_PATH}/Vagrantfile"
   DIR_NAME=$(dirname ${SCRIPT})
   makedir ${GOVM_PATH}/${DIR_NAME}
   cp "${PROVISION_DIR}/${SCRIPT}" "${GOVM_PATH}/${SCRIPT}"
@@ -849,9 +849,7 @@ validateoptionalvmargs() {
     fi
   fi
 
-  if [[ -f "${VAGRANTFILE_DIR}/${VAGRANTFILE}" && -s "${VAGRANTFILE_DIR}/${VAGRANTFILE}" ]]; then
-    VAGRANTFILE=${VAGRANTFILE_DIR}/${VAGRANTFILE}
-  else 
+  if ! [[ -f "${VAGRANTFILE_DIR}/${VAGRANTFILE}" && -s "${VAGRANTFILE_DIR}/${VAGRANTFILE}" ]]; then
     error "VAGRANTFILE is empty or not found: ${VAGRANTFILE}"
     exit 1
   fi
@@ -881,7 +879,6 @@ validateappargs() {
   fi
  
 }
-
 
 # validateip is validating the given ip
 # if its already in use or not by following 2 steps:
@@ -1056,7 +1053,7 @@ vexport() {
   infobold "Exporting ${VM_NAME}. This may take some time..."
   sourcefile "${VM_CONFIG}"
   getid "${HOST_ONLY_IP}"
-  halt 'export'
+  halt 'export';
   appliancesemver "${VM_NAME}"
   vmexport "${VM_NAME}" "single"
   success "Finished! appliance can be found at ${APPLIANCESTORE}"
@@ -1126,11 +1123,10 @@ gup() {
     clearoptionalargs
     VM_CONFIG=${CFG}
     sourcefile "${CFG}";
-    resetvenv
-    info "Creating $(basename ${CFG})..."
-    groupup "${CFG}"
+    resetvenv;
+    info "Creating $(basename ${CFG})...";
+    groupup "${CFG}";
   done
-
 }
 
 # gdestroy is an alias
@@ -1276,6 +1272,9 @@ vmlistbridgedlifs() {
 # an example group located at .govm/configs
 integrationtest() {
   if ! [[ -f ${BASEDIR}/${GOVM}/tested ]]; then
+    PROVISION_DIR="${BASEDIR}/${GOVM}/provision"
+    VAGRANTFILE_DIR="${BASEDIR}/${GOVM}/vagrantfiles"
+    GROUP="${BASEDIR}/${GOVM}/configs/ubuntu"
     APPSTORE=${APPLIANCESTORE}
     infobold "Running some tests to asure that everything works as planned."
     infobold "This will take some time. Get a coffee... :)"
@@ -1295,7 +1294,6 @@ integrationtest() {
     sleep 10
     ID=""
     MAIN_OVA="false"
-    GROUP="${BASEDIR}/${GOVM}/configs/ubuntu"
     gup
     ghalt
     gstart
