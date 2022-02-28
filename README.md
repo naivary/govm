@@ -6,8 +6,8 @@ currently a shell-wrapper for vagrant with virtualbox as provider. It has a lot 
 - create a group of virtual machines with multiple config-files each representing a virtual machine with a [group-creation](#group-creation)
 - manage the group with the known commands (destroy/start/halt) with some syntax sugar
 - [export](#exporting) a group or one virtual machine as an .ova file
-- easy import of [main.ova](#mainova) file with a [.exe](.govm/pkg/exe/import.exe) file
-- configure everthing that govm is  controlling via [govm.cfg](#govmcfg)
+- easy import of [main.ova](#mainova) file with a `.exe` file
+- configure everthing that govm is controlling via [govm.cfg](#govmcfg)
 
 # Requirements
 The only requirements are [HashiCorp Vagrant](https://www.vagrantup.com/) and [Oracle VirtualBox](https://www.virtualbox.org/).
@@ -254,7 +254,7 @@ For a group-export `govm -v gexport -g some/dir` the directory name is used for 
 After the first part of the name is calculated a versioning will be calculated. The versioning is based on [semver](https://semver.org/) standard with a small simplification. So the end result will be: `$VM_NAME-v1.0.ova` or `Group-Dir-Name-v1.0.ova`.
 
 ### main.ova
-`main.ova` is a special kind of `.ova` file. This file is the main ova file which will be used by [import.exe](.govm/pkg/exe/import.exe). `import.exe` will automatically import `main.ova` into `VirtualBox`. This is especially useful if you have multiple computers that all can import with one click the `main.ova` and are ready to go with the prepared virtual-machine `Environemt`.
+`main.ova` is a special kind of `.ova` file. This file is the main ova file which will be used by [import.exe](.govm/pkg/exe). `import.exe` will automatically import `main.ova` into `VirtualBox`. This is especially useful if you have multiple computers that all can import with one click the `main.ova` and are ready to go with the prepared virtual-machine `Environemt`.
 
 ## Custome Vagrantfile
 With `govm` you can also provide your own custome `Vagrantfile` that should be used instead of the [default](.govm/vagrantfile/) vagrantfiles. If you would like to use a custome Vagrantfile there are some rules that you have to follow for a proper integration of your custome `Vagrantfile`. 
