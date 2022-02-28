@@ -189,7 +189,8 @@ Location wehere the logging is made.
 `VAGRANTFILE_DIR: .govm/vagrantfiles -opt` <br/>
 Location of all your custome vagrantfiles. If you change
 be sure that there are some vagrantfiles that can be used otherwise 
-the linux [default](.govm/vagrantfile/linux) will be used.
+the linux [default](.govm/vagrantfile/linux) will be used. For creating 
+custome `Vagrantfiles` you have to follow some [rules](#custome-vagrantfile).
 
 `CONFIG_DIR: vagrant-wrapper/config -opt` <br/>
 Directory where you would
@@ -260,7 +261,7 @@ There are some variables which will be exported into the current shell-session v
 ### Custome variables
 Of course govm can't cover all options that a user may want to have. Because of this the `PROVISION_VARIABLES` were introduced. Here you can declare based on the syntax explained [here](#vmcfg) your custome variables that you would like to use in your `Vagrantfile`. Because the `PROVISION_VARIABLES` are a string which has to be converted into a ruby `hash` before they can be used in the `Vagrantfile` you have to paste the code-snippet into your `Vagrantfile` before configuring antyhing:
 ```ruby
-hash_string=ENV["HASH_TABLE_STRING"]
+hash_string=ENV["CUSTOME_VARIABLES_STRING"]
 hash_arr = hash_string.split(',')
 hash = {}
 hash_arr.each do |e|
@@ -271,6 +272,9 @@ hash_arr.each do |e|
 end
 ```
 Afterwards every defined custome variables of your vm.cfg is also accesible by using `hash["KEY"]`.
+
+### Gotchas
+Changing the `VAGRANTFILE_DIR` will change the behavior of the [single-screation](#single-creation) of the `default.cfg` This is because if you choose to haven a custome `Vagrantfile` every variable defined in [vm.cfg](#vmcfg) will be optional and one new argument will be required: `VAGRANTFILE` which is not set in the [default.cfg](.govm/default.cfg). But you can set a `VAGRANTFILE` for [default.cfg](.govm/default.cfg) then it will work properly. which one? Thats on you!
 
 ## Testing
 The first valid command that you will run will trigger an `integrationtest` which is assuring that every functionality is working properly. If the testing was successfull an empty file named `tested` will be created, which is informing `govm` that the `integrationtest` was already ran successfully. Don't worry you will see some error messages that are intentionally or known issues that will not influence any functionalities.

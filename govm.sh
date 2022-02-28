@@ -333,7 +333,7 @@ getid() {
   if [[ ${id} ]]; then
     ID="${id}"
   else 
-    ID=${ID:-"nil"}
+    ID="nil"
   fi
 }
 
@@ -351,7 +351,7 @@ getos() {
   if [[ ${os} ]]; then
     OS_IMAGE=${OS_IMAGE:-os}
   else
-    OS_IMAGE=${OS_IMAGE:-"nil"}
+    OS_IMAGE="nil"
   fi
 }
 
@@ -362,7 +362,7 @@ getip() {
   if [[ ${ip} ]]; then
     HOST_ONLY_IP=${HOST_ONLY_IP:-ip}
   else
-    HOST_ONLY_IP=${HOST_ONLY_IP:-"nil"}
+    HOST_ONLY_IP="nil"
   fi
 }
 
@@ -538,7 +538,6 @@ bridgeoptiongen() {
   if [[ "${VAGRANTFILE_TYPE}" == "custome" ]]; then
     return 0
   fi
-  echo "here"
   local i=0
   BRIDGE_OPTIONS_STRING=""
   if [[ ${#BRIDGE_OPTIONS[@]} -gt 0 ]]; then
