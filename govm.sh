@@ -85,7 +85,7 @@ VALID_CONFIG_PARAMS_VM=(
     "SYNC_DIR"
     "HOST_ONLY_IP"
     "VM_NAME"
-    "PROVISION_VARIABLES"
+    "CUSTOME_VARIABLES"
     "DISK_SIZE_PRIMARY"
     "DISK_SIZE_SECOND"
     "MOUNTING_POINT"
@@ -104,7 +104,7 @@ OPTIONAL_CONFIG_PARAMS_VM=(
   "DISK_SIZE_SECOND"
   "MOUNTING_POINT"
   "FILE_SYSTEM"
-  "PROVISION_VARIABLES"
+  "CUSTOME_VARIABLES"
 )
 
 VALID_CONFIG_PARAMS_APP=(
@@ -211,7 +211,7 @@ predefault() {
   GOVM_CONFIG="${BASEDIR}/${GOVM}/govm.cfg"
   GOVM_NAME="$(basename ${GOVM_CONFIG})"
   PROVISION_DIR=${PROVISION_DIR:-"${BASEDIR}/${PROVISION_DIR_NAME}"}
-  CONFIG_DIR=${CONFIG_DIR:-"${BASEDIR}/config"}
+  CONFIG_DIR=${CONFIG_DIR:-"${BASEDIR}/configs"}
   VAGRANTFILE=${VAGRANTFILE:-${BASEDIR}/${GOVM}/vagrantfile/linux}
   VMSTORE=${VMSTORE:-${HOME}/${GOVM}}
   APPLIANCESTORE=${APPLIANCESTORE:-${HOME}/"${GOVM}_appliance"}
@@ -224,7 +224,7 @@ predefault() {
   GROUP=${GROUP:-""}
   VM_CONFIG=${VM_CONFIG:-"${BASEDIR}/${GOVM}/${DEFAULT_VM}"}
   SCRIPT_VAGRANT=${PROVISON_DIR_NAME}/${SCRIPT_NAME}
-  PROVISION_VARIABLES=${PROVISION_VARIABLES:-""}
+  CUSTOME_VARIABLES=${CUSTOME_VARIABLES:-()}
   OS_TYPE=${OS_TYPE:-linux}
   SYNC_USER=${SYNC_USER:-"vagrant"}
   getid 192.168.56.2
@@ -486,10 +486,10 @@ successexit() {
 # the vagrantfile to create an actual
 # ruby hash
 hashtablegen() {
-  HASH_TABLE_STRING=${PROVISION_VARIABLES[@]}
+  local HASH_TABLE_STRING=${CUSTOME_VARIABLES[@]}
   local i=0
-  if [[ ${#PROVISION_VARIABLES[@]} -gt 0 ]]; then
-    for PAIR in "${PROVISION_VARIABLES[@]}"
+  if [[ ${#CUSTOME_VARIABLES[@]} -gt 0 ]]; then
+    for PAIR in "${CUSTOME_VARIABLES[@]}"
     do
       if ! [[ "${PAIR}" =~ ':' ]]; then
         PAIR="${PAIR}:${PAIR}"
@@ -509,8 +509,9 @@ hashtablegen() {
       fi
       i=$((i+1))
     done
+    CUSTOME_VARIABLES=${HASH_TABLE_STRING}
   else
-    error "Empty PROVISION_VARIABLES Array: ${PROVISION_VARIABLES}"
+    error "Empty CUSTOME_VARIABLES Array: ${CUSTOME_VARIABLES}"
     error "If you dont want to have any comment it out"
     exit 1
   fi
@@ -521,6 +522,7 @@ hashtablegen() {
 # an actual ruby arr for the bridge options
 bridgeoptiongen() {
   local i=0
+  local BRIDGE_OPTION_STRING=""
   if [[ ${#BRIDGE_OPTIONS[@]} -gt 0 ]]; then
     for VALUE in "${BRIDGE_OPTIONS[@]}"
     do
@@ -531,6 +533,7 @@ bridgeoptiongen() {
       fi
       i=$((i+1))
     done
+    BRIDGE_OPTIONS=${BRIDGE_OPTION_STRING}
   else
     error "Empty BRIDGE_OPTIONS Array!"
     infobold "Your options are:"
@@ -553,8 +556,8 @@ setvenv() {
   export DISK_SIZE_SECOND;
   export MOUNTING_POINT;
   export FILE_SYSTEM;
-  export HASH_TABLE_STRING;
-  export BRIDGE_OPTION_STRING;
+  export CUSTOME_VARIABLES;
+  export BRIDGE_OPTIONS;
   export VAGRANT_EXPERIMENTAL="disks"
   export SYNC_DIR;
   export SYNC_USER;
@@ -574,10 +577,10 @@ resetvenv() {
   export -n DISK_SIZE_SECOND;
   export -n MOUNTING_POINT;
   export -n FILE_SYSTEM;
-  export -n HASH_TABLE_STRING;
-  export -n BRIDGE_OPTION_STRING;
+  export -n CUSTOME_VARIABLES;
+  export -n BRIDGE_OPTIONS;
   export -n SYNC_DIR;
-  export -n SYNC_USER
+  export -n SYNC_USER;
 
 }
 
@@ -598,13 +601,13 @@ createcfg() {
   cd ${BASEDIR} 
   REALPATH_VM_CONFIG=$(realpath ${VM_CONFIG})
   cp ${REALPATH_VM_CONFIG} ${GOVM_PATH}/vm.cfg
+sed -i '/[^\S\r\n]*CUSTOME_VARIABLES=/d' ${GOVM_PATH}/vm.cfg
 cat << EOF >> ${GOVM_PATH}/vm.cfg
-
 # CREATED BY GOVM. DO NOT EDIT DATA! 
 SYNC_DIR=${SYNC_DIR}
 ID=${ID}
 LOG_PATH=${LOG_PATH}
-HASH_TABLE_STRING="${HASH_TABLE_STRING}"
+CUSTOME_VARIABLES="${CUSTOME_VARIABLES}"
 EOF
 }
 
@@ -812,7 +815,7 @@ validateoptionalvmargs() {
     if ! [[ -d "${SYNC_DIR}" ]]; then
       makedir "${SYNC_DIR}"
     fi
-  elif [[ "${PROVISION_VARIABLES}" ]]; then
+  elif [[ "${CUSTOME_VARIABLES}" ]]; then
     hashtablegen
   elif [[ "${VM_NAME}" ]]; then
     if ! [[ "${VM_NAME}" =~ ^([A-Za-z0-9_.-]+)$ ]]; then
@@ -1233,7 +1236,7 @@ vmlistbridgedlifs() {
 # integreationtest will test all functionalities in the app
 # by simulating an example usage of an end-user
 # for this the default.cfg and
-# an example group located at .govm/config 
+# an example group located at .govm/configs
 integrationtest() {
   if ! [[ -f ${BASEDIR}/${GOVM}/tested ]]; then
     APPSTORE=${APPLIANCESTORE}
@@ -1255,7 +1258,7 @@ integrationtest() {
     sleep 10
     ID=""
     MAIN_OVA="false"
-    GROUP="${BASEDIR}/${GOVM}/config/ubuntu"
+    GROUP="${BASEDIR}/${GOVM}/configs/ubuntu"
     gup
     ghalt
     gstart
