@@ -274,7 +274,7 @@ hash_arr.each do |e|
   hash[key] = value
 end
 ```
-Afterwards every defined custome variables of your vm.cfg is also accesible by using `hash["KEY"]`.
+Afterwards every defined custome variables of your vm.cfg is also accesible by using `hash["KEY"]`. There is already a [template](./vagrantfiles/template) for creating proper custome `Vagrantfiles`.
 
 ### Gotchas
 Changing the `VAGRANTFILE_DIR` will change the behavior of the [single-screation](#single-creation) of the `default.cfg` This is because if you choose to haven a custome `Vagrantfile` every variable defined in [vm.cfg](#vmcfg) will be optional and one new argument will be required: `VAGRANTFILE` which is not set in the [default.cfg](.govm/default.cfg). But you can set a `VAGRANTFILE` for [default.cfg](.govm/default.cfg) then it will work properly. which one? Thats on you!
