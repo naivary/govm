@@ -194,19 +194,14 @@ e.g. ("first network" "second network") <br/>
 Location wehere the logging is made. 
 
 `VAGRANTFILE_DIR: .govm/vagrantfiles -opt` <br/>
-Location of all your custome vagrantfiles. If you change
-be sure that there are some vagrantfiles that can be used otherwise 
-the linux [default](.govm/vagrantfile/linux) will be used. For creating 
-custome `Vagrantfiles` you have to follow some [rules](#custome-vagrantfile).
+Location of all your custome vagrantfiles. For creating your custome `Vagrantfiles` you have to follow some [rules](#custome-vagrantfile).
 
 `CONFIG_DIR: vagrant-wrapper/config -opt` <br/>
-Directory where you would
-like to store your groups and vm.cfg. 
+Directory where you would like to store your groups and vm.cfg. 
 The structure of the directories has a [meaning](#project-structure). <br/>
 
 `PROVISION_DIR: vagrant-wrapper/provision -opt` <br/>
-Directory with all your
-provisions-scripts. <br/>
+Directory with all your provisions-scripts. <br/>
 
 In `govm.cfg` are also some globally defined default values for the 
 virtual-machine `cfg` files which are required to be present. 
@@ -222,51 +217,53 @@ There are two types of creation-processes [single-creation](#single-creation) an
 
 ## single-creation
 Single-creation is the process of creating one virtual-machine with an optional provided
-vm.cfg file representing the virtual-machine and the configurations for the virtual-machine.
+vm.cfg file representing the configs of the virtual-machines.
 
 To start a single-creation you have two options:
 1. You can run `govm -v up`. This will create a virtual machine based on the [default.cfg](.govm/default.cfg).
 2. You can run `govm -v up -f your/vm/config/path`. This will create a virtual-machine based on the `.cfg` that you provided.
 
 After the virtual machine is created your are able to interact with it by using the `$GOVM-ID` of the virtual-machine created by `govm`.
-The syntax for any interaction with the virtual machine is `govm -v [options] -m [$GOVM-ID]`.
+The syntax for any interaction with the virtual machine is `govm -v [options] -m $GOVM-ID`.
 
 ## group-creation
 Group-creation is the process of creating multiple virtual-machines based on a directory
-which contains multiple vm.cfg files, each representing a virtual-machine.
+which contains multiple vm.cfg files.
 
 To start a group-creation you have to run `govm -v gup -g path/to/dir`
 
 After the group is created you can interact with the each virtual-machine as it would be a [`single-creation`](#single-creation).
-For some **syntax-sugar** there are some *group-commands* as described in [usage](#usage) like `gdestroy` or `ghalt` 
+For some **syntax-sugar** there are some **group-commands** as described in [usage](#usage) like `gdestroy` or `ghalt` 
 which will run the given command on the whole group so you dont have to run a single command by hand on every virtual-machine in the same group.
 
 ## Exporting
 Exporting is the possibility to export a group or a single 
 virtual-machine as an `.ova` file which then can be used in every
-Type-2 virtualization to import the create Environment.
+Type-2 virtualization to import the created Environment.
 
 This feature is a great way to create an `Environment`, have it saved as an `.ova` file and thne used it with any Type-2-Provider. 
 This is giving you the possibility to keep your `GUI` clean from **dead virtual-machines**. 
 
 ### How is the .ova filename generated?
 
-For a single-export `govm -v export -f some/cfg/file` its straightforward: The name of the virtual-machine will be used.
+For a single-export `govm -v export -f some/cfg/file` the name of the virtual-machine will be used.
 For a group-export `govm -v gexport -g some/dir` the directory name is used for the name of the `.ova` file.
 
 After the first part of the name is calculated a versioning will be calculated. The versioning is based on [semver](https://semver.org/) standard with a small simplification. So the end result will be: `$VM_NAME-v1.0.ova` or `Group-Dir-Name-v1.0.ova`.
 
 ### main.ova
-`main.ova` is a special kind of `.ova` file. This file is the main ova file which will be used by [import.exe](.govm/pkg/exe). `import.exe` will automatically import `main.ova` into `VirtualBox`. This is especially useful if you have multiple computers that all can import with one click the `main.ova` and are ready to go with the prepared virtual-machine `Environemt`.
+
+`main.ova` is a special kind of `.ova` file. This file is the .ova file which will be used by [import.exe](.govm/pkg/exe). `import.exe` will automatically import `main.ova` into `VirtualBox`. This is especially useful if you have multiple computers that all can import with one click the `main.ova` and are ready to go with the prepared virtual-machine `Environemt`. It is currently experimental so it will propably not function correctly.
 
 ## Custome Vagrantfile
-With `govm` you can also provide your own custome `Vagrantfile` that should be used instead of the [default](.govm/vagrantfile/) vagrantfiles. If you would like to use a custome Vagrantfile there are some rules that you have to follow for a proper integration of your custome `Vagrantfile`. 
+
+With `govm` you can also provide your own custome `Vagrantfile` that should be used instead of the [default](.govm/vagrantfiles/) vagrantfiles. If you would like to use a custome Vagrantfile there are some rules that you have to follow for a proper integration of your custome `Vagrantfile`. 
 
 ### govm variables
 There are some variables which will be exported into the current shell-session via the `export` keyword by govm. These variables can be accesses in your `Vagrantfile` by using `ENV["VARIABLE_NAME"]`. The variables which are accessible are all config parameters which you can set in the [vm.cfg](#vmcfg).
 
 ### Custome variables
-Of course govm can't cover all options that a user may want to have. Because of this the `PROVISION_VARIABLES` were introduced. Here you can declare based on the syntax explained [here](#vmcfg) your custome variables that you would like to use in your `Vagrantfile`. Because the `CUSTOME_VARIABLES` is a formatted string which has to be converted into a ruby `hash` before they can be used in the `Vagrantfile`  the followeing code-snippet has to be used to achieve this. 
+Of course govm can't cover all options that a user may want to have. Because of this the `CUSTOME_VARIABLES` were introduced. Here you can declare based on the syntax explained [here](#vmcfg) your custome variables that you would like to use in your `Vagrantfile`. Because the `CUSTOME_VARIABLES` is a formatted string which has to be converted into a ruby `hash` before they can be used in the `Vagrantfile` the followeing code-snippet has always to be used to achieve this. 
 ```ruby
 hash_string=ENV["CUSTOME_VARIABLES_STRING"]
 hash_arr = hash_string.split(',')
@@ -278,7 +275,7 @@ hash_arr.each do |e|
   hash[key] = value
 end
 ```
-Afterwards every defined custome variables of your vm.cfg is also accesible by using `hash["KEY"]`. There is already a [template](./vagrantfiles/template) for creating proper custome `Vagrantfiles`. That template should be used as a base for every `Vagrantfile` that you want to create.
+Afterwards every defined custome variables of your vm.cfg is also accesible by using `hash["KEY"]`. There is already a [template](./vagrantfiles/linux) for creating proper custome `Vagrantfiles`. That template should be used as a base for every `Vagrantfile` that you want to create.
 
 ### Gotchas
 Changing the `VAGRANTFILE_DIR` will change the behavior of the [single-screation](#single-creation) of the `default.cfg` This is because if you choose to have a custome `Vagrantfile` every variable defined in [vm.cfg](#vmcfg) will be optional and one new argument will be required: `VAGRANTFILE` which is not set in the [default.cfg](.govm/default.cfg). But you can set a `VAGRANTFILE` for [default.cfg](.govm/default.cfg) then it will work properly. which one? Thats on you but it has to be relative to the `VAGRANTFILE_DIR`.
@@ -291,7 +288,7 @@ As always there are some specialities needed for `windows (wsl)`. We tried to co
 compared to a native linux machine.
 
 ## Disk-Size
-Becuase the disk-size config in vagrant is currently [experimental](https://www.vagrantup.com/docs/disks/usage) there are still some issues using it with WSL. There is a way around using `Git-Bash` but it is not recommended to use it, if you wish to work with wsl afterwards to manage those virtual-machines.
+Because the disk-size config in vagrant is currently [experimental](https://www.vagrantup.com/docs/disks/usage) there are still some issues using it with WSL. There is a way around using `Git-Bash` but it is not recommended to use it, if you wish to work with wsl afterwards to manage those virtual-machines.
 
 # Best-practices
 Here are some best practices that you may follow. It is just a recommendation because the software was mostly tested with these practices and will promise
@@ -305,8 +302,8 @@ This directory contains directories and files that are used by the software to f
 `govm.cfg` and `default.cfg`.
 
 `configs` <br/>
-In this directory you can define your virtual-machine `cfg` files. If you want to create a `group` of virtual-machines
-create a directory with the name of the group and insert all `cfg` files into that new directory e.g.
+In this directory you can define your virtual-machine `vm.cfg` files. If you want to create a `group` of virtual-machines
+create a directory with the name of the group and insert all `vm.cfg` files into that new directory e.g.
 ```
 📦config
  ┣ 📂ansible
@@ -321,13 +318,13 @@ create a directory with the name of the group and insert all `cfg` files into th
 the directory name will be used as the [filename](#how-is-the-ova-filename-generated) of the `.ova` file. <br/>
 
 `provision` <br/>
-Every provision script or other types of provision should be located here. The structure of the directory is up to you. If you are using an other provision directory other than the default one be sure to set it as `PROVISION_DIR` in `govm.cfg`. All `SCRIPT` values in any `vm.cfg` file should be releative to `PROVISION_DIR`
+Every provision script or other types of provision should be located here. The structure of the directory is up to you. If you are using an other provision directory other than the default one be sure to set it as `PROVISION_DIR` in `govm.cfg`. All `SCRIPT` values in any `vm.cfg` file should be releative to `PROVISION_DIR`.
 
 `vagrantfiles` <br/>
 If you would like to use a custome made [vagrantfile](#custome-vagrantfile) then these should be located here. The directory structure is not important to govm but be sure to set the corret `VAGRANTFILE_DIR`.
 
 ## Naming
-Because the names of your directories in the config direcroty and virtual-machine names [matter](#how-is-the-ova-filename-generated) it is a good idea to choose the names that they represent the purpose of the virtual-machine or the group like you can see in the example tree-structure above.
+Because the names of your directories in the `configs` direcroty and virtual-machine names [matter](#how-is-the-ova-filename-generated) it is a good idea to choose the names that they represent the purpose of the virtual-machine or the group like you can see in the example tree-structure above.
 
 # Errors
 Errors are something nobody likes! Thats a fact! But they will always be a part of software. The following sections are describing how to [interpretated](#interpretation) some custome defined errors and some known [issues](#known-issues-and-possible-fixes) and possible fixes.
@@ -335,12 +332,12 @@ Errors are something nobody likes! Thats a fact! But they will always be a part 
 ## Interpretation 
 If you see anytime an error message with `nil` then this means
 that some option was not set which is required if you are using
-one other option for example: if you would like to have
+one other option. For example: if you would like to have
 an additional disk with the option `DISK_SIZE_SECOND` but your are not
 setting the `FILE_SYSTEM` for it, then you will see that type of error message.
 
 ## Init
-Running the init script will install all requirements and setup the environment for `govm` to work properly. After a reboot of your local machine you can use govm. In some cases it may occur an error that vagrant is not able to start the virtual-machine. There are two solutions for this error:
+Running the init script will install all requirements and setup the environment for `govm` to work properly. After a reboot of your local machine you can use govm. In some cases it may occur an error that vagrant is not able to start the virtual-machine. There are three possible solutions for this error:
 1. Use govm after a reboot of the local machine once the init script is finished.
 2. Deactive and activate the `VirtualBox Host-Only Ethernet Adapter` and reboot your local machine afterwards.
 3. Delete all `VirtualBox Host-Only Ethernet Adapter` and create one without a `dhcp-server` and with the `IPv4 192.168.56.1/24`.
