@@ -1,0 +1,37 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure("2") do |config|
+  # creating hash from the given hash_string
+  hash_string = ENV["CUSTOME_VARIABLES_STRING"]
+  hash_arr = hash_string.split(",")
+  hash = {}
+
+  hash_arr.each do |e|
+    pair = e.split(":")
+    key = pair[0]
+    value = pair[1]
+    hash[key] = value
+  end
+
+  #vagrant-box-config
+  config.vm.box = ENV["OS_IMAGE"] 
+  config.vm.provision "shell", path: ENV["SCRIPT"], env: hash
+  config.vm.synced_folder ENV["SYNC_DIR"], "/home/#{ENV['SYNC_USER']}/sync_dir", disabled:false
+  config.vm.synced_folder ".", "/vagrant", disabled:true
+  config.vm.network "private_network", ip: "192.168.56.40"
+  config.vm.provider "virtualbox" do |vb|
+    vb.name = ENV["VM_NAME"]
+    vb.memory = ENV["RAM"]
+    vb.cpus = ENV["CPU"]
+  end
+
+  if ENV["DISK_SIZE_PRIMARY"] != ""
+    config.vm.disk :disk, size: ENV["DISK_SIZE_PRIMARY"], primary: true
+  end
+
+  if ENV["DISK_SIZE_SECOND"] != ""
+    config.vm.disk :disk, size: ENV["DISK_SIZE_SECOND"], name: "sdb"
+  end
+
+end

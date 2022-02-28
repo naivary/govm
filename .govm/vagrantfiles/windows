@@ -1,0 +1,64 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+
+Vagrant.configure("2") do |config|
+
+
+  # creating hash from the given hash_string
+  hash_string=ENV["HASH_TABLE_STRING"]
+  hash_arr = hash_string.split(',')
+  hash = {}
+  hash_arr.each do |e|
+    pair = e.split(':')
+    hash[pair[0]] = pair[1]
+  end
+
+  bridge_string = ENV["BRIDGE_OPTION_STRING"]
+  bridge_arr = bridge_string.split(',')
+
+
+  config.vm.box = ENV["OS_IMAGE"] 
+  config.vm.provision "shell", path: ENV["SCRIPT"], env: hash
+  # big timeout since windows boot is very slow
+  config.vm.boot_timeout = 700
+
+  # Port forward WinRM (Windows Remote Management) and RDP
+  config.vm.network :forwarded_port, guest: 3389, host: 3389, id: "rdp", auto_correct: true
+  config.vm.network :forwarded_port, guest: 5985, host: 5985, id: "winrm", auto_correct: true
+
+  # winrm config, uses modern.ie default user/password.
+  # If other credentials are used must be changed here
+  config.vm.communicator = "winrm"
+  config.winrm.username = "IEUser"
+  config.winrm.password = "Passw0rd!"
+  config.winrm.host = "localhost"
+  config.winrm.timeout = 180
+
+  config.ssh.username = "IEUser"
+  config.ssh.password = "Passw0rd!"
+  config.ssh.extra_args = "cmd"  # cmd or powershell
+  config.vm.guest = :windows
+
+
+  config.vm.synced_folder ENV["SYNC_DIR"], "/home/gov/sync_dir", disabled:false
+  config.vm.synced_folder ".", "/vagrant", disabled:true
+  config.vm.network "private_network", ip: ENV["HOST_ONLY_IP"]
+  config.vm.network "public_network", bridge: bridge_arr
+
+  config.vm.provider "virtualbox" do |vb|
+    vb.gui = true
+    vb.name = ENV["VM_NAME"]
+    vb.memory = ENV["RAM"]
+    vb.cpus = ENV["CPU"]
+  end
+
+  if ENV["DISK_SIZE_PRIMARY"] != ""
+    config.vm.disk :disk, size: ENV["DISK_SIZE_PRIMARY"], primary: true
+  end
+
+  if ENV["DISK_SIZE_SECOND"] != ""
+    config.vm.disk :disk, size: ENV["DISK_SIZE_SECOND"], name: "sdb"
+  end
+
+end
