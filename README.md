@@ -162,8 +162,9 @@ SPECIAL-VARIABLES:
 1. `os_user`: if this is set this users home-directory will be used as the `SYNC_DIR`.
 
 `VAGRANTFILE: .govm/vagrantfiles/linux` <br/>
-`Vagrantfile` that should be used for the virtual-machine. It has to be 
-relative to the `govm.VAGRANTFILE_DIR`.
+Vagrantfile that should be used for the virtual-machine. It has to be 
+relative to the `govm.VAGRANTFILE_DIR`. If no `VAGRANTFILE_DIR` is set 
+the default will be `.govm/vagrantfiles/linux` otherwise it is required.
 
 ## govm.cfg
 In the following you will be introduced to all the config options with a detailed explanation what the option will affect.
