@@ -262,7 +262,7 @@ With `govm` you can also provide your own custome `Vagrantfile` that should be u
 There are some variables which will be exported into the current shell-session via the `export` keyword by govm. These variables can be accesses in your `Vagrantfile` by using `ENV["VARIABLE_NAME"]`. The variables which are accessible are all config parameters which you can set in the [vm.cfg](#vmcfg).
 
 ### Custome variables
-Of course govm can't cover all options that a user may want to have. Because of this the `PROVISION_VARIABLES` were introduced. Here you can declare based on the syntax explained [here](#vmcfg) your custome variables that you would like to use in your `Vagrantfile`. Because the `PROVISION_VARIABLES` are a string which has to be converted into a ruby `hash` before they can be used in the `Vagrantfile` you have to paste the code-snippet into your `Vagrantfile` before configuring antyhing:
+Of course govm can't cover all options that a user may want to have. Because of this the `PROVISION_VARIABLES` were introduced. Here you can declare based on the syntax explained [here](#vmcfg) your custome variables that you would like to use in your `Vagrantfile`. Because the `CUSTOME_VARIABLES` is a formatted string which has to be converted into a ruby `hash` before they can be used in the `Vagrantfile`  the followeing code-snippet has to be used to achieve this. 
 ```ruby
 hash_string=ENV["CUSTOME_VARIABLES_STRING"]
 hash_arr = hash_string.split(',')
@@ -274,7 +274,7 @@ hash_arr.each do |e|
   hash[key] = value
 end
 ```
-Afterwards every defined custome variables of your vm.cfg is also accesible by using `hash["KEY"]`. There is already a [template](./vagrantfiles/template) for creating proper custome `Vagrantfiles`.
+Afterwards every defined custome variables of your vm.cfg is also accesible by using `hash["KEY"]`. There is already a [template](./vagrantfiles/template) for creating proper custome `Vagrantfiles`. That template should be used as a base for every `Vagrantfile` that you want to create.
 
 ### Gotchas
 Changing the `VAGRANTFILE_DIR` will change the behavior of the [single-screation](#single-creation) of the `default.cfg` This is because if you choose to haven a custome `Vagrantfile` every variable defined in [vm.cfg](#vmcfg) will be optional and one new argument will be required: `VAGRANTFILE` which is not set in the [default.cfg](.govm/default.cfg). But you can set a `VAGRANTFILE` for [default.cfg](.govm/default.cfg) then it will work properly. which one? Thats on you!
