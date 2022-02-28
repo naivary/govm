@@ -50,7 +50,7 @@ The following sections will explain in detail how to use `govm`. Before you star
 `-m [$GOVM-ID]` the virtual machine which should be manipulated by the specified `-v` command<br/>
 `-i` if present the group or virtual machine is getting exported as [main.ova](#mainova). <br/>
 `-r` if present it will force a `recreation` of the virtual-machine if there is a virtual-machine registered but not reachable. You may also use it to  `reload` a virtual machine or group.  
-`-l` listing all virtual-machine created by `govm` <br/>
+`-l` listing all virtual-machine created by `govm` with some extra meta-information. <br/>
 
 If you wish to list all virtual-machines with some additional information run `govm -l`. <br/>
 
@@ -87,7 +87,8 @@ Is informing the application
 which type of operating-system you are
 using. This is needed because as always windows
 needs some special configurations in the vagrantfile.
-Valid values are linux and windows.
+Valid values are linux and windows. This option
+will be ignored if you use your own Vagrantfiles.
 
 `SCRIPT: govm.SCRIPT -opt` <br/>
 Provision script that will run for the virtual-machine.
@@ -148,7 +149,9 @@ mkfs for the second disk. Valid values are:
 - `xfs` <br/>
 
 This variable is required if `DISK_SIZE-SECOND` is set otherwise it is getting ignored.
- 
+
+NOTE: The second disk will be attached to your virtual-machine but you have to mount it to a mounting point. YOu can do it manually or in your provision script. There is also a pre-written [script](provision/linux/default.sh) which will do it for you. So it's recommended to use the pre-written script and add any further provision task to the script.
+
 `CUSTOME_VARIABLES: () -opt` <br/>
 Variables that you want to access 
 in your provision script.
@@ -159,12 +162,12 @@ then this will be taken as key and value i.e.
 ("something") -> ("something:something")
 
 SPECIAL-VARIABLES:
-1. `os_user`: if this is set this users home-directory will be used as the `SYNC_DIR`.
+1. `os_user:username`: if this is set this users home-directory will be used as the `SYNC_DIR`.
 
 `VAGRANTFILE: .govm/vagrantfiles/linux` <br/>
 Vagrantfile that should be used for the virtual-machine. It has to be 
 relative to the `govm.VAGRANTFILE_DIR`. If no `VAGRANTFILE_DIR` is set 
-the default will be `.govm/vagrantfiles/linux` otherwise it is required.
+the options is optional otherwise it is required.
 
 ## govm.cfg
 In the following you will be introduced to all the config options with a detailed explanation what the option will affect.
