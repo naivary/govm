@@ -321,8 +321,8 @@ the directory name will be used as the [filename](#how-is-the-ova-filename-gener
 Every provision script or other types of provision should be located here. The structure of the directory is up to you. If you are using an other provision directory other than the default one be sure to set it as `PROVISION_DIR` in `govm.cfg`. All `SCRIPT` values in any `vm.cfg` file should be releative to `PROVISION_DIR`
 
 `vagrantfiles` <br/>
-If you would like to use an custome made [vagrantfiles](#custome-vagrantfile) should be located here. The directory is not important to govm but be sure to set the corret `VAGRANTFILE_DIR`.
-h
+If you would like to use a custome made [vagrantfile](#custome-vagrantfile) then these should be located here. The directory structure is not important to govm but be sure to set the corret `VAGRANTFILE_DIR`.
+
 ## Naming
 Because the names of your directories in the config direcroty and virtual-machine names [matter](#how-is-the-ova-filename-generated) it is a good idea to choose the names that they represent the purpose of the virtual-machine or the group like you can see in the example tree-structure above.
 
