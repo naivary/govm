@@ -16,12 +16,12 @@
 # limitations under the License.
 
 
-trap trapexit INT;
+trap func_trapexit INT;
 
-usage() {
+func_usage() {
   # govm-cmd
   echo "-v [up/halt/start/ssh/destroy] is setting the vagrant command you want to run (has to be present with every command.)"
-  echo "You can also prefix any command with g for exampe gdestroy to destroy a whole group (ssh is not possible)"
+  echo "You can also prefix any command with g for exampe func_gdestroy to destroy a whole group (ssh is not possible)"
 
   # path/machine
   echo "-f [path] is specifing the path to a *.config file with the parameters CPU, RAM, OS_IMAGE, IP and SCRIPT"
@@ -63,7 +63,7 @@ while getopts "f:g:v:m:lrid" OPT; do
       MAIN_OVA="true"
       ;;
     ?)
-      usage
+      func_usage
       exit 1
       ;;
   esac
@@ -148,10 +148,10 @@ SUPPORTED_OS_TYPES=(
   "windows"
 )
 
-# init is setting all best-practice-standards 
+# func_init is setting all best-practice-standards 
 # needed for the shell-script to run without
 # any problems and catch errors 
-init() {
+func_init() {
   export PATH="${PATH}"
   export LANG=C.UTF-8
   export LC_NUMERIC="en_US.UTF-8"
@@ -184,12 +184,12 @@ whitebold() {
   printf "\033[1m\033[37m${1}\033[0m\n"
 }
 
-# predefault is setting
+# func_predefault is setting
 # all defaults that do not
 # dependent on govm.cfg.
 # All other defaults that have
 # a dependencie can be set int postdefault
-predefault() {
+func_predefault() {
   # appliaction
   ALREADY_CREATED_VMS=()
   REQUIRED_PARAMS_CONFIG_VM=$(( ${#VALID_CONFIG_PARAMS_VM[@]} - ${#OPTIONAL_CONFIG_PARAMS_VM[@]} ))
@@ -228,8 +228,8 @@ predefault() {
   SCRIPT_VAGRANT=${PROVISON_DIR_NAME}/${SCRIPT_NAME}
   OS_TYPE=${OS_TYPE:-linux}
   SYNC_USER=${SYNC_USER:-"vagrant"}
-  getid 192.168.56.2
-  getvmname 192.168.56.2
+  func_getid 192.168.56.2
+  func_getvmname 192.168.56.2
   HOST_ONLY_IP=${HOST_ONLY_IP:-""}
   SYNC_DIR=${SYNC_DIR:-""}
   VM_NAME=${VM_NAME:-""}
@@ -245,22 +245,22 @@ predefault() {
 # on govm.cfg values
 # postdefault() {}
 
-# osdefault is checking ig the current
+# func_osdefault is checking ig the current
 # used system is an wsl system or native linux
 # distrubution and if it is an wsl system it converts 
 # some paths to a windows path for the virtualbox api
 # so it will work properly
-osdefault() {
+func_osdefault() {
   if [[ "${CURRENT_OS}" == "microsoft" ]]; then
     APPLIANCESTORE="$(wslpath -w ${APPLIANCESTORE})"
   fi
 }
 
-# vagrantfiledefault is checking
+# func_vagrantfiledefault is checking
 # if the vagrantfile that is getting
 # used is a default or a custome
 # vagrantfile 
-vagrantfiledefault() {
+func_vagrantfiledefault() {
   if ! [[ "${VAGRANTFILE_DIR}" == "${BASEDIR}/${GOVM}/vagrantfiles" ]]; then
     OPTIONAL_CONFIG_PARAMS_VM+=("HOST_ONLY_IP")
     OPTIONAL_CONFIG_PARAMS_APP+=("BRIDGE_OPTIONS")
@@ -273,61 +273,61 @@ vagrantfiledefault() {
   fi
 }
 
-# clearoptionalargs is setting
+# func_clearoptionalargs is setting
 # some optional arguments
 # to empty strings
-clearoptionalargs() {
+func_clearoptionalargs() {
   DISK_SIZE_SECOND=""
   DISK_SIZE_PRIMARY=""
   SYNC_DIR=""
 }
 
-# rmgovm is removing
+# func_rmgovm is removing
 # the meta-data if a already
 # created virtual-machine
-rmgovm() {
+func_rmgovm() {
   if [[ -d "${VMSTORE}/${ID}" ]]; then
-    rmdirrf "${VMSTORE}/${ID}";
+    func_rmdirrf "${VMSTORE}/${ID}";
   fi 
 }
 
-# rmlogdir is removing
+# func_rmlogdir is removing
 # the log directory if the
 # directory is not the default
-rmlogdir() {
+func_rmlogdir() {
   if [[ -d "${LOG_PATH}/${ID}" ]]; then
-    rmdirrf "${LOG_PATH}/${ID}"
+    func_rmdirrf "${LOG_PATH}/${ID}"
   fi
 }
 
-# clean is called after
+# func_clean is called after
 # destroyed. it will not 
 # handle interrupt
 # it is removing the 
-clean() {
+func_clean() {
   infobold "Cleaning up..."
-  rmgovm;
-  rmip;
-  rmlogdir;
+  func_rmgovm;
+  func_rmip;
+  func_rmlogdir;
   success "Destroyed ${ID}!"
 }
 
 
-# leftcut is cutting out the
+# func_leftcut is cutting out the
 # value on the leftside 
 # of a colon seperated string
-leftcut() {
+func_leftcut() {
   LEFTSIDE="$(cut -d ':' -f 1 <<< ${1})"
 }
 
-# rightcut is cutting out the
+# func_rightcut is cutting out the
 # value on the rightside 
 # of a colon seperated string
-rightcut() {
+func_rightcut() {
   RIGHTSIDE="$(cut -d ':' -f 2 <<< ${1})"
 }
 
-getid() {
+func_getid() {
   local id
   id="$(grep -w ${1} ${DB} | cut -d ':' -f 1)"
   if [[ ${id} ]]; then
@@ -337,7 +337,7 @@ getid() {
   fi
 }
 
-getvmname() {
+func_getvmname() {
   local name
   name="$(grep ${1} -w ${DB} | cut -d ':' -f 2)"
   if [[ ${name} ]]; then
@@ -345,7 +345,7 @@ getvmname() {
   fi
 }
 
-getos() {
+func_getos() {
   local os
   os="$(grep ${1} -w ${DB} | cut -d ':' -f 3)"
   if [[ ${os} ]]; then
@@ -355,7 +355,7 @@ getos() {
   fi
 }
 
-getip() {
+func_getip() {
   local ip
   ip="$(grep ${1} -w ${DB} | cut -d ':' -f 4)"
 
@@ -366,58 +366,58 @@ getip() {
   fi
 }
 
-# govmpath is setting the path
+# func_govmpath is setting the path
 # to the current virtual-machine
 # and his metadata in the $VMSTORE
-govmpath() {
+func_govmpath() {
   GOVM_PATH="${VMSTORE}/${ID}/${GOVM}"
 }
 
-# rmip is removing the
+# func_rmip is removing the
 # ip-adress from the file
-rmip() {
+func_rmip() {
   if grep -q -w "${HOST_ONLY_IP}" "${DB}"; then
     sed -i "/${HOST_ONLY_IP}/d" "${DB}";
   fi
 }
 
-# makedir is creating
+# func_makedir is creating
 # all nonexisting directories
 # of a given path
-makedir() {
+func_makedir() {
   mkdir -p -- "${1}"
 }
 
-# rmdirrf is removing
+# func_rmdirrf is removing
 # a directory recusively 
 # by forcing it
-rmdirrf() {
+func_rmdirrf() {
   sudo rm -rf "${1}"
 }
 
-# isvmrunning is checking if the virtual-machine
+# func_isvmrunning is checking if the virtual-machine
 # is already up and running
-isvmrunning() {
+func_isvmrunning() {
   vboxmanage.exe list runningvms | grep -q -w "${1}" 
   echo "$?"
 }
 
 # isvmexting check if the virtual-machine
 # exists in virtualbox
-isvmexisting() {
+func_isvmexisting() {
   vboxmanage.exe list vms | grep -q -w "${1}"
   echo "$?"
 }
 
-# appliancesemver is generating an filename
+# func_appliancesemver is generating an filename
 # for the .ova file based on the rules described in the documentation: 
 # https://github.com/No1Lik3U/vagrant-wrapper#how-is-the-ova-filename-generated
-appliancesemver() {
+func_appliancesemver() {
   APPLIANCE_NAME=${1}
   VERSION=1
 
   if [[ ! -d ${APPLIANCESTORE}/${APPLIANCE_NAME} && ${MAIN_OVA} == "false" ]]; then
-    makedir "${APPLIANCESTORE}/${APPLIANCE_NAME}"
+    func_makedir "${APPLIANCESTORE}/${APPLIANCE_NAME}"
   fi
 
   if [[ ${MAIN_OVA} == "false" ]]; then
@@ -435,70 +435,70 @@ appliancesemver() {
 
 # trapexutup is cleaning a single-creation
 # of a virtual-machine by destroying it
-trapexitup() {
+func_trapexitup() {
   vagrant destroy --force &> "${LOG_PATH}/${TIMESTAMP}_destroy.log"
-  rmgovm;
-  rmip;
-  rmlogdir;
+  func_rmgovm;
+  func_rmip;
+  func_rmlogdir;
   infobold "Cleaned ${1}"
 }
 
-# trapexit will be triggered if the user
+# func_trapexit will be triggered if the user
 # is using CRTL+C. It will only run an
-# action if it is an up or gup operation
+# action if it is an up or func_gup operation
 # otherwise its just ignoring the call
-trapexit() {
+func_trapexit() {
   if [[ "${VAGRANT_CMD}" == "up" ]]; then
-    infobold "Graceful exiting. Trying to clean as much as possible...";
-    trapexitup "${VM_NAME}"
-  elif [[ "${VAGRANT_CMD}" == "gup" ]]; then
-    infobold "Graceful exiting. Trying to clean as much as possible...";
-    trapexitgroup
+    infobold "Graceful exiting. Trying to func_clean as much as possible...";
+    func_trapexitup "${VM_NAME}"
+  elif [[ "${VAGRANT_CMD}" == "func_gup" ]]; then
+    infobold "Graceful exiting. Trying to func_clean as much as possible...";
+    func_trapexitgroup
   else 
-    infobold "Nothing to clean up. Exiting!"
+    infobold "Nothing to func_clean up. Exiting!"
   fi
 }
 
-# trapexitgroup is cleaning
+# func_trapexitgroup is cleaning
 # all created virtual-machines by
 # destroying them and deleting the 
 # directory in $VMSTORE.
-trapexitgroup() {
+func_trapexitgroup() {
   for CFG in ${ALREADY_CREATED_VMS[@]}
   do
     # get config-file
-    leftcut ${CFG}
+    func_leftcut ${CFG}
     # get of the config-file
-    rightcut ${CFG}
+    func_rightcut ${CFG}
     VM_CONFIG=${LEFTSIDE}    
     ID=${RIGHTSIDE}
-    govmpath
+    func_govmpath
     cd "${GOVM_PATH}"
-    sourcefile vm.cfg
-    trapexitup "${ID}"
+    func_sourcefile vm.cfg
+    func_trapexitup "${ID}"
   done
 }
 
-# successexit is inserting the
+# func_successexit is inserting the
 # newly created virtual-machine
 # to the db.txt for future interactions
 # and listing purposes. BEfore inserting the
 # new data it will also insert an empty line
 # if one is needed because otherwise the appending 
 # will not work properly
-successexit() {
+func_successexit() {
   infobold "Finishing touches...";
   sed -i -e '$a\' "${DB}"
   echo "${ID}:${VM_NAME}:${OS_IMAGE}:${HOST_ONLY_IP}:${RAM}:${CPU}" >> "${DB}";
   success "VM ${ID} is set and ready to go :)"
 }
 
-# hashtablegen is creating an comma 
+# func_hashtablegen is creating an comma 
 # seperated string with the given 
 # key:value pairs which will be used by
 # the vagrantfile to create an actual
 # ruby hash
-hashtablegen() {
+func_hashtablegen() {
   CUSTOME_VARIABLES_STRING=""
   local i=0
 
@@ -509,10 +509,10 @@ hashtablegen() {
         PAIR="${PAIR}:${PAIR}"
       fi
 
-      leftcut "${PAIR}"
+      func_leftcut "${PAIR}"
 
       if [[ "${LEFTSIDE}" == "os_user" ]]; then
-        rightcut "${PAIR}"
+        func_rightcut "${PAIR}"
         SYNC_USER=${RIGHTSIDE}
       fi
 
@@ -530,10 +530,10 @@ hashtablegen() {
   fi
 }
 
-# bridgeoptiongen is creating a string which is seperated 
+# func_bridgeoptiongen is creating a string which is seperated 
 # by commas which will then be used by the vagrantfile to create 
 # an actual ruby arr for the bridge options
-bridgeoptiongen() {
+func_bridgeoptiongen() {
   local i=0
   if [[ "${VAGRANTFILE_TYPE}" == "custome" ]]; then
     return 0
@@ -552,15 +552,15 @@ bridgeoptiongen() {
   else
     error "Empty BRIDGE_OPTIONS Array!"
     infobold "Your options are:"
-    vmlistbridgedlifs
+    func_vmlistbridgedlifs
     exit 1
   fi
 }
 
-# setvenv is exporting 
+# func_setvenv is exporting 
 # all neded env-variables
 # for the current shell-session
-setvenv() {
+func_setvenv() {
   export CPU;
   export RAM;
   export OS_IMAGE;
@@ -578,10 +578,10 @@ setvenv() {
   export SYNC_USER;
 }
 
-# resetvenv is deleting all
+# func_resetvenv is deleting all
 # exported env-variables of
 # the current shell-session
-resetvenv() {
+func_resetvenv() {
   export -n CPU;
   export -n RAM;
   export -n OS_IMAGE;
@@ -600,20 +600,20 @@ resetvenv() {
 
 }
 
-# setvfile is setting the
+# func_setvfile is setting the
 # vagrantfile that should 
 # be used for the 
-setvfile() {
+func_setvfile() {
   if [[ "${OS_TYPE}" == "windows" && "${VAGRANTFILE_TYPE}" == "default" ]]; then
     VAGRANTFILE=${BASEDIR}/${GOVM}/vagrantfile/windows
   fi
 }
 
-# createcfg is copying the used
+# func_createcfg is copying the used
 # config file for the creation
 # and is appending some extra 
 # information to it
-createcfg() {
+func_createcfg() {
   cd ${BASEDIR} 
   REALPATH_VM_CONFIG=$(realpath ${VM_CONFIG})
   cp ${REALPATH_VM_CONFIG} ${GOVM_PATH}/vm.cfg
@@ -627,24 +627,24 @@ CUSTOME_VARIABLES_STRING="${CUSTOME_VARIABLES_STRING}"
 EOF
 }
 
-# prepvenv is creating the
+# func_prepvenv is creating the
 # syncFolder for the VM and also
 # the log folder to log to
-prepvenv() {
+func_prepvenv() {
   ID="$(openssl rand -hex 5)"
-  govmpath
-  makedir "${GOVM_PATH}"
+  func_govmpath
+  func_makedir "${GOVM_PATH}"
 
   if [[ ${LOG} == "/log" ]]; then
-    makedir "${GOVM_PATH}/logs"
+    func_makedir "${GOVM_PATH}/logs"
     LOG_PATH=${GOVM_PATH}/logs
   else 
     LOG_PATH=${LOG}/${ID}
-    makedir "${LOG_PATH}"
+    func_makedir "${LOG_PATH}"
   fi
 
   if [[ ${SYNC_DIR} == "" ]]; then
-    makedir "${VMSTORE}/${ID}/sync_dir"
+    func_makedir "${VMSTORE}/${ID}/sync_dir"
     SYNC_DIR="${VMSTORE}/${ID}/sync_dir"
   fi
 
@@ -655,28 +655,28 @@ prepvenv() {
   SCRIPT_NAME=$(basename ${SCRIPT})
 }
 
-# postvenv is creating 
+# func_postvenv is creating 
 # directories and copying 
 # all needed vagrant-files so that
 # the vagrant commands can run in the
 # newly created directory
-postvenv() {
-  setvenv;
-  setvfile
+func_postvenv() {
+  func_setvenv;
+  func_setvfile
   cp "${VAGRANTFILE_DIR}/${VAGRANTFILE}" "${GOVM_PATH}/Vagrantfile"
   DIR_NAME=$(dirname ${SCRIPT})
-  makedir ${GOVM_PATH}/${DIR_NAME}
+  func_makedir ${GOVM_PATH}/${DIR_NAME}
   cp "${PROVISION_DIR}/${SCRIPT}" "${GOVM_PATH}/${SCRIPT}"
-  createcfg;
+  func_createcfg;
 }
 
-#sourcefile is sourcing the
+#func_sourcefile is sourcing the
 # given file into the current
 # shell-ENV
-sourcefile() {
+func_sourcefile() {
   dos2unix "${1}" &> /dev/null
   . "${1}"
-  govmpath
+  func_govmpath
 }
 
 # validateAndSourceVMConfig
@@ -685,7 +685,7 @@ sourcefile() {
 # meaning duplicated keys or not enough
 # keys and if the config file is valid 
 # it is getting sourced.
-validatevmcfg() {
+func_validatevmcfg() {
   local config_name=$(basename "${VM_CONFIG}")
   GIVEN_PARAMS_REQUIRED=()
   GIVEN_PARAMS_OPTIONAL=()
@@ -729,12 +729,12 @@ validatevmcfg() {
   fi
 }
 
-# validateappcfg
+# func_validateappcfg
 # is validating the config file
 # for the application (syntax only)
 # and if the config file is valid 
 # it is getting sourced.
-validateappcfg() {
+func_validateappcfg() {
   GIVEN_PARAMS_OPTIONAL=()
   GIVEN_PARAMS_REQUIRED=()
   info "Loading ${GOVM_NAME}...";
@@ -770,7 +770,7 @@ validateappcfg() {
       error "Expected: ${VALID_CONFIG_PARAMS_APP[*]}"
       infobold "Be sure that if you are using the default VAGRANTFILE_DIR"
       infobold "that the BRIDGE_OPTIONS has to be set. Here are the possible options:"
-      vmlistbridgedlifs
+      func_vmlistbridgedlifs
       exit 1
     fi
 
@@ -781,12 +781,12 @@ validateappcfg() {
 }
 
 
-# validaterequiredvmargs is  checking if 
+# func_validaterequiredvmargs is  checking if 
 # all given VM-Configs are the type 
 # that they has to be like 
 # CPU should be an integer not 
 # a word and so on
-validaterequiredvmargs() {
+func_validaterequiredvmargs() {
   local config_name=$(basename "${VM_CONFIG}")
   info "Validating required arguments values of ${config_name}..."
   if ! [[ "${CPU}" =~ ^[0-9]+$ && "${CPU}" -ge 1 && "${CPU}" -le 100 ]]; then
@@ -808,16 +808,16 @@ validaterequiredvmargs() {
   if ! [[ "${SUPPORTED_OS_TYPES[@]}" =~ "${OS_TYPE}" ]]; then
     error "os is not currently supported: ${OS_TYPE}"
     exit 1
-  elif ! validateip; then
+  elif ! func_validateip; then
     exit 1
-  elif validateoptionalvmargs; then
+  elif func_validateoptionalvmargs; then
     success "Valid values!" 
   fi
 }
 
-# validateoptionalvmargs is validating 
+# func_validateoptionalvmargs is validating 
 # the optional parameters of the config-file
-validateoptionalvmargs() {
+func_validateoptionalvmargs() {
   local config_name=$(basename "${VM_CONFIG}")
   infobold "Validating optional arguments values of ${config_name}..."
   if [[ "${DISK_SIZE_SECOND}" ]]; then
@@ -838,10 +838,10 @@ validateoptionalvmargs() {
     fi
   elif [[ "${SYNC_DIR}" ]]; then
     if ! [[ -d "${SYNC_DIR}" ]]; then
-      makedir "${SYNC_DIR}"
+      func_makedir "${SYNC_DIR}"
     fi
   elif [[ ${#CUSTOME_VARIABLES[@]} -gt 0 ]]; then
-    hashtablegen
+    func_hashtablegen
   elif [[ "${VM_NAME}" ]]; then
     if ! [[ "${VM_NAME}" =~ ^([A-Za-z0-9_.-]+)$ ]]; then
       error "VM_NAME may only contain letters numbres hypens and underscores: ${VM_NAME}"
@@ -856,21 +856,21 @@ validateoptionalvmargs() {
 
 }
 
-# validateappargs is checking if 
+# func_validateappargs is checking if 
 # the given values are valid and is setting 
 # defaults if needed
-validateappargs() {
+func_validateappargs() {
   info "Validating App-Configuration arguments values..."
   if ! [[ -d ${VMSTORE} ]]; then
-    makedir "${VMSTORE}"
+    func_makedir "${VMSTORE}"
   elif [[ "${LOG}" != "/log" && ! -d "${LOG}" ]]; then
-    makedir "${LOG}"
+    func_makedir "${LOG}"
   elif ! [[ -d ${APPLIANCESTORE} ]]; then 
-    makedir "${APPLIANCESTORE}"
+    func_makedir "${APPLIANCESTORE}"
   elif ! [[ -d ${CONFIG_DIR} ]]; then
-    makedir "${CONFIG_DIR}"
+    func_makedir "${CONFIG_DIR}"
   elif ! [[ -d ${PROVISION_DIR} ]]; then
-    makedir "${PROVISION_DIR}"
+    func_makedir "${PROVISION_DIR}"
   elif ! [[ -d ${VAGRANTFILE_DIR} ]]; then
     error "VAGRANTFILE_DIR does not exist: ${VAGRANTFILE_DIR}"
     exit 1
@@ -880,7 +880,7 @@ validateappargs() {
  
 }
 
-# validateip is validating the given ip
+# func_validateip is validating the given ip
 # if its already in use or not by following 2 steps:
 # First we ping the given IP-Adress. If it is reachable
 # then the IP adress is in use in (but it does not have to 
@@ -888,7 +888,7 @@ validateappargs() {
 # virtual-machine). Second we check if the IP-Adress
 # is existing in our system. If it does we exit. A recreation 
 # can be forced with -d flag
-validateip() {
+func_validateip() {
   # check if ip is used in any way
   if [[ "${VAGRANTFILE_TYPE}" == "custome" ]]; then
     return 0
@@ -905,30 +905,30 @@ validateip() {
   fi
 
   # check if ip exist within govm-ecosystem
-  getid "${HOST_ONLY_IP}"
+  func_getid "${HOST_ONLY_IP}"
 
   if [[ "${ID}" != "nil" && -z "${FORCE_REPLACE}" ]]; then
-    getid "${HOST_ONLY_IP}"
+    func_getid "${HOST_ONLY_IP}"
     error "Machine still existing in our system ID: ${ID}. Run Command with -d to force recreation."    
     exit 1
   fi
 
   if [[ ${FORCE_REPLACE} ]]; then
-    destroy
+    func_destroy
     if [ "${VM_CONFIG}" ]; then
-      sourcefile "${VM_CONFIG}"
+      func_sourcefile "${VM_CONFIG}"
     fi
   fi 
 
 }
 
-# validateposixgroup is validatin
+# func_validateposixgroup is validatin
 # all given flags but not the values
 # of the given flags. These are validated in
 # validateInput. Here we validate the given flags
 # and if they can be used together 
 # using groups.
-validateposixgroup() {
+func_validateposixgroup() {
   CHECK_FILE=()
   CHECK_VAGRANT=()
   CHECK_GROUPUP=()
@@ -963,62 +963,62 @@ validateposixgroup() {
     infobold "Running command \"${VAGRANT_CMD}\" on default-machine..."
   else
     error "Too many or not enough arguments"
-    usage;
+    func_usage;
     exit 1
   fi
 
 }
 
-# createvenv is
+# func_createvenv is
 # sourcing the config file
 # in the ${VMSTORE}/${ID}
 # and is running the given command afterwards
 # otherwise the Vagrantfile cannot pull
 # the ENV-Variables
-createvenv() {
-  govmpath
+func_createvenv() {
+  func_govmpath
   cd ${GOVM_PATH}
-  sourcefile vm.cfg;
-  setvenv;
+  func_sourcefile vm.cfg;
+  func_setvenv;
 }
 
-# createvm is creating the
+# func_createvm is creating the
 # virtual machine using vagrant up 
-createvm() {
+func_createvm() {
   infobold "Creating Virtual-Machine ${ID}. This may take a while..."
   # vagrant up &> ${LOG_PATH}/"${TIMESTAMP}_up.log" 
   vagrant up
 }
 
-# up is creating a virtual-machine with vagrant up. 
+# func_up is creating a virtual-machine with vagrant up. 
 # Before creating the virtual-machine it will also 
 # validate the the used config file for the creation 
 # and create the needed environment for vagrant to run properly.
-up() {
-  validatevmcfg;
-  sourcefile "${VM_CONFIG}";
-  validaterequiredvmargs && prepvenv;
-  postvenv;
+func_up() {
+  func_validatevmcfg;
+  func_sourcefile "${VM_CONFIG}";
+  func_validaterequiredvmargs && func_prepvenv;
+  func_postvenv;
   cd ${GOVM_PATH};
-  createvm && successexit || error "Something went wrong. Debbuging information can be found at ${LOG_PATH}"
+  func_createvm && func_successexit || error "Something went wrong. Debbuging information can be found at ${LOG_PATH}"
 }
 
-# alias to vagrant destroy
-destroy() {
+# alias to vagrant func_destroy
+func_destroy() {
   infobold "Destroying ${ID}..."
-  createvenv;
+  func_createvenv;
   vagrant destroy --force &> "${LOG_PATH}/${TIMESTAMP}_destroy.log"
   cd ${BASEDIR}; 
-  clean;
+  func_clean;
 }
 
-# alias to vagrant halt
-halt() {
+# alias to vagrant func_halt
+func_halt() {
   local FIRST_ARG=${1:-""}
   local isrunning
   info "Stopping ${ID}..."
-  createvenv;
-  isrunning=$(isvmrunning "${VM_NAME}")
+  func_createvenv;
+  isrunning=$(func_isvmrunning "${VM_NAME}")
 
   if [[ "${isrunning}" -eq 0 ]]; then
     vagrant halt &> "${LOG_PATH}/${TIMESTAMP}_halt.log";
@@ -1033,49 +1033,49 @@ halt() {
 }
 
 # alias to vagrant ssh
-vssh() {
+func_ssh() {
   info "SSH into ${ID}"
-  createvenv;
+  func_createvenv;
   vagrant ssh;
 }
 
-# alias to vagrant start
-start() {
+# alias to vagrant func_start
+func_start() {
   info "Starting ${ID}. This may take some time..."
-  createvenv;
+  func_createvenv;
   vagrant up &> ${LOG_PATH}/"${TIMESTAMP}_start.log"
   success "${ID} up and running!"
 }
 
 # create an appliance
 # of the given virtual-machine
-vexport() {
+func_export() {
   infobold "Exporting ${VM_NAME}. This may take some time..."
-  sourcefile "${VM_CONFIG}"
-  getid "${HOST_ONLY_IP}"
-  halt 'export';
-  appliancesemver "${VM_NAME}"
-  vmexport "${VM_NAME}" "single"
+  func_sourcefile "${VM_CONFIG}"
+  func_getid "${HOST_ONLY_IP}"
+  func_halt 'export';
+  func_appliancesemver "${VM_NAME}"
+  func_vmexport "${VM_NAME}" "single"
   success "Finished! appliance can be found at ${APPLIANCESTORE}"
 }
 
-# groupup is just a helper for 
+# func_groupup is just a helper for 
 # starting the virtual machines
 # without the any validaton
 # before it
-groupup() {
-  prepvenv;
-  postvenv;
+func_groupup() {
+  func_prepvenv;
+  func_postvenv;
   cd ${GOVM_PATH};
   ALREADY_CREATED_VMS+=("${1}:${ID}")
-  createvm && successexit || error "Something went wrong. Debbuging information can be found at ${LOG_PATH}."
+  func_createvm && func_successexit || error "Something went wrong. Debbuging information can be found at ${LOG_PATH}."
 }
 
 # group is creating
 # as many virtuals machines 
 # as configs files given in the 
 # given directory
-gup() {
+func_gup() {
   IP_ADRESSES=()
   NAMES=()
 
@@ -1083,13 +1083,13 @@ gup() {
   for CFG in ${GROUP}/*.cfg; 
   do
     VM_CONFIG="${CFG}"
-    validatevmcfg
+    func_validatevmcfg
   done
 
   # checking for duplication of ip or names in the given group
   for CFG in ${GROUP}/*.cfg;
   do
-    sourcefile "${CFG}"
+    func_sourcefile "${CFG}"
     if [[ "${IP_ADRESSES[*]}" =~ "${HOST_ONLY_IP}" ]]; then
       error "Duplicated IP-Adress ${HOST_ONLY_IP}"
       exit 1
@@ -1109,8 +1109,8 @@ gup() {
   do
     VM_CONFIG=${CFG}
     cd "${BASEDIR}"
-    sourcefile "${CFG}"
-    validaterequiredvmargs 
+    func_sourcefile "${CFG}"
+    func_validaterequiredvmargs 
   done
 
   info "Starting creation process..."
@@ -1120,64 +1120,64 @@ gup() {
   for CFG in ${GROUP}/*.cfg; 
   do
     cd "${BASEDIR}"
-    clearoptionalargs
+    func_clearoptionalargs
     VM_CONFIG=${CFG}
-    sourcefile "${CFG}";
-    resetvenv;
+    func_sourcefile "${CFG}";
+    func_resetvenv;
     info "Creating $(basename ${CFG})...";
-    groupup "${CFG}";
+    func_groupup "${CFG}";
   done
 }
 
-# gdestroy is an alias
+# func_gdestroy is an alias
 # for vagrant destroy 
 # but build for a group
 # destruction
-gdestroy() {
+func_gdestroy() {
   for CFG in ${GROUP}/*.cfg; 
   do
     VM_CONFIG=${CFG}
     cd "${BASEDIR}"
-    resetvenv
-    sourcefile "${CFG}";
-    getid "${HOST_ONLY_IP}"
-    destroy
+    func_resetvenv
+    func_sourcefile "${CFG}";
+    func_getid "${HOST_ONLY_IP}"
+    func_destroy
   done
 }
 
-# gdestroy is an alias
+# func_gdestroy is an alias
 # for vagrant destroy 
 # but build for a group
 # destruction
-ghalt() {
+func_ghalt() {
   local FIRST_ARG=${1:-""}
   local isrunning;
   for CFG in ${GROUP}/*.cfg; 
   do
     VM_CONFIG=${CFG}
     cd "${BASEDIR}"
-    resetvenv
-    sourcefile "${CFG}";
+    func_resetvenv
+    func_sourcefile "${CFG}";
 
-    # VM_NAMES is not necessary for halt 
-    # but if halt is getting used in combination with export
+    # VM_NAMES is not necessary for func_halt 
+    # but if func_halt is getting used in combination with export
     # it is usefull to not do it two times
     if [[ ${FIRST_ARG} == "export" ]]; then
       VM_NAMES+=("${VM_NAME}")
     fi
 
-    isrunning=$(isvmrunning "${VM_NAME}")
+    isrunning=$(func_isvmrunning "${VM_NAME}")
     
     if [[ "${isrunning}" -eq 1 ]]; then
       infobold "Machine is not running. Continueing..."
       continue
     fi
 
-    getid "${HOST_ONLY_IP}"
+    func_getid "${HOST_ONLY_IP}"
     if [[ "${ID}" ]]; then
-      govmpath
+      func_govmpath
       cd ${GOVM_PATH}
-      halt
+      func_halt
     else
       error "Did not find the machines! Do they even run?"
       exit 2
@@ -1185,45 +1185,45 @@ ghalt() {
   done
 }
 
-gstart() {
+func_gstart() {
   local exists
   local isrunning
   for CFG in ${GROUP}/*.cfg; 
   do
     VM_CONFIG=${CFG}
     cd "${BASEDIR}"
-    resetvenv
-    sourcefile "${CFG}";
-    exists=$(isvmexisting ${VM_NAME})
+    func_resetvenv
+    func_sourcefile "${CFG}";
+    exists=$(func_isvmexisting ${VM_NAME})
     if [[ ${exists} -ne 0 ]]; then
       error "Machine ${VM_NAME} does not exists"
       exit 1
     fi
-    isrunning=$(isvmrunning ${VM_NAME})
+    isrunning=$(func_isvmrunning ${VM_NAME})
     if [[ ${isrunning} -eq 0 ]]; then
       infobold "Machine ${VM_NAME} is already up and running. Continuening with next..."
       continue
     fi
-    getid "${HOST_ONLY_IP}"
-    start
+    func_getid "${HOST_ONLY_IP}"
+    func_start
   done
 }
 
 # alias to vboxmanage.exe 
 # export <machines>
-gexport() {
+func_gexport() {
   local basename
   infobold "Exporting group: $(basename ${GROUP})"
-  ghalt "export"
+  func_ghalt "export"
   basename=$(basename ${GROUP})
-  appliancesemver "${basename}"
-  vmexport "${basename}" "group"
+  func_appliancesemver "${basename}"
+  func_vmexport "${basename}" "group"
 }
 
-# list is listing all the 
+# func_list is listing all the 
 # virtual-machines created
 # by govm
-list() {
+func_list() {
   if [ -z "$(ls -A ${VMSTORE})" ]; then
     infobold "No Machines have been created yet!"
     exit 1
@@ -1231,12 +1231,12 @@ list() {
   column ${DB} -t -s ":" 
 }
 
-# vmexport is exporting a single virtual-machine
+# func_vmexport is exporting a single virtual-machine
 # or a group of virtual-machines as an .ova file to
 # the $APPLIANCESTORE. It is also checking if a wsl
 # system is used and is converting the path to a 
 # windowspath for a proper function
-vmexport() {
+func_vmexport() {
   local dir=${1}
   local type=${2}
 
@@ -1246,7 +1246,7 @@ vmexport() {
     dir="/${dir}"
   fi
 
-  osdefault
+  func_osdefault
   if [[ "${type}" == "single" ]]; then
     infobold "Exporting ${VM_NAME} as ${APPLIANCE_NAME}"
     vboxmanage.exe 'export' "${VM_NAME}" --output "${APPLIANCESTORE}${dir}/${APPLIANCE_NAME}"
@@ -1259,18 +1259,18 @@ vmexport() {
   fi
 }
 
-# vmlistbridgedlifs is listing all
+# func_vmlistbridgedlifs is listing all
 # posbbile bridge-options that the user
 # can use for the bridge-network in virtualbox
-vmlistbridgedlifs() {
+func_vmlistbridgedlifs() {
   vboxmanage.exe list bridgedifs | grep -w "Name:" | tr -s " " 
 }
 
 # integreationtest will test all functionalities in the app
-# by simulating an example usage of an end-user
+# by simulating an example func_usage of an end-user
 # for this the default.cfg and
 # an example group located at .govm/configs
-integrationtest() {
+func_integrationtest() {
   if ! [[ -f ${BASEDIR}/${GOVM}/tested ]]; then
     PROVISION_DIR="${BASEDIR}/${GOVM}/provision"
     VAGRANTFILE_DIR="${BASEDIR}/${GOVM}/vagrantfiles"
@@ -1278,41 +1278,41 @@ integrationtest() {
     APPSTORE=${APPLIANCESTORE}
     infobold "Running some tests to asure that everything works as planned."
     infobold "This will take some time. Get a coffee... :)"
-    up
-    halt
-    start
-    vexport
+    func_up
+    func_halt
+    func_start
+    func_export
     APPLIANCESTORE=${APPSTORE}
-    vexport
+    func_export
     APPLIANCESTORE=${APPSTORE}
     MAIN_OVA="true"
-    vexport 
+    func_export 
     APPLIANCESTORE=${APPSTORE}
-    destroy
+    func_destroy
     success "Single-functions are working!"
     infobold "Testing group functions..."
     sleep 10
     ID=""
     MAIN_OVA="false"
-    gup
-    ghalt
-    gstart
-    gexport
+    func_gup
+    func_ghalt
+    func_gstart
+    func_gexport
     APPLIANCESTORE=${APPSTORE}
     MAIN_OVA="true"
-    gexport
+    func_gexport
     APPLIANCESTORE=${APPSTORE}
-    gdestroy
+    func_gdestroy
     success "Group-functions are working!"
     infobold "Testing edge cases..."
-    VM_CONFIG=${BASEDIR}/${GOVM}/default.cfg
+    VM_CONFIG="${BASEDIR}/${GOVM}/default.cfg"
     ID=""
-    up
+    func_up
     FORCE_REPLACE="true" 
-    up
-    destroy
-    rmdirrf "${APPLIANCESTORE}"
-    rmdirrf "${VMSTORE}"
+    func_up
+    func_destroy
+    func_rmdirrf "${APPLIANCESTORE}"
+    func_rmdirrf "${VMSTORE}"
     touch "${BASEDIR}/${GOVM}/tested"
     success "Finished testing! Everthing working!"
     exit 0
@@ -1322,42 +1322,42 @@ integrationtest() {
 # main is the entering point
 # of the application
 main() {
-  predefault
-  init;
-  vagrantfiledefault;
-  validateappcfg;
-  sourcefile ${GOVM_CONFIG};
-  validateappargs;
-  validateposixgroup "$@"
-  bridgeoptiongen
-  integrationtest
+  func_predefault
+  func_init;
+  func_vagrantfiledefault;
+  func_validateappcfg;
+  func_sourcefile ${GOVM_CONFIG};
+  func_validateappargs;
+  func_validateposixgroup "$@"
+  func_bridgeoptiongen
+  func_integrationtest
   if [[ "${VAGRANT_CMD}" == "ssh" && "${ID}" ]]; then
-    vssh
+    func_ssh
   elif [[ "${VAGRANT_CMD}" == "export" && -s ${VM_CONFIG} ]]; then
-    vexport
-  elif [[ "${VAGRANT_CMD}" == "gup" && -d "${GROUP}" ]]; then
-    gup; 
-  elif [[ "${VAGRANT_CMD}" == "gstart" && -d "${GROUP}" ]]; then
-    gstart
-  elif [[ "${VAGRANT_CMD}" == "gdestroy" && -d "${GROUP}" ]]; then
-    gdestroy
-  elif [[ "${VAGRANT_CMD}" == "ghalt" && -d "${GROUP}" ]]; then
-    ghalt
-  elif [[ "${VAGRANT_CMD}" == "gexport" && -d "${GROUP}" ]]; then
-    gexport
+    func_export
+  elif [[ "${VAGRANT_CMD}" == "func_gup" && -d "${GROUP}" ]]; then
+    func_gup; 
+  elif [[ "${VAGRANT_CMD}" == "func_gstart" && -d "${GROUP}" ]]; then
+    func_gstart
+  elif [[ "${VAGRANT_CMD}" == "func_gdestroy" && -d "${GROUP}" ]]; then
+    func_gdestroy
+  elif [[ "${VAGRANT_CMD}" == "func_ghalt" && -d "${GROUP}" ]]; then
+    func_ghalt
+  elif [[ "${VAGRANT_CMD}" == "func_gexport" && -d "${GROUP}" ]]; then
+    func_gexport
   elif [[ "${VM_LIST}" ]]; then
-    list
+    func_list
   elif [[ "${VAGRANT_CMD}" == "destroy" && "${ID}" ]]; then 
-    destroy;
+    func_destroy;
   elif [[ "${VAGRANT_CMD}" == "halt" && "${ID}" ]]; then
-    halt;
+    func_halt;
   elif [[ "${VAGRANT_CMD}" == "start" && "${ID}" ]]; then
-    start
+    func_start
   elif [[ "${VAGRANT_CMD}" == "up" ]]; then
-    up
+    func_up
   else 
     error "Posix-Arguments did not match!"
-    usage
+    func_usage
   fi
 
   if [[ ${CURRENT_OS} == "microsoft" ]]; then
