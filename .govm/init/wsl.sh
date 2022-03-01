@@ -38,6 +38,8 @@ fi
 
 if ! [[ -f ../../govm ]]; then
   cp ../../govm.sh ../../govm
+  sudo chmod u+x ../../govm
+  rm ../../govm.sh
 fi
 
 

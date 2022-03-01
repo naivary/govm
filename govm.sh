@@ -686,7 +686,6 @@ func_postvenv() {
 # given file into the current
 # shell-ENV
 func_sourcefile() {
-  dos2unix "${1}" &> /dev/null
   . "${1}"
   func_govmpath
 }
@@ -1221,8 +1220,7 @@ func_gstart() {
   done
 }
 
-# alias to vboxmanage.exe 
-# export <machines>
+# alias to vboxmanage.exe export <machines>
 func_gexport() {
   local basename
   infobold "Exporting group: $(basename ${GROUP})"

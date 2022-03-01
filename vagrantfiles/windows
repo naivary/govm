@@ -4,8 +4,15 @@
 
 Vagrant.configure("2") do |config|
 
+  # A basic template for creating a windows virtual-machine
+  # with some configs needed that it will run without
+  # any probles
 
-  # creating hash from the given hash_string
+  # this is needed if you wish to have access
+  # to the varibales defined in CUSTOME_VARIABLES.
+  # It will convert the formatted string into a 
+  # proper ruby hash. Afterwards you can access every variable
+  # using the "hash" variable e.g. hash["KEY"]
   hash_string=ENV["CUSTOME_VARIABLES_STRING"]
   hash_arr = hash_string.split(',')
   hash = {}
