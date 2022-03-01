@@ -21,3 +21,5 @@ if [[ "${DISK_SIZE_SECOND}" != "" ]]; then
   sudo mount /dev/second/sdb1 "${MOUNTING_POINT}"
   echo "/dev/second/sdb1 ${MOUNTING_POINT} ${FILE_SYSTEM} defaults 0 ${FSCK}" >> /etc/fstab
 fi
+
+sudo apt install git -y;

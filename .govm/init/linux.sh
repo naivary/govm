@@ -17,7 +17,7 @@ sudo apt-get install virtualbox -y
 infobold "Installing vagrant..."
 curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -
 sudo apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main"
-sudo apt-get update && sudo apt-get install vagrant
+sudo apt-get update && sudo apt-get install vagrant -y;
 
 infobold  "Finishing touches..."
 BASHFILE="${HOME}/.bashrc"
@@ -44,5 +44,5 @@ if ! [[ -f ../../govm ]]; then
 fi
 
 sudo apt install realpath;
-sudo apt install git -y;
+sudo apt install dos2unix;
 sudo apt-get update -y;
