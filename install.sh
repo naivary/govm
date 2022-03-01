@@ -1,5 +1,20 @@
 #!/bin/bash
 
+# func_init is setting all best-practice-standards 
+# needed for the shell-script to run without
+# any problems and catch errors 
+func_init() {
+  export PATH="${PATH}"
+  export LANG=C.UTF-8
+  export LC_NUMERIC="en_US.UTF-8"
+  # -e any error means to exit the script
+  # -u treat export -n variables and paramters as an error
+  # -x what is getting executed
+  set -e 
+  # set -x
+  set -u
+  # UTF-8 as standard in the shell-Environment
+}
 
 infobold() {
   printf "\033[1m\033[34m${1}\033[0m\n"
@@ -45,15 +60,16 @@ func_clean() {
   sudo chmod u+x govm
   rm govm.sh
   rm -rf ./.govm/init
-  rm "$0"
   rm README.md
-  rm LECENSE
+  rm LICENSE
+  rm -rf ./.govm/pkg
   rm .gitignore
   rm -rf .git
 }
 
 main() {
   func_ostype
+  func_init
   if [[ "${OS}" == "wsl" ]]; then
     func_wslinstall
   elif [[ "${OS}" == "ubuntu" ]]; then

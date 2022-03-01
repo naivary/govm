@@ -21,7 +21,7 @@ cd vagrant-wrapper/ && sudo chmod u+x install.sh
 ```
 Before you run the script be sure to read [this](#installsh) otherwise you may have an unexpected outcome.
 ```
-./install.sh
+./install.sh && rm install.sh
 ```
 
 If you can't or do not want to use one of the pre-written scripts make sure that all the [requirements](#requirements) are installed.
