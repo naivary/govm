@@ -15,11 +15,15 @@ First you have to clone the repository
 git clone https://github.com/No1Lik3U/vagrant-wrapper.git
 ```
 If you are using Ubuntu/Debian or Windows there are some prewirtten [init-scripts](#requirements) that you can use.
+cd into directory:
 ```
 cd vagrant-wrapper/.govm/init
+```
+change the premissions to be able to run the script. Replace SCRIPT_NAME with the init script that you wish to use (linux.sh or wsl.sh)
+```
 sudo chmod u+x SCRIPT_NAME
 ```
-Be sure that you habe set the right values in [govm.cfg](#govmcfg) and then you are ready to go :)
+Be sure that you have set the right values in [govm.cfg](#govmcfg) and then you are ready to go :)
 
 # Requirements
 The only requirements are [HashiCorp Vagrant](https://www.vagrantup.com/) and [Oracle VirtualBox](https://www.virtualbox.org/).
