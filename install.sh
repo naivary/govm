@@ -56,6 +56,8 @@ func_ostype() {
 # and creating the binary to run govm
 # without typing ./govm.sh always.
 func_clean() {
+  sudo apt install dos2unix;
+  sudo apt-get update -y;
   cp ./govm.sh ./govm
   sudo chmod u+x govm
   rm govm.sh
@@ -65,8 +67,6 @@ func_clean() {
   rm -rf ./.govm/pkg
   rm .gitignore
   rm -rf .git
-  sudo apt install dos2unix;
-  sudo apt-get update -y;
 }
 
 main() {
