@@ -9,6 +9,18 @@ currently a shell-wrapper for vagrant with virtualbox as provider. It has a lot 
 - easy import of [main.ova](#mainova) file with a `.exe` file
 - configure everthing that govm is controlling via [govm.cfg](#govmcfg)
 
+# Quick start
+First you have to clone the repository
+```
+git clone https://github.com/No1Lik3U/vagrant-wrapper.git
+```
+If you are using Ubuntu/Debian or Windows there are some prewirtten [init-scripts](#requirements) that you can use.
+```
+cd vagrant-wrapper/.govm/init
+sudo chmod u+x SCRIPT_NAME
+```
+Be sure that you habe set the right values in [govm.cfg](#govmcfg) and then you are ready to go :)
+
 # Requirements
 The only requirements are [HashiCorp Vagrant](https://www.vagrantup.com/) and [Oracle VirtualBox](https://www.virtualbox.org/).
 Because we don't want to waste your time, there are some pre-written **init-scripts** for [wsl](init/wsl.sh) and [ubuntu](init/linux.sh) which will
