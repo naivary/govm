@@ -36,9 +36,4 @@ if ! sudo grep -w -q "${USER} ALL=(ALL) NOPASSWD:ALL" /etc/sudoers.d/${USER}; th
   echo "${USER} ALL = (ALL) NOPASSWD:ALL" | sudo tee -a /etc/sudoers.d/${USER}
 fi
 
-
-sudo apt install realpath;
-sudo apt install dos2unix;
-sudo apt-get update -y;
-
 success "Wait for the windows-powershell-prompt to close automatically and you are ready to go!"

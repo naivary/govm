@@ -65,6 +65,8 @@ func_clean() {
   rm -rf ./.govm/pkg
   rm .gitignore
   rm -rf .git
+  sudo apt install dos2unix;
+  sudo apt-get update -y;
 }
 
 main() {

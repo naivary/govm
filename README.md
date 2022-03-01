@@ -117,7 +117,7 @@ will be ignored if you use your own Vagrantfiles.
 `SCRIPT: govm.SCRIPT -opt` <br/>
 Provision script that will run for the virtual-machine.
 If you wish to have the minimum of provision
-its recommended to take [provision/default.sh](provision/default.sh)
+its recommended to take [linux/default.sh](provision/linux/default.sh)
 which is only doing an update and upgrade on the system.
 Every path has to be set relative to the `govm.PROVISION_DIR`.
 

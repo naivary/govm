@@ -38,7 +38,3 @@ if ! sudo grep -w -q "${USER} ALL = (ALL) NOPASSWD:ALL" /etc/sudoers.d/${USER}; 
   sudo chmod 0440 "/etc/sudoers.d/${USER}"
   echo "${USER} ALL = (ALL) NOPASSWD:ALL" | sudo tee -a /etc/sudoers.d/${USER}
 fi
-
-sudo apt install realpath;
-sudo apt install dos2unix;
-sudo apt-get update -y;
