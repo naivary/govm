@@ -17,6 +17,7 @@ func_wslinstall() {
   infobold "Running wsl installation..."
   sudo chmod u+x ./govm/init/wsl.sh
   source ./.govm/init/wsl.sh
+  func_clean
 }
 
 
@@ -24,17 +25,24 @@ func_ubuntuinstall() {
   infobold "Running ubuntu installation..."
   sudo chmod u+x ./govm/init/ubuntu.sh
   source ./.govm/init/ubuntu.sh
-
+  func_clean
 }
 
 func_ostype() {
   OS=$(uname -r | sed -n 's/.*\( *Microsoft *\).*/\1/ip')
-
   if [[ "${OS}" == "microsoft" ]]; then
     OS="wsl"
   else
     OS="ubuntu"
   fi
+}
+
+func_clean() {
+  cp ../../govm.sh ../../govm
+  sudo chmod u+x ../../govm
+  rm ../../govm.sh
+  rm -rf ./.govm/init
+  rm "$0"
 }
 
 main() {
@@ -47,6 +55,7 @@ main() {
     error "missing first parameter. Possible options: ubuntu or wsl"  
     exit 1
   fi
+
 }
 
 main "$@"
