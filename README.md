@@ -20,15 +20,19 @@ cd into directory:
 ```
 cd vagrant-wrapper/.govm/init
 ```
-change the premissions to be able to run the script. Replace SCRIPT_NAME with the init script that you wish to use (linux.sh or wsl.sh)
+Change the premissions to be able to run the script. Replace SCRIPT_NAME with the init script that you wish to use (linux.sh or wsl.sh)
 ```
 sudo chmod u+x SCRIPT_NAME
 ```
-Run the script
+Run the script: 
 ```
 ./SCRIPT_NAME.sh
 ```
-Be sure that you have set the right values in [govm.cfg](#govmcfg) and then you are ready to go :)
+
+If you can't or do not want to use one of the pre-written scripts make sure that all the [requirements](#requirements) are installed.
+
+Also be sure that you have set the right values in [govm.cfg](#govmcfg) and then you are ready to go :)
+For more information about govm read the [documentation](#documentation).
 
 # Requirements
 The only requirements are [HashiCorp Vagrant](https://www.vagrantup.com/) and [Oracle VirtualBox](https://www.virtualbox.org/).
