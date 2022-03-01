@@ -15,9 +15,11 @@ NOTE: You need sudo or admin priviliges to run any of the prewritten scripts.
 ```
 git clone https://github.com/No1Lik3U/vagrant-wrapper.git
 ```
+`cd` into the directory and change the permissions of `install.sh` to be executable:
 ```
 cd vagrant-wrapper/ && sudo chmod u+x install.sh
 ```
+Before you run the script be sure to read [this](#installsh) otherwise you may have an unexpected outcome.
 ```
 ./install.sh
 ```
