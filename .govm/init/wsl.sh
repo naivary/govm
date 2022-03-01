@@ -29,11 +29,11 @@ else
   echo "" >> ${BASHFILE}
 fi
 
-if ! sudo grep -w -q "${USER} ALL = (ALL) NOPASSWD:ALL" /etc/sudoers.d/musti; then
+if ! sudo grep -w -q "${USER} ALL = (ALL) NOPASSWD:ALL" /etc/sudoers.d/${USER}; then
   infobold "Setting sudo-priviliges without password"
   sudo touch /etc/sudoers.d/${USER}
   sudo chmod 0440 "/etc/sudoers.d/${USER}"
-  echo "${USER} ALL = (ALL) NOPASSWD:ALL" | sudo tee -a /etc/sudoers.d/musti
+  echo "${USER} ALL = (ALL) NOPASSWD:ALL" | sudo tee -a /etc/sudoers.d/${USER}
 fi
 
 if ! [[ -f ../../govm ]]; then

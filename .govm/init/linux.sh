@@ -13,7 +13,7 @@ success() {
 }
 
 infobold "Installing virtualbox..."
-sudo apt-get install virtualbox
+sudo apt-get install virtualbox -y
 infobold "Installing vagrant..."
 curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -
 sudo apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main"
@@ -32,7 +32,7 @@ else
   echo "" >> ${BASHFILE}
 fi
 
-if ! sudo grep -w -q "${USER} ALL = (ALL) NOPASSWD:ALL" /etc/sudoers.d/musti; then
+if ! sudo grep -w -q "${USER} ALL = (ALL) NOPASSWD:ALL" /etc/sudoers.d/${USER}; then
   infobold "Setting sudo-priviliges without password"
   sudo touch /etc/sudoers.d/${USER}
   sudo chmod 0440 "/etc/sudoers.d/${USER}"
@@ -43,5 +43,6 @@ if ! [[ -f ../../govm ]]; then
   cp ../../govm.sh ../../govm
 fi
 
+sudo apt install realpath;
 
-success "Wait for the windows-powershell-prompt to close automatically and you are ready to go!"
+sudo apt-get update;

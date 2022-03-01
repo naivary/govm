@@ -398,14 +398,26 @@ func_rmdirrf() {
 # func_isvmrunning is checking if the virtual-machine
 # is already up and running
 func_isvmrunning() {
-  vboxmanage.exe list runningvms | grep -q -w "${1}" 
+
+  if [[ "${CURRENT_OS}" == "microsoft" ]]; then
+    vboxmanage.exe list runningvms | grep -q -w "${1}" 
+  else
+    vboxmanage list runningvms | grep -q -w "${1}" 
+  fi
+
   echo "$?"
 }
 
 # isvmexting check if the virtual-machine
 # exists in virtualbox
 func_isvmexisting() {
-  vboxmanage.exe list vms | grep -q -w "${1}"
+
+  if [[ "${CURRENT_OS}" == "microsoft" ]]; then
+    vboxmanage.exe list vms | grep -q -w "${1}"
+  else
+    vboxmanage list vms | grep -q -w "${1}"
+  fi
+
   echo "$?"
 }
 
@@ -1249,10 +1261,20 @@ func_vmexport() {
   func_osdefault
   if [[ "${type}" == "single" ]]; then
     infobold "Exporting ${VM_NAME} as ${APPLIANCE_NAME}"
-    vboxmanage.exe 'export' "${VM_NAME}" --output "${APPLIANCESTORE}${dir}/${APPLIANCE_NAME}"
+    if [[ "${CURRENT_OS}" == "microsoft" ]]; then
+      vboxmanage.exe 'export' "${VM_NAME}" --output "${APPLIANCESTORE}${dir}/${APPLIANCE_NAME}"
+    else 
+      vboxmanage 'export' "${VM_NAME}" --output "${APPLIANCESTORE}${dir}/${APPLIANCE_NAME}"
+    fi
+
   elif [[ "${type}" == "group" ]]; then
+
+    if [[ "${CURRENT_OS}" == "microsoft" ]]; then
+      vboxmanage.exe 'export' "${VM_NAMES[@]}" --output "${APPLIANCESTORE}/${dir}/${APPLIANCE_NAME}" && success "Created appliance ${APPLIANCE_NAME}"
+    else 
+      vboxmanage 'export' "${VM_NAMES[@]}" --output "${APPLIANCESTORE}/${dir}/${APPLIANCE_NAME}" && success "Created appliance ${APPLIANCE_NAME}"
+    fi
     infobold "Exporting machine group (${VM_NAMES[*]}) as ${APPLIANCE_NAME}" 
-    vboxmanage.exe 'export' "${VM_NAMES[@]}" --output "${APPLIANCESTORE}/${dir}/${APPLIANCE_NAME}" && success "Created appliance ${APPLIANCE_NAME}"
   else
     error "currently not supported for ${CURRENT_OS}"
     exit 1
@@ -1263,7 +1285,11 @@ func_vmexport() {
 # posbbile bridge-options that the user
 # can use for the bridge-network in virtualbox
 func_vmlistbridgedlifs() {
-  vboxmanage.exe list bridgedifs | grep -w "Name:" | tr -s " " 
+  if [[ "${CURRENT_OS}" == "microsoft" ]]; then
+    vboxmanage.exe list bridgedifs | grep -w "Name:" | tr -s " " 
+  else 
+    vboxmanage list bridgedifs | grep -w "Name:" | tr -s " "
+  fi
 }
 
 # integreationtest will test all functionalities in the app
