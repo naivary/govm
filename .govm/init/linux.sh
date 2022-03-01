@@ -36,7 +36,7 @@ if ! sudo grep -w -q "${USER} ALL = (ALL) NOPASSWD:ALL" /etc/sudoers.d/${USER}; 
   infobold "Setting sudo-priviliges without password"
   sudo touch /etc/sudoers.d/${USER}
   sudo chmod 0440 "/etc/sudoers.d/${USER}"
-  echo "${USER} ALL = (ALL) NOPASSWD:ALL" | sudo tee -a /etc/sudoers.d/musti
+  echo "${USER} ALL = (ALL) NOPASSWD:ALL" | sudo tee -a /etc/sudoers.d/${USER}
 fi
 
 if ! [[ -f ../../govm ]]; then
@@ -44,5 +44,5 @@ if ! [[ -f ../../govm ]]; then
 fi
 
 sudo apt install realpath;
-
-sudo apt-get update;
+sudo apt install git -y;
+sudo apt-get update -y;
