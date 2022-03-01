@@ -37,12 +37,19 @@ func_ostype() {
   fi
 }
 
+# func_clean is cleaning everthing
+# and creating the binary to run govm
+# without typing ./govm.sh always.
 func_clean() {
-  cp ../../govm.sh ../../govm
-  sudo chmod u+x ../../govm
-  rm ../../govm.sh
+  cp ./govm.sh ./govm
+  sudo chmod u+x govm
+  rm govm.sh
   rm -rf ./.govm/init
   rm "$0"
+  rm README.md
+  rm LECENSE
+  rm .gitignore
+  rm -rf .git
 }
 
 main() {
