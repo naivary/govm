@@ -10,7 +10,8 @@ currently a shell-wrapper for vagrant with virtualbox as provider. It has a lot 
 - configure everthing that govm is controlling via [govm.cfg](#govmcfg)
 
 # Quick start
-First you have to clone the repository
+NOTE: You need sudo or admin priviliges to run any of the prewritten scripts.
+
 ```
 git clone https://github.com/No1Lik3U/vagrant-wrapper.git
 ```
@@ -22,6 +23,10 @@ cd vagrant-wrapper/.govm/init
 change the premissions to be able to run the script. Replace SCRIPT_NAME with the init script that you wish to use (linux.sh or wsl.sh)
 ```
 sudo chmod u+x SCRIPT_NAME
+```
+Run the script
+```
+./SCRIPT_NAME.sh
 ```
 Be sure that you have set the right values in [govm.cfg](#govmcfg) and then you are ready to go :)
 
