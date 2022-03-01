@@ -30,7 +30,7 @@ success() {
 
 func_wslinstall() {
   infobold "Running wsl installation..."
-  sudo chmod u+x ./govm/init/wsl.sh
+  sudo chmod u+x ./.govm/init/wsl.sh
   source ./.govm/init/wsl.sh
   func_clean
 }
@@ -38,7 +38,7 @@ func_wslinstall() {
 
 func_ubuntuinstall() {
   infobold "Running ubuntu installation..."
-  sudo chmod u+x ./govm/init/ubuntu.sh
+  sudo chmod u+x ./.govm/init/ubuntu.sh
   source ./.govm/init/ubuntu.sh
   func_clean
 }

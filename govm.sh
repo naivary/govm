@@ -1337,6 +1337,7 @@ func_integrationtest() {
     func_destroy
     func_rmdirrf "${APPLIANCESTORE}"
     func_rmdirrf "${VMSTORE}"
+    func_rmdirrf "${GOVM}/configs"
     touch "${BASEDIR}/${GOVM}/tested"
     success "Finished testing! Everthing working!"
     exit 0

@@ -39,12 +39,6 @@ if ! sudo grep -w -q "${USER} ALL = (ALL) NOPASSWD:ALL" /etc/sudoers.d/${USER}; 
   echo "${USER} ALL = (ALL) NOPASSWD:ALL" | sudo tee -a /etc/sudoers.d/${USER}
 fi
 
-if ! [[ -f ../../govm ]]; then
-  cp ../../govm.sh ../../govm
-  sudo chmod u+x ../../govm
-  rm ../../govm.sh
-fi
-
 sudo apt install realpath;
 sudo apt install dos2unix;
 sudo apt-get update -y;
