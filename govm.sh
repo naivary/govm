@@ -218,7 +218,7 @@ func_predefault() {
   VAGRANTFILE=${VAGRANTFILE:-linux}
   VMSTORE=${VMSTORE:-${HOME}/${GOVM}}
   APPLIANCESTORE=${APPLIANCESTORE:-${HOME}/"${GOVM}_appliance"}
-  LOG=${LOG:-"/log"}
+  LOG=${LOG:-""}
   SCRIPT=${SCRIPT:-"nil"}
   BRIDGE_OPTIONS=()
 
@@ -647,7 +647,7 @@ func_prepvenv() {
   func_govmpath
   func_makedir "${GOVM_PATH}"
 
-  if [[ ${LOG} == "/log" ]]; then
+  if [[ -z ${LOG} ]]; then
     func_makedir "${GOVM_PATH}/logs"
     LOG_PATH=${GOVM_PATH}/logs
   else 
@@ -874,7 +874,7 @@ func_validateappargs() {
   info "Validating App-Configuration arguments values..."
   if ! [[ -d ${VMSTORE} ]]; then
     func_makedir "${VMSTORE}"
-  elif [[ "${LOG}" != "/log" && ! -d "${LOG}" ]]; then
+  elif [[ "${LOG}" && ! -d "${LOG}" ]]; then
     func_makedir "${LOG}"
   elif ! [[ -d ${APPLIANCESTORE} ]]; then 
     func_makedir "${APPLIANCESTORE}"
@@ -997,8 +997,8 @@ func_createvenv() {
 # virtual machine using vagrant up 
 func_createvm() {
   infobold "Creating Virtual-Machine ${ID}. This may take a while..."
-  # vagrant up &> ${LOG_PATH}/"${TIMESTAMP}_up.log" 
-  vagrant up
+  vagrant up &> ${LOG_PATH}/"${TIMESTAMP}_up.log" 
+  # vagrant up
 }
 
 # func_up is creating a virtual-machine with vagrant up. 
