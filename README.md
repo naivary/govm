@@ -9,24 +9,17 @@ currently a shell-wrapper for vagrant with virtualbox as provider. It has a lot 
 - easy import of [main.ova](#mainova) file with a `.exe` file
 - configure everthing that govm is controlling via [govm.cfg](#govmcfg)
 
-# Quick start
+# Installation
 NOTE: You need sudo or admin priviliges to run any of the prewritten scripts.
 
 ```
 git clone https://github.com/No1Lik3U/vagrant-wrapper.git
 ```
-If you are using Ubuntu/Debian or Windows there are some prewirtten [init-scripts](#requirements) that you can use.
-cd into directory:
 ```
-cd vagrant-wrapper/.govm/init
+cd vagrant-wrapper/ && sudo chmod u+x install.sh
 ```
-Change the premissions to be able to run the script. Replace SCRIPT_NAME with the init script that you wish to use (linux.sh or wsl.sh)
 ```
-sudo chmod u+x SCRIPT_NAME
-```
-Run the script: 
-```
-./SCRIPT_NAME.sh
+./install.sh
 ```
 
 If you can't or do not want to use one of the pre-written scripts make sure that all the [requirements](#requirements) are installed.
@@ -58,6 +51,10 @@ sudo commands without entering the password `<username> ALL = PASSWD:ALL`.
 This init script will do the same as [wsl](#wslsh) but for ubuntu/debian. 
 This script is created for ubuntu and may be used for other linux-distrubutions 
 that use the `apt` package manager.
+
+## install.sh
+If you wish to install all requirements using the pre-written init-scripts follow the instructions described in [installation](#installation). It will autmatically detect if you are using wsl and then run the wsl.sh script. If you are not using wsl it will always take the ubuntu.sh script and will not check for further `OSTYPE` information.
+
 
 # Documentation
 The following sections will explain in detail how to use `govm`. Before you start reading the documentation here are some conventions:
