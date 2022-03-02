@@ -115,7 +115,7 @@ VALID_CONFIG_PARAMS_APP=(
   "CONFIG_DIR"
   "APPLIANCESTORE"
   "BRIDGE_OPTIONS"
-  "LOG"
+  "LOG_DIR"
   "CPU"
   "RAM"
   "OS_IMAGE"
@@ -128,7 +128,7 @@ OPTIONAL_CONFIG_PARAMS_APP=(
   "PROVISION_DIR"
   "CONFIG_DIR"
   "APPLIANCESTORE"
-  "LOG"
+  "LOG_DIR"
 )
 
 SUPPORTED_FILE_SYSTEMS=(
@@ -218,7 +218,7 @@ func_predefault() {
   VAGRANTFILE=${VAGRANTFILE:-linux}
   VMSTORE=${VMSTORE:-${HOME}/${GOVM}}
   APPLIANCESTORE=${APPLIANCESTORE:-${HOME}/"${GOVM}_appliance"}
-  LOG=${LOG:-""}
+  LOG_DIR=${LOG_DIR:-""}
   SCRIPT=${SCRIPT:-"nil"}
   BRIDGE_OPTIONS=()
 
@@ -647,11 +647,11 @@ func_prepvenv() {
   func_govmpath
   func_makedir "${GOVM_PATH}"
 
-  if [[ -z ${LOG} ]]; then
+  if [[ -z ${LOG_DIR} ]]; then
     func_makedir "${GOVM_PATH}/logs"
     LOG_PATH=${GOVM_PATH}/logs
   else 
-    LOG_PATH=${LOG}/${ID}
+    LOG_PATH=${LOG_DIR}/${ID}
     func_makedir "${LOG_PATH}"
   fi
 
@@ -874,8 +874,8 @@ func_validateappargs() {
   info "Validating App-Configuration arguments values..."
   if ! [[ -d ${VMSTORE} ]]; then
     func_makedir "${VMSTORE}"
-  elif [[ "${LOG}" && ! -d "${LOG}" ]]; then
-    func_makedir "${LOG}"
+  elif [[ "${LOG_DIR}" && ! -d "${LOG_DIR}" ]]; then
+    func_makedir "${LOG_DIR}"
   elif ! [[ -d ${APPLIANCESTORE} ]]; then 
     func_makedir "${APPLIANCESTORE}"
   elif ! [[ -d ${CONFIG_DIR} ]]; then

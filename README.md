@@ -214,8 +214,9 @@ Possible networks virtual-box can use to bridge
 to. It is an array seperated by whitespace
 e.g. ("first network" "second network") <br/>
 
-`LOG: govm.VMSTORE/$GOVM-ID/logs -opt` <br/>
-Location wehere the logging is made. 
+`LOG_DIR: govm.VMSTORE/$GOVM-ID/logs -opt` <br/>
+Location wehere the logging is made. The value has to be a
+directory.
 
 `VAGRANTFILE_DIR: .govm/vagrantfiles -opt` <br/>
 Location of all your custome vagrantfiles. For creating your custome `Vagrantfiles` you have to follow some [rules](#custome-vagrantfile).
