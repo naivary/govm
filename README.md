@@ -106,7 +106,7 @@ If you use windows be sure that
 the `OS_TYPE` is also set to windows.
 All possible base-boxes can be found [here](https://app.vagrantup.com/boxes/search?provider=virtualbox).
 
-`OS_TYPE: linux -opt` <br/>
+`OS_TYPE: govm.OS_TYPE -opt` <br/>
 Is informing the application
 which type of operating-system you are
 using. This is needed because as always windows
@@ -176,11 +176,12 @@ This variable is required if `DISK_SIZE-SECOND` is set otherwise it is getting i
 
 NOTE: The second disk will be attached to your virtual-machine but you have to mount it to a mounting point. YOu can do it manually or in your provision script. There is also a pre-written [script](provision/linux/default.sh) which will do it for you. So it's recommended to use the pre-written script and add any further provision task to the script.
 
-`CUSTOME_VARIABLES: () -opt` <br/>
+`CUSTOME_VARIABLES: govm.CUSTOME_VARIABLES -opt` <br/>
 Variables that you want to access 
-in your provision script.
-It is an array seperated with 
-whitespace e.g. ("KEY:VALUE" "KEY:VALUE").
+in your provision script or in your custome
+[Vagrantfile](#custome-vagrantfile). 
+It is an array seperated with whitespace 
+e.g. ("KEY:VALUE" "KEY:VALUE").
 
 SPECIAL-VARIABLES:
 1. `os_user:username`: if this is set this users home-directory will be used as the `SYNC_DIR`.
@@ -227,8 +228,9 @@ Directory with all your provisions-scripts. <br/>
 
 In `govm.cfg` are also some globally defined default values for the 
 virtual-machine `cfg` files which are required to be present. 
-These are `CPU` `RAM` `OS_IMAGE` `SCRIPT`. There are already some defaults 
-set for you in the present [govm.cfg](.govm/govm.cfg) but feel free to change them. 
+These are `CPU` `RAM` `OS_IMAGE` `SCRIPT` `OS_TYPE` `CUSTOME_VARIABLES`. 
+There are already some defaults set for you in the present [govm.cfg](.govm/govm.cfg) 
+but feel free to change them. 
 
 # Creation process
 There are two types of creation-processes [single-creation](#single-creation) and [group-creation](#group-creation). Even though a group-creation can be started with one `vm.cfg` it is highly recommended to use the single-creation for two reasons:

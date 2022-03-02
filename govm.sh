@@ -1389,6 +1389,7 @@ main() {
   func_validateappargs;
   func_validateposixgroup "$@"
   func_integrationtest
+
   if [[ "${VAGRANT_CMD}" == "ssh" && "${ID}" ]]; then
     func_ssh
   elif [[ "${VAGRANT_CMD}" == "export" && -s ${VM_CONFIG} ]]; then
