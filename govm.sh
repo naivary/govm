@@ -757,8 +757,6 @@ func_validatevmcfg() {
     # why we call func_hashtablegen here is because
     # if the custome_variables option is set then it will get
     # appended to the govm.custome_variable and the formatted string will be created
-    #! there is no validation yet if it is an array. If it is not an array the outcome
-    #! will be unexpected.
     func_hashtablegen
     success "Valid Syntax and Arguments for ${config_name}" 
   else 
@@ -1394,15 +1392,15 @@ main() {
     func_ssh
   elif [[ "${VAGRANT_CMD}" == "export" && -s ${VM_CONFIG} ]]; then
     func_export
-  elif [[ "${VAGRANT_CMD}" == "func_gup" && -d "${GROUP}" ]]; then
+  elif [[ "${VAGRANT_CMD}" == "gup" && -d "${GROUP}" ]]; then
     func_gup; 
-  elif [[ "${VAGRANT_CMD}" == "func_gstart" && -d "${GROUP}" ]]; then
+  elif [[ "${VAGRANT_CMD}" == "gstart" && -d "${GROUP}" ]]; then
     func_gstart
-  elif [[ "${VAGRANT_CMD}" == "func_gdestroy" && -d "${GROUP}" ]]; then
+  elif [[ "${VAGRANT_CMD}" == "gdestroy" && -d "${GROUP}" ]]; then
     func_gdestroy
-  elif [[ "${VAGRANT_CMD}" == "func_ghalt" && -d "${GROUP}" ]]; then
+  elif [[ "${VAGRANT_CMD}" == "ghalt" && -d "${GROUP}" ]]; then
     func_ghalt
-  elif [[ "${VAGRANT_CMD}" == "func_gexport" && -d "${GROUP}" ]]; then
+  elif [[ "${VAGRANT_CMD}" == "gexport" && -d "${GROUP}" ]]; then
     func_gexport
   elif [[ "${VM_LIST}" ]]; then
     func_list

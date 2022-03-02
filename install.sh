@@ -67,6 +67,7 @@ func_clean() {
   rm -rf ./.govm/pkg
   rm .gitignore
   rm -rf .git
+  rm ./configs/.gitignore
 }
 
 main() {
