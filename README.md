@@ -181,9 +181,6 @@ Variables that you want to access
 in your provision script.
 It is an array seperated with 
 whitespace e.g. ("KEY:VALUE" "KEY:VALUE").
-If you just declare an string in the array 
-then this will be taken as key and value i.e. 
-("something") -> ("something:something")
 
 SPECIAL-VARIABLES:
 1. `os_user:username`: if this is set this users home-directory will be used as the `SYNC_DIR`.

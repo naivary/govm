@@ -120,6 +120,8 @@ VALID_CONFIG_PARAMS_APP=(
   "RAM"
   "OS_IMAGE"
   "SCRIPT"
+  "OS_TYPE"
+  "CUSTOME_VARIABLES"
 )
 
 OPTIONAL_CONFIG_PARAMS_APP=(
@@ -365,6 +367,20 @@ func_getip() {
     HOST_ONLY_IP="nil"
   fi
 }
+
+# func_verifyarr is checking if the syntax of the 
+# given arr and returning it 
+func_verifyarrcustomearr() {
+  local arr
+  arr=$(echo "${1}" | cut -d "=" -f 2 | tr -d '()' | tr -d '[:space:]')
+
+  if ! [[ "${arr}" =~ ^(\"[A-Za-z0-9_-]+:[A-Za-z0-9_-]+\")+$ ]]; then
+    echo 1
+  else 
+    echo 0
+  fi
+}
+
 
 # func_govmpath is setting the path
 # to the current virtual-machine
@@ -698,16 +714,17 @@ func_sourcefile() {
 # it is getting sourced.
 func_validatevmcfg() {
   local config_name=$(basename "${VM_CONFIG}")
+  local iscorrect
   GIVEN_PARAMS_REQUIRED=()
   GIVEN_PARAMS_OPTIONAL=()
   info "Loading ${config_name}...";
   if [[  -s "${VM_CONFIG}" && "${VM_CONFIG}" == *.cfg ]]; then
     while read LINE
     do
-      VALUE="$(echo -e "${LINE}" | tr -d '[:space:]')"
-      if ! [[ "${VALUE}" =~ ^([A-Za-z0-9_]+)=([^'#'$%'&''*'^]+$) ]]; then
-        [[ "${VALUE}" =~ ^\#.*$ || -z "${VALUE}" ]] && continue
-        error "Wrong syntax: ${VALUE}"
+      VALUE_LINE="$(echo -e "${LINE}" | tr -d '[:space:]')"
+      if ! [[ "${VALUE_LINE}" =~ ^([A-Za-z0-9_]+)=([^'#'$%'&''*'^]+$) ]]; then
+        [[ "${VALUE_LINE}" =~ ^\#.*$ || -z "${VALUE_LINE}" ]] && continue
+        error "Wrong syntax: ${VALUE_LINE}"
         exit 1
       else
         NAME="${BASH_REMATCH[1]}"
@@ -717,6 +734,17 @@ func_validatevmcfg() {
         elif ! [[ "${VALID_CONFIG_PARAMS_VM[*]}" =~ "${NAME}" ]]; then
           error "Unexpected key ${NAME}"
           exit 1
+        elif [[ "${NAME}" == "CUSTOME_VARIABLES" ]]; then
+          iscorrect=$(func_verifyarrcustomearr "${LINE}")
+
+          if [[ ${iscorrect} -eq 1 ]]; then
+            error "Array is in the wrong syntax: ${LINE}"
+            exit 1
+          fi
+
+          VALUE=$(echo "${LINE}" | cut -d "=" -f 2 | tr -d '()' | tr -d '"' )
+          ARR=(${VALUE})
+          CUSTOME_VARIABLES+=("${ARR[@]}")
         elif [[ "${OPTIONAL_CONFIG_PARAMS_VM[*]}" =~ "${NAME}" ]]; then
           GIVEN_PARAMS_OPTIONAL+=("${NAME}")
         elif [[ "${VALID_CONFIG_PARAMS_VM[*]}" =~ "${NAME}" ]]; then
@@ -726,6 +754,12 @@ func_validatevmcfg() {
     done < ${VM_CONFIG}
 
   if [[ ${#GIVEN_PARAMS_REQUIRED[*]} -eq ${REQUIRED_PARAMS_CONFIG_VM} ]]; then
+    # why we call func_hashtablegen here is because
+    # if the custome_variables option is set then it will get
+    # appended to the govm.custome_variable and the formatted string will be created
+    #! there is no validation yet if it is an array. If it is not an array the outcome
+    #! will be unexpected.
+    func_hashtablegen
     success "Valid Syntax and Arguments for ${config_name}" 
   else 
     error "Not Enough Arguments: ${VM_CONFIG}"
@@ -851,8 +885,6 @@ func_validateoptionalvmargs() {
     if ! [[ -d "${SYNC_DIR}" ]]; then
       func_makedir "${SYNC_DIR}"
     fi
-  elif [[ ${#CUSTOME_VARIABLES[@]} -gt 0 ]]; then
-    func_hashtablegen
   elif [[ "${VM_NAME}" ]]; then
     if ! [[ "${VM_NAME}" =~ ^([A-Za-z0-9_.-]+)$ ]]; then
       error "VM_NAME may only contain letters numbres hypens and underscores: ${VM_NAME}"
@@ -872,6 +904,8 @@ func_validateoptionalvmargs() {
 # defaults if needed
 func_validateappargs() {
   info "Validating App-Configuration arguments values..."
+  func_bridgeoptiongen
+
   if ! [[ -d ${VMSTORE} ]]; then
     func_makedir "${VMSTORE}"
   elif [[ "${LOG_DIR}" && ! -d "${LOG_DIR}" ]]; then
@@ -997,8 +1031,8 @@ func_createvenv() {
 # virtual machine using vagrant up 
 func_createvm() {
   infobold "Creating Virtual-Machine ${ID}. This may take a while..."
-  vagrant up &> ${LOG_PATH}/"${TIMESTAMP}_up.log" 
-  # vagrant up
+  # vagrant up &> ${LOG_PATH}/"${TIMESTAMP}_up.log" 
+  vagrant up
 }
 
 # func_up is creating a virtual-machine with vagrant up. 
@@ -1354,7 +1388,6 @@ main() {
   func_sourcefile ${GOVM_CONFIG};
   func_validateappargs;
   func_validateposixgroup "$@"
-  func_bridgeoptiongen
   func_integrationtest
   if [[ "${VAGRANT_CMD}" == "ssh" && "${ID}" ]]; then
     func_ssh
