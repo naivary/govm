@@ -283,7 +283,6 @@ func_clearoptionalargs() {
   DISK_SIZE_PRIMARY=""
   SYNC_DIR=""
   VM_NAME=""
-  SCRIPT=""
 }
 
 # func_rmgovm is removing
@@ -337,7 +336,7 @@ func_getid() {
   if [[ ${id} ]]; then
     ID="${id}"
   else 
-    ID="nil"
+    ID=${ID:-"nil"}
   fi
 }
 
@@ -1134,11 +1133,13 @@ func_gup() {
   # checking for duplication of ip or names in the given group
   for CFG in ${GROUP}/*.cfg;
   do
+    func_clearoptionalargs
     func_sourcefile "${CFG}"
+
     if [[ "${IP_ADRESSES[*]}" =~ "${HOST_ONLY_IP}" ]]; then
       error "Duplicated IP-Adress ${HOST_ONLY_IP}"
       exit 1
-    elif [[ "${NAMES[*]}" =~ "${VM_NAME}" ]]; then
+    elif [[ "${NAMES[*]}" =~ "${VM_NAME}" && "${VM_NAME}" ]]; then
       error "Duplicated name: ${VM_NAME}"
       exit 1
     else 
@@ -1153,6 +1154,7 @@ func_gup() {
   for CFG in ${GROUP}/*.cfg; 
   do
     VM_CONFIG=${CFG}
+    func_clearoptionalargs
     cd "${BASEDIR}"
     func_sourcefile "${CFG}"
     func_validaterequiredvmargs 
@@ -1389,7 +1391,7 @@ main() {
   func_validateappargs;
   func_validateposixgroup "$@"
   func_integrationtest
-
+  
   if [[ "${VAGRANT_CMD}" == "ssh" && "${ID}" ]]; then
     func_ssh
   elif [[ "${VAGRANT_CMD}" == "export" && -s ${VM_CONFIG} ]]; then
