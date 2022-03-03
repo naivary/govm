@@ -1,2 +1,2 @@
 ID:Name:OS:IP:Memory:CPU
-6b12218a38:single:ubuntu/trusty64:192.168.56.12:1048:2
+864088e01b:next:ubuntu/trusty64:nil:1048:2

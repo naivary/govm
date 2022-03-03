@@ -870,11 +870,6 @@ func_validaterequiredvmargs() {
   elif ! [[ -s "${PROVISION_DIR}/${SCRIPT}" ]]; then
     error "Shell-script not found or empty: ${PROVISION_DIR}/${SCRIPT}";
     exit 1;
-  elif [[ "${VAGRANTFILE_TYPE}" == "default" ]]; then
-    if ! [[ "${HOST_ONLY_IP}" =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
-      error "Invalid IP-Adress";
-      exit 1;
-    fi
   fi
 
   if ! [[ "${VM_NAME}" =~ ^([A-Za-z0-9_-]+)$ ]]; then
@@ -966,6 +961,12 @@ func_validateip() {
   if [[ "${VAGRANTFILE_TYPE}" == "custome" ]]; then
     return 0
   fi 
+
+  if ! [[ "${HOST_ONLY_IP}" =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
+    error "Invalid IP-Adress";
+    exit 1;
+  fi
+
   # NOTE: for git bash it is really 
   # complicated. it is a success even though
   # some of the packages are not received
