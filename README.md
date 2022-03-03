@@ -1,5 +1,5 @@
 # govm
-vagrant-wrapper or govm (which is called govm because it will be implemented in go in the future with a proper API) is 
+govm (which is called govm because it will be implemented in go in the future with a proper API) is 
 currently a shell-wrapper for vagrant with virtualbox as provider. It has a lot of functions: 
 - create one single virtual-machine with a [single-creation](#single-creation)
 - run any action you know from vagrant on these machines
@@ -13,11 +13,11 @@ currently a shell-wrapper for vagrant with virtualbox as provider. It has a lot 
 NOTE: You need sudo or admin priviliges to run any of the prewritten scripts.
 
 ```
-git clone https://github.com/No1Lik3U/vagrant-wrapper.git
+git clone https://github.com/naivary/govm.git
 ```
 `cd` into the directory and change the permissions of `install.sh` to be executable:
 ```
-cd vagrant-wrapper/ && sudo chmod u+x install.sh
+cd govm/ && sudo chmod u+x install.sh
 ```
 Before you run the script be sure to read [this](#installsh) otherwise you may have an unexpected outcome.
 ```
@@ -219,11 +219,11 @@ directory.
 `VAGRANTFILE_DIR: .govm/vagrantfiles -opt` <br/>
 Location of all your custome vagrantfiles. For creating your custome `Vagrantfiles` you have to follow some [rules](#custome-vagrantfile).
 
-`CONFIG_DIR: vagrant-wrapper/config -opt` <br/>
+`CONFIG_DIR: govm/config -opt` <br/>
 Directory where you would like to store your groups and vm.cfg. 
 The structure of the directories has a [meaning](#project-structure). <br/>
 
-`PROVISION_DIR: vagrant-wrapper/provision -opt` <br/>
+`PROVISION_DIR: govm/provision -opt` <br/>
 Directory with all your provisions-scripts. <br/>
 
 In `govm.cfg` are also some globally defined default values for the 

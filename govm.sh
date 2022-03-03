@@ -282,6 +282,8 @@ func_clearoptionalargs() {
   DISK_SIZE_SECOND=""
   DISK_SIZE_PRIMARY=""
   SYNC_DIR=""
+  VM_NAME=""
+  SCRIPT=""
 }
 
 # func_rmgovm is removing
