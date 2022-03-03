@@ -127,8 +127,9 @@ for the virtual-machine.
 NOTE: 192.168.56.2 is reserved for 
 the default virtual-machine so do not use it!
 
-`VM_NAME: $GOVM-ID -opt` <br/>
-Name of the virtual-machine.
+`VM_NAME: String -req` <br/>
+Name of the virtual-machine. It has to be unique
+through all virtual-machines. 
 
 `SYNC_DIR: $VMSTORE/$GOVM-ID/SYNC_DIR -opt` <br/> 
 The directory that should be mounted 

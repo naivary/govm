@@ -100,7 +100,6 @@ OPTIONAL_CONFIG_PARAMS_VM=(
   "OS_TYPE"
   "SCRIPT"
   "SYNC_DIR"
-  "VM_NAME"
   "CUSTOME_VARIABLES"
   "DISK_SIZE_PRIMARY"
   "DISK_SIZE_SECOND"
@@ -204,6 +203,7 @@ func_predefault() {
   REALPATH=$(realpath ${0})
   BASEDIR=$(dirname ${REALPATH})
   DB=${BASEDIR}/${GOVM}/db.txt
+  CDB=${BASEDIR}/${GOVM}/cdb.txt
   TIMESTAMP=$(date '+%s')
   VAGRANT_CMD=${VAGRANT_CMD:-""}
   PROVISION_DIR_NAME="provision"
@@ -262,18 +262,38 @@ func_osdefault() {
 # if the vagrantfile that is getting
 # used is a default or a custome
 # vagrantfile 
-func_vagrantfiledefault() {
-  if ! [[ "${VAGRANTFILE_DIR}" == "${BASEDIR}/${GOVM}/vagrantfiles" ]]; then
+func_vagrantfilevm() {
+  if [[ "${VAGRANTFILE_TYPE}" == "custome" ]]; then
     OPTIONAL_CONFIG_PARAMS_VM+=("HOST_ONLY_IP")
-    OPTIONAL_CONFIG_PARAMS_APP+=("BRIDGE_OPTIONS")
     REQUIRED_PARAMS_CONFIG_VM=$(( ${#VALID_CONFIG_PARAMS_VM[@]} - ${#OPTIONAL_CONFIG_PARAMS_VM[@]} ))
-    REQUIRED_PARAMS_CONFIG_APP=$(( ${#VALID_CONFIG_PARAMS_APP[@]} - ${#OPTIONAL_CONFIG_PARAMS_APP[@]} ))
-    VAGRANTFILE_TYPE="custome"
   else 
     OPTIONAL_CONFIG_PARAMS_VM+=("VAGRANTFILE")
     REQUIRED_PARAMS_CONFIG_VM=$(( ${#VALID_CONFIG_PARAMS_VM[@]} - ${#OPTIONAL_CONFIG_PARAMS_VM[@]} ))
   fi
 }
+
+func_vagrantfileapp() {
+  local dir=$(grep -w "VAGRANTFILE_DIR=" .govm/govm.cfg)
+  local iscommented=$(echo "${dir}" | grep -o "^#")
+
+  if [[ "${iscommented}" == "#" ]]; then
+    return
+  fi
+ 
+  if ! [[ -d "${dir}" ]]; then
+    error "VAGRANTFILE_DIR is not directory: ${dir}"
+    exit 1
+  fi
+
+  if ! [[ "${dir}" == "${BASEDIR}/${GOVM}/vagrantfiles" ]]; then
+    OPTIONAL_CONFIG_PARAMS_APP+=("BRIDGE_OPTIONS")
+    REQUIRED_PARAMS_CONFIG_APP=$(( ${#VALID_CONFIG_PARAMS_APP[@]} - ${#OPTIONAL_CONFIG_PARAMS_APP[@]} ))
+    VAGRANTFILE_TYPE="custome"
+  fi
+}
+
+
+
 
 # func_clearoptionalargs is setting
 # some optional arguments
@@ -478,13 +498,13 @@ func_trapexitup() {
 # otherwise its just ignoring the call
 func_trapexit() {
   if [[ "${VAGRANT_CMD}" == "up" ]]; then
-    infobold "Graceful exiting. Trying to func_clean as much as possible...";
+    infobold "Graceful exiting. Trying to clean as much as possible...";
     func_trapexitup "${VM_NAME}"
   elif [[ "${VAGRANT_CMD}" == "func_gup" ]]; then
-    infobold "Graceful exiting. Trying to func_clean as much as possible...";
+    infobold "Graceful exiting. Trying to clean as much as possible...";
     func_trapexitgroup
   else 
-    infobold "Nothing to func_clean up. Exiting!"
+    infobold "Nothing to clean up. Exiting!"
   fi
 }
 
@@ -517,10 +537,20 @@ func_trapexitgroup() {
 # will not work properly
 func_successexit() {
   infobold "Finishing touches...";
-  sed -i -e '$a\' "${DB}"
-  echo "${ID}:${VM_NAME}:${OS_IMAGE}:${HOST_ONLY_IP}:${RAM}:${CPU}" >> "${DB}";
+  func_insert
   success "VM ${ID} is set and ready to go :)"
 }
+
+func_insert() {
+  if [[ "${VAGRANTFILE_TYPE}" == "default" ]]; then
+    sed -i -e '$a\' "${DB}"
+    echo "${ID}:${VM_NAME}:${OS_IMAGE}:${HOST_ONLY_IP}:${RAM}:${CPU}" >> "${DB}";
+  else 
+    sed -i -e '$a\' "${DB}"
+    echo "${ID}:${VM_NAME}:${OS_IMAGE}:${RAM}:${CPU}" >> "${CDB}";
+  fi
+}
+
 
 # func_hashtablegen is creating an comma 
 # seperated string with the given 
@@ -677,10 +707,6 @@ func_prepvenv() {
     SYNC_DIR="${VMSTORE}/${ID}/sync_dir"
   fi
 
-  if [[ "${VM_NAME}" == "" ]]; then
-    VM_NAME="${ID}"
-  fi
-
   SCRIPT_NAME=$(basename ${SCRIPT})
 }
 
@@ -719,6 +745,7 @@ func_validatevmcfg() {
   GIVEN_PARAMS_REQUIRED=()
   GIVEN_PARAMS_OPTIONAL=()
   info "Loading ${config_name}...";
+
   if [[  -s "${VM_CONFIG}" && "${VM_CONFIG}" == *.cfg ]]; then
     while read LINE
     do
@@ -761,6 +788,7 @@ func_validatevmcfg() {
     func_hashtablegen
     success "Valid Syntax and Arguments for ${config_name}" 
   else 
+    echo "${VAGRANTFILE_DIR}"
     error "Not Enough Arguments: ${VM_CONFIG}"
     error "Valid-Arguments: ${VALID_CONFIG_PARAMS_VM[*]}"
     error "Optional: ${OPTIONAL_CONFIG_PARAMS_VM[*]}"
@@ -832,6 +860,7 @@ func_validateappcfg() {
 # a word and so on
 func_validaterequiredvmargs() {
   local config_name=$(basename "${VM_CONFIG}")
+  func_getid ${VM_NAME}
   info "Validating required arguments values of ${config_name}..."
   if ! [[ "${CPU}" =~ ^[0-9]+$ && "${CPU}" -ge 1 && "${CPU}" -le 100 ]]; then
     error "CPU may only contain numbers and shall be bigger than 1";
@@ -851,6 +880,13 @@ func_validaterequiredvmargs() {
 
   if ! [[ "${SUPPORTED_OS_TYPES[@]}" =~ "${OS_TYPE}" ]]; then
     error "os is not currently supported: ${OS_TYPE}"
+    exit 1
+  elif ! [[ "${VM_NAME}" =~ ^([A-Za-z0-9_-]+)$ ]]; then
+    error "VM_NAME may only contain letters numbres hypens and underscores: ${VM_NAME}"
+    exit 1
+  elif ! [[ "${ID}" == "nil" || -z "${ID}" ]] && [[ "${FORCE_REPLACE}" == "false" ]]; then
+    echo "${FORCE_REPLACE}"
+    error "VM_NAME is duplicated: ${VM_NAME}"
     exit 1
   elif ! func_validateip; then
     exit 1
@@ -884,11 +920,6 @@ func_validateoptionalvmargs() {
     if ! [[ -d "${SYNC_DIR}" ]]; then
       func_makedir "${SYNC_DIR}"
     fi
-  elif [[ "${VM_NAME}" ]]; then
-    if ! [[ "${VM_NAME}" =~ ^([A-Za-z0-9_.-]+)$ ]]; then
-      error "VM_NAME may only contain letters numbres hypens and underscores: ${VM_NAME}"
-      exit 1
-    fi
   fi
 
   if ! [[ -f "${VAGRANTFILE_DIR}/${VAGRANTFILE}" && -s "${VAGRANTFILE_DIR}/${VAGRANTFILE}" ]]; then
@@ -904,7 +935,6 @@ func_validateoptionalvmargs() {
 func_validateappargs() {
   info "Validating App-Configuration arguments values..."
   func_bridgeoptiongen
-
   if ! [[ -d ${VMSTORE} ]]; then
     func_makedir "${VMSTORE}"
   elif [[ "${LOG_DIR}" && ! -d "${LOG_DIR}" ]]; then
@@ -949,15 +979,15 @@ func_validateip() {
   fi
 
   # check if ip exist within govm-ecosystem
-  func_getid "${HOST_ONLY_IP}"
+  func_getid "${VM_NAME}"
 
   if [[ "${ID}" != "nil" && -z "${FORCE_REPLACE}" ]]; then
-    func_getid "${HOST_ONLY_IP}"
-    error "Machine still existing in our system ID: ${ID}. Run Command with -d to force recreation."    
+    func_getid "${VM_NAME}"
+    error "Machine still existing in our system ID: ${ID}. Run command with -r to force recreation."    
     exit 1
   fi
 
-  if [[ ${FORCE_REPLACE} ]]; then
+  if [[ ${FORCE_REPLACE} && "${ID}" != "nil" ]]; then
     func_destroy
     if [ "${VM_CONFIG}" ]; then
       func_sourcefile "${VM_CONFIG}"
@@ -1096,7 +1126,7 @@ func_start() {
 func_export() {
   infobold "Exporting ${VM_NAME}. This may take some time..."
   func_sourcefile "${VM_CONFIG}"
-  func_getid "${HOST_ONLY_IP}"
+  func_getid "${VM_NAME}"
   func_halt 'export';
   func_appliancesemver "${VM_NAME}"
   func_vmexport "${VM_NAME}" "single"
@@ -1187,7 +1217,7 @@ func_gdestroy() {
     cd "${BASEDIR}"
     func_resetvenv
     func_sourcefile "${CFG}";
-    func_getid "${HOST_ONLY_IP}"
+    func_getid "${VM_NAME}"
     func_destroy
   done
 }
@@ -1220,7 +1250,7 @@ func_ghalt() {
       continue
     fi
 
-    func_getid "${HOST_ONLY_IP}"
+    func_getid "${VM_NAME}"
     if [[ "${ID}" ]]; then
       func_govmpath
       cd ${GOVM_PATH}
@@ -1251,7 +1281,7 @@ func_gstart() {
       infobold "Machine ${VM_NAME} is already up and running. Continuening with next..."
       continue
     fi
-    func_getid "${HOST_ONLY_IP}"
+    func_getid "${VM_NAME}"
     func_start
   done
 }
@@ -1274,7 +1304,12 @@ func_list() {
     infobold "No Machines have been created yet!"
     exit 1
   fi
-  column ${DB} -t -s ":" 
+  
+  if [[ "${VAGRANTFILE_TYPE}" == "default" ]]; then
+    column ${DB} -t -s ":" 
+  else
+    column ${CDB} -t -s ":" 
+  fi
 }
 
 # func_vmexport is exporting a single virtual-machine
@@ -1385,13 +1420,14 @@ func_integrationtest() {
 main() {
   func_predefault
   func_init;
-  func_vagrantfiledefault;
+  func_vagrantfileapp;
   func_validateappcfg;
   func_sourcefile ${GOVM_CONFIG};
   func_validateappargs;
+  func_vagrantfilevm;
   func_validateposixgroup "$@"
   func_integrationtest
-  
+
   if [[ "${VAGRANT_CMD}" == "ssh" && "${ID}" ]]; then
     func_ssh
   elif [[ "${VAGRANT_CMD}" == "export" && -s ${VM_CONFIG} ]]; then

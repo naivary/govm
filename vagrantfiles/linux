@@ -19,5 +19,5 @@ Vagrant.configure("2") do |config|
     value = pair[1]
     hash[key] = value
   end
-
+  
 end
