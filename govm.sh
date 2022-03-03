@@ -269,6 +269,7 @@ func_vagrantfilevm() {
   else 
     OPTIONAL_CONFIG_PARAMS_VM+=("VAGRANTFILE")
     REQUIRED_PARAMS_CONFIG_VM=$(( ${#VALID_CONFIG_PARAMS_VM[@]} - ${#OPTIONAL_CONFIG_PARAMS_VM[@]} ))
+    func_bridgeoptiongen
   fi
 }
 
@@ -454,7 +455,7 @@ func_isvmexisting() {
   else
     vboxmanage list vms | grep -q -w "${1}"
   fi
-
+  
   echo "$?"
 }
 
@@ -934,7 +935,6 @@ func_validateoptionalvmargs() {
 # defaults if needed
 func_validateappargs() {
   info "Validating App-Configuration arguments values..."
-  func_bridgeoptiongen
   if ! [[ -d ${VMSTORE} ]]; then
     func_makedir "${VMSTORE}"
   elif [[ "${LOG_DIR}" && ! -d "${LOG_DIR}" ]]; then
@@ -1023,11 +1023,12 @@ func_validateposixgroup() {
     fi
   done
 
-  if [[ "${#CHECK_FILE[@]}" -eq $(( ${#FILE_GROUP[@]} -1 )) && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq 0 && "${#CHECK_GROUPUP[@]}" -eq 0 && ! "${VAGRANT_CMD}" =~  g[a-z]+ ]]; then
+  if [[ "${#CHECK_FILE[@]}" -eq $(( ${#FILE_GROUP[@]} -1 )) && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq 0 && "${#CHECK_GROUPUP[@]}" -eq 0 && "${VAGRANT_CMD}" == "up" ]]; then
     infobold "Running ${VAGRANT_CMD} on ${VM_CONFIG}"
     VM_CONFIG=${CONFIG_DIR}/${VM_CONFIG}
   elif [[ "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq $(( ${#VAGRANT_GROUP[@]} -1 )) && "${#CHECK_LIST[@]}" -eq 0 && "${#CHECK_GROUPUP[@]}" -eq 0 && ! "${VAGRANT_CMD}" =~  g[a-z]+ ]]; then
     infobold "Running \"${VAGRANT_CMD}\" on ${ID}..."
+    echo "HERE"
   elif [[ "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq ${#LIST_GROUP[@]} && -z "${VAGRANT_CMD}" && "${#CHECK_GROUPUP[@]}" -eq 0 ]]; then
     infobold "Listing all virtual-machines..."
   elif [[ "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq 0 && "${#CHECK_GROUPUP[@]}" -eq  $(( ${#GROUPCMD_GROUP[@]} -1 )) && "${VAGRANT_CMD}" =~ g[a-z]+ ]]; then
@@ -1036,7 +1037,8 @@ func_validateposixgroup() {
   elif [[ "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq 0 && "${#CHECK_GROUPUP[@]}" -eq 0 && "${VAGRANT_CMD}" =~ [a-z]+ ]]; then
     infobold "Running command \"${VAGRANT_CMD}\" on default-machine..."
   else
-    error "Too many or not enough arguments"
+    error "Too many or not enough arguments."
+    error "It may also be that you used a wrong combination like govm -v start -f some/vm.cfg."
     func_usage;
     exit 1
   fi
