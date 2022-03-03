@@ -48,7 +48,7 @@ while getopts "f:g:v:m:lrid" OPT; do
       ID=${OPTARG}
       ;;
     l)
-      VM_LIST="show"
+      LIST_DATA="true"
       ;;
     r)
       FORCE_REPLACE="true"
@@ -197,7 +197,7 @@ func_predefault() {
   REQUIRED_PARAMS_CONFIG_APP=$(( ${#VALID_CONFIG_PARAMS_APP[@]} - ${#OPTIONAL_CONFIG_PARAMS_APP[@]} ))
   GOVM=".govm"
   DEFAULT_VM="default.cfg"
-  VM_LIST=${VM_LIST:-""}
+  LIST_DATA=${LIST_DATA:-""}
   VM_NAMES=()
   FORCE_REPLACE=${FORCE_REPLACE:-""}
   REALPATH=$(realpath ${0})
@@ -242,10 +242,10 @@ func_predefault() {
   CUSTOME_VARIABLES=("govm:govm")
 }
 
-# postdefault is setting all
+# func_postdefault is setting all
 # defaults that have a dependencie 
 # on govm.cfg values
-# postdefault() {}
+# func_postdefault() {}
 
 # func_osdefault is checking ig the current
 # used system is an wsl system or native linux
@@ -274,13 +274,13 @@ func_vagrantfilevm() {
 }
 
 func_vagrantfileapp() {
-  local dir=$(grep -w "VAGRANTFILE_DIR=" .govm/govm.cfg)
+  local dir=$(grep -w "VAGRANTFILE_DIR=" .govm/govm.cfg | cut -d "=" -f 2)
   local iscommented=$(echo "${dir}" | grep -o "^#")
 
   if [[ "${iscommented}" == "#" ]]; then
     return
   fi
- 
+
   if ! [[ -d "${dir}" ]]; then
     error "VAGRANTFILE_DIR is not directory: ${dir}"
     exit 1
@@ -292,9 +292,6 @@ func_vagrantfileapp() {
     VAGRANTFILE_TYPE="custome"
   fi
 }
-
-
-
 
 # func_clearoptionalargs is setting
 # some optional arguments
@@ -547,7 +544,7 @@ func_insert() {
     sed -i -e '$a\' "${DB}"
     echo "${ID}:${VM_NAME}:${OS_IMAGE}:${HOST_ONLY_IP}:${RAM}:${CPU}" >> "${DB}";
   else 
-    sed -i -e '$a\' "${DB}"
+    sed -i -e '$a\' "${CDB}"
     echo "${ID}:${VM_NAME}:${OS_IMAGE}:${RAM}:${CPU}" >> "${CDB}";
   fi
 }
@@ -789,7 +786,6 @@ func_validatevmcfg() {
     func_hashtablegen
     success "Valid Syntax and Arguments for ${config_name}" 
   else 
-    echo "${VAGRANTFILE_DIR}"
     error "Not Enough Arguments: ${VM_CONFIG}"
     error "Valid-Arguments: ${VALID_CONFIG_PARAMS_VM[*]}"
     error "Optional: ${OPTIONAL_CONFIG_PARAMS_VM[*]}"
@@ -886,7 +882,6 @@ func_validaterequiredvmargs() {
     error "VM_NAME may only contain letters numbres hypens and underscores: ${VM_NAME}"
     exit 1
   elif ! [[ "${ID}" == "nil" || -z "${ID}" ]] && [[ "${FORCE_REPLACE}" == "false" ]]; then
-    echo "${FORCE_REPLACE}"
     error "VM_NAME is duplicated: ${VM_NAME}"
     exit 1
   elif ! func_validateip; then
@@ -1028,7 +1023,6 @@ func_validateposixgroup() {
     VM_CONFIG=${CONFIG_DIR}/${VM_CONFIG}
   elif [[ "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq $(( ${#VAGRANT_GROUP[@]} -1 )) && "${#CHECK_LIST[@]}" -eq 0 && "${#CHECK_GROUPUP[@]}" -eq 0 && ! "${VAGRANT_CMD}" =~  g[a-z]+ ]]; then
     infobold "Running \"${VAGRANT_CMD}\" on ${ID}..."
-    echo "HERE"
   elif [[ "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq ${#LIST_GROUP[@]} && -z "${VAGRANT_CMD}" && "${#CHECK_GROUPUP[@]}" -eq 0 ]]; then
     infobold "Listing all virtual-machines..."
   elif [[ "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq 0 && "${#CHECK_GROUPUP[@]}" -eq  $(( ${#GROUPCMD_GROUP[@]} -1 )) && "${VAGRANT_CMD}" =~ g[a-z]+ ]]; then
@@ -1444,7 +1438,7 @@ main() {
     func_ghalt
   elif [[ "${VAGRANT_CMD}" == "gexport" && -d "${GROUP}" ]]; then
     func_gexport
-  elif [[ "${VM_LIST}" ]]; then
+  elif [[ "${LIST_DATA}" ]]; then
     func_list
   elif [[ "${VAGRANT_CMD}" == "destroy" && "${ID}" ]]; then 
     func_destroy;
