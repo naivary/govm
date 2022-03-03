@@ -1,1 +1,3 @@
 ID:Name:OS:IP:Memory:CPU
+d2e29b0dd8:first:ubuntu/trusty64:192.168.56.10:1048:2
+8522ceeb6a:sec:ubuntu/trusty64:192.168.56.11:1048:2

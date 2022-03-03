@@ -275,7 +275,7 @@ func_vagrantfilevm() {
 
 func_vagrantfileapp() {
   local dir=$(grep -w "VAGRANTFILE_DIR=" .govm/govm.cfg | cut -d "=" -f 2)
-  local iscommented=$(echo "${dir}" | grep -o "^#")
+  local iscommented=$(grep -w "VAGRANTFILE_DIR=" .govm/govm.cfg | grep -o "^#")
 
   if [[ "${iscommented}" == "#" ]]; then
     return
@@ -328,7 +328,7 @@ func_rmlogdir() {
 func_clean() {
   infobold "Cleaning up..."
   func_rmgovm;
-  func_rmip;
+  func_delete;
   func_rmlogdir;
   success "Destroyed ${ID}!"
 }
@@ -400,20 +400,11 @@ func_verifyarrcustomearr() {
   fi
 }
 
-
 # func_govmpath is setting the path
 # to the current virtual-machine
 # and his metadata in the $VMSTORE
 func_govmpath() {
   GOVM_PATH="${VMSTORE}/${ID}/${GOVM}"
-}
-
-# func_rmip is removing the
-# ip-adress from the file
-func_rmip() {
-  if grep -q -w "${HOST_ONLY_IP}" "${DB}"; then
-    sed -i "/${HOST_ONLY_IP}/d" "${DB}";
-  fi
 }
 
 # func_makedir is creating
@@ -485,7 +476,7 @@ func_appliancesemver() {
 func_trapexitup() {
   vagrant destroy --force &> "${LOG_PATH}/${TIMESTAMP}_destroy.log"
   func_rmgovm;
-  func_rmip;
+  func_delete;
   func_rmlogdir;
   infobold "Cleaned ${1}"
 }
@@ -539,15 +530,38 @@ func_successexit() {
   success "VM ${ID} is set and ready to go :)"
 }
 
+func_newline() {
+  sed -i -e '$a\' "${1}"
+}
+
 func_insert() {
   if [[ "${VAGRANTFILE_TYPE}" == "default" ]]; then
-    sed -i -e '$a\' "${DB}"
+    func_newline "${DB}"
     echo "${ID}:${VM_NAME}:${OS_IMAGE}:${HOST_ONLY_IP}:${RAM}:${CPU}" >> "${DB}";
   else 
-    sed -i -e '$a\' "${CDB}"
+    func_newline "${CDB}"
     echo "${ID}:${VM_NAME}:${OS_IMAGE}:${RAM}:${CPU}" >> "${CDB}";
   fi
 }
+
+func_insert() {
+  if [[ "${VAGRANTFILE_TYPE}" == "default" ]]; then
+    func_newline "${DB}"
+    echo "${ID}:${VM_NAME}:${OS_IMAGE}:${HOST_ONLY_IP}:${RAM}:${CPU}" >> "${DB}";
+  else 
+    func_newline "${CDB}"
+    echo "${ID}:${VM_NAME}:${OS_IMAGE}:${RAM}:${CPU}" >> "${CDB}";
+  fi
+}
+
+func_delete() {
+  if [[ "${VAGRANTFILE_TYPE}" == "default" ]]; then
+    sed -i "/${HOST_ONLY_IP}/d" "${DB}";
+  else 
+    sed -i "/${HOST_ONLY_IP}/d" "${CDB}";
+  fi
+}
+
 
 
 # func_hashtablegen is creating an comma 
@@ -786,9 +800,9 @@ func_validatevmcfg() {
     func_hashtablegen
     success "Valid Syntax and Arguments for ${config_name}" 
   else 
-    error "Not Enough Arguments: ${VM_CONFIG}"
+    error "Not Enough Arguments: $(basename ${VM_CONFIG})"
     error "Valid-Arguments: ${VALID_CONFIG_PARAMS_VM[*]}"
-    error "Optional: ${OPTIONAL_CONFIG_PARAMS_VM[*]}"
+    error "Given: ${GIVEN_PARAMS_REQUIRED[@]}"
     exit 1
   fi
   
@@ -991,53 +1005,6 @@ func_validateip() {
 
 }
 
-# func_validateposixgroup is validatin
-# all given flags but not the values
-# of the given flags. These are validated in
-# validateInput. Here we validate the given flags
-# and if they can be used together 
-# using groups.
-func_validateposixgroup() {
-  CHECK_FILE=()
-  CHECK_VAGRANT=()
-  CHECK_GROUPUP=()
-  CHECK_LIST=()
-
-  for ARG in "$@"
-  do
-    if [[ "${ARG}" =~ ^-.$ ]]; then
-      if [[ "${FILE_GROUP[*]}" =~ "${ARG}" && "${ARG}" != "-v" ]]; then
-        CHECK_FILE+=("${ARG}")
-      elif [[ "${VAGRANT_GROUP[*]}" =~ "${ARG}" && "${ARG}" != "-v" ]]; then
-        CHECK_VAGRANT=("${ARG}")
-      elif [[ "${GROUPCMD_GROUP[*]}" =~ "${ARG}" && "${ARG}" != "-v" ]]; then
-        CHECK_GROUPUP=("${ARG}")
-      elif [[ "${LIST_GROUP[*]}" =~ "${ARG}" && "${ARG}" != "-v" ]]; then
-        CHECK_LIST+=("${ARG}")
-      fi
-    fi
-  done
-
-  if [[ "${#CHECK_FILE[@]}" -eq $(( ${#FILE_GROUP[@]} -1 )) && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq 0 && "${#CHECK_GROUPUP[@]}" -eq 0 && "${VAGRANT_CMD}" == "up" ]]; then
-    infobold "Running ${VAGRANT_CMD} on ${VM_CONFIG}"
-    VM_CONFIG=${CONFIG_DIR}/${VM_CONFIG}
-  elif [[ "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq $(( ${#VAGRANT_GROUP[@]} -1 )) && "${#CHECK_LIST[@]}" -eq 0 && "${#CHECK_GROUPUP[@]}" -eq 0 && ! "${VAGRANT_CMD}" =~  g[a-z]+ ]]; then
-    infobold "Running \"${VAGRANT_CMD}\" on ${ID}..."
-  elif [[ "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq ${#LIST_GROUP[@]} && -z "${VAGRANT_CMD}" && "${#CHECK_GROUPUP[@]}" -eq 0 ]]; then
-    infobold "Listing all virtual-machines..."
-  elif [[ "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq 0 && "${#CHECK_GROUPUP[@]}" -eq  $(( ${#GROUPCMD_GROUP[@]} -1 )) && "${VAGRANT_CMD}" =~ g[a-z]+ ]]; then
-    infobold "Running \"${VAGRANT_CMD}\" on group: $(basename ${GROUP})"
-    GROUP=${CONFIG_DIR}/${GROUP}
-  elif [[ "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq 0 && "${#CHECK_GROUPUP[@]}" -eq 0 && "${VAGRANT_CMD}" =~ [a-z]+ ]]; then
-    infobold "Running command \"${VAGRANT_CMD}\" on default-machine..."
-  else
-    error "Too many or not enough arguments."
-    error "It may also be that you used a wrong combination like govm -v start -f some/vm.cfg."
-    func_usage;
-    exit 1
-  fi
-
-}
 
 # func_createvenv is
 # sourcing the config file
@@ -1121,8 +1088,7 @@ func_start() {
 # of the given virtual-machine
 func_export() {
   infobold "Exporting ${VM_NAME}. This may take some time..."
-  func_sourcefile "${VM_CONFIG}"
-  func_getid "${VM_NAME}"
+  func_getvmname "${ID}"
   func_halt 'export';
   func_appliancesemver "${VM_NAME}"
   func_vmexport "${VM_NAME}" "single"
@@ -1411,6 +1377,54 @@ func_integrationtest() {
   fi
 }
 
+# func_validateposixgroup is validatin
+# all given flags but not the values
+# of the given flags. These are validated in
+# validateInput. Here we validate the given flags
+# and if they can be used together 
+# using groups.
+func_validateposixgroup() {
+  CHECK_FILE=()
+  CHECK_VAGRANT=()
+  CHECK_GROUPUP=()
+  CHECK_LIST=()
+
+  for ARG in "$@"
+  do
+    if [[ "${ARG}" =~ ^-.$ ]]; then
+      if [[ "${FILE_GROUP[*]}" =~ "${ARG}" && "${ARG}" != "-v" ]]; then
+        CHECK_FILE+=("${ARG}")
+      elif [[ "${VAGRANT_GROUP[*]}" =~ "${ARG}" && "${ARG}" != "-v" ]]; then
+        CHECK_VAGRANT=("${ARG}")
+      elif [[ "${GROUPCMD_GROUP[*]}" =~ "${ARG}" && "${ARG}" != "-v" ]]; then
+        CHECK_GROUPUP=("${ARG}")
+      elif [[ "${LIST_GROUP[*]}" =~ "${ARG}" && "${ARG}" != "-v" ]]; then
+        CHECK_LIST+=("${ARG}")
+      fi
+    fi
+  done
+
+  if [[ "${#CHECK_FILE[@]}" -eq $(( ${#FILE_GROUP[@]} -1 )) && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq 0 && "${#CHECK_GROUPUP[@]}" -eq 0 && "${VAGRANT_CMD}" == "up" ]]; then
+    infobold "Running ${VAGRANT_CMD} on ${VM_CONFIG}"
+    VM_CONFIG=${CONFIG_DIR}/${VM_CONFIG}
+  elif [[ "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq $(( ${#VAGRANT_GROUP[@]} -1 )) && "${#CHECK_LIST[@]}" -eq 0 && "${#CHECK_GROUPUP[@]}" -eq 0 && ! "${VAGRANT_CMD}" =~  g[a-z]+ ]]; then
+    infobold "Running \"${VAGRANT_CMD}\" on ${ID}..."
+  elif [[ "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq ${#LIST_GROUP[@]} && -z "${VAGRANT_CMD}" && "${#CHECK_GROUPUP[@]}" -eq 0 ]]; then
+    infobold "Listing all virtual-machines..."
+  elif [[ "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq 0 && "${#CHECK_GROUPUP[@]}" -eq  $(( ${#GROUPCMD_GROUP[@]} -1 )) && "${VAGRANT_CMD}" =~ g[a-z]+ ]]; then
+    infobold "Running \"${VAGRANT_CMD}\" on group: $(basename ${GROUP})"
+    GROUP=${CONFIG_DIR}/${GROUP}
+  elif [[ "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq 0 && "${#CHECK_GROUPUP[@]}" -eq 0 && "${VAGRANT_CMD}" =~ [a-z]+ ]]; then
+    infobold "Running command \"${VAGRANT_CMD}\" on default-machine..."
+  else
+    error "Too many or not enough arguments."
+    error "It may also be that you used a wrong combination like govm -v start -f some/vm.cfg."
+    func_usage;
+    exit 1
+  fi
+
+}
+
 # main is the entering point
 # of the application
 main() {
@@ -1426,7 +1440,7 @@ main() {
 
   if [[ "${VAGRANT_CMD}" == "ssh" && "${ID}" ]]; then
     func_ssh
-  elif [[ "${VAGRANT_CMD}" == "export" && -s ${VM_CONFIG} ]]; then
+  elif [[ "${VAGRANT_CMD}" == "export" && ${ID} ]]; then
     func_export
   elif [[ "${VAGRANT_CMD}" == "gup" && -d "${GROUP}" ]]; then
     func_gup; 
