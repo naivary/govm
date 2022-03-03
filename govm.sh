@@ -258,10 +258,11 @@ func_osdefault() {
   fi
 }
 
-# func_vagrantfiledefault is checking
+# func_vagrantfilevm is checking
 # if the vagrantfile that is getting
 # used is a default or a custome
-# vagrantfile 
+# vagrantfile and will make some
+# required options optional.
 func_vagrantfilevm() {
   if [[ "${VAGRANTFILE_TYPE}" == "custome" ]]; then
     OPTIONAL_CONFIG_PARAMS_VM+=("HOST_ONLY_IP")
@@ -273,6 +274,10 @@ func_vagrantfilevm() {
   fi
 }
 
+# we need to check before if the vagrantfile is custome
+# or one of the defaults because the bridge_options will be 
+# optional which will lead to an error if its handled after the govm.cfg
+# is getting sourced.
 func_vagrantfileapp() {
   local dir=$(grep -w "VAGRANTFILE_DIR=" .govm/govm.cfg | cut -d "=" -f 2)
   local iscommented=$(grep -w "VAGRANTFILE_DIR=" .govm/govm.cfg | grep -o "^#")
@@ -1466,13 +1471,6 @@ main() {
     error "Posix-Arguments did not match!"
     func_usage
   fi
-
-  if [[ ${CURRENT_OS} == "microsoft" ]]; then
-    WINDOWS_PATH=$(wslpath -w "${APPLIANCESTORE}")
-    powershell.exe -Command "Remove-Item Env:\\WINDOWS_PATH" -ErrorAction "silentlycontinue"
-    powershell.exe -Command "setx APPLIANCESTORE ${WINDOWS_PATH}"
-  fi
-
 }
 
 main "$@"
