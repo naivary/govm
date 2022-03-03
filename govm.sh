@@ -203,7 +203,6 @@ func_predefault() {
   REALPATH=$(realpath ${0})
   BASEDIR=$(dirname ${REALPATH})
   DB=${BASEDIR}/${GOVM}/db.txt
-  CDB=${BASEDIR}/${GOVM}/cdb.txt
   TIMESTAMP=$(date '+%s')
   VAGRANT_CMD=${VAGRANT_CMD:-""}
   PROVISION_DIR_NAME="provision"
@@ -356,6 +355,7 @@ func_rightcut() {
 func_getid() {
   local id
   id="$(grep -w ${1} ${DB} | cut -d ':' -f 1)"
+
   if [[ ${id} ]]; then
     ID="${id}"
   else 
@@ -540,34 +540,17 @@ func_newline() {
 }
 
 func_insert() {
-  if [[ "${VAGRANTFILE_TYPE}" == "default" ]]; then
-    func_newline "${DB}"
-    echo "${ID}:${VM_NAME}:${OS_IMAGE}:${HOST_ONLY_IP}:${RAM}:${CPU}" >> "${DB}";
-  else 
-    func_newline "${CDB}"
-    echo "${ID}:${VM_NAME}:${OS_IMAGE}:${RAM}:${CPU}" >> "${CDB}";
+  func_newline "${DB}"
+  if [[ -z "${HOST_ONLY_IP}" ]]; then
+    HOST_ONLY_IP="nil"
   fi
-}
 
-func_insert() {
-  if [[ "${VAGRANTFILE_TYPE}" == "default" ]]; then
-    func_newline "${DB}"
-    echo "${ID}:${VM_NAME}:${OS_IMAGE}:${HOST_ONLY_IP}:${RAM}:${CPU}" >> "${DB}";
-  else 
-    func_newline "${CDB}"
-    echo "${ID}:${VM_NAME}:${OS_IMAGE}:${RAM}:${CPU}" >> "${CDB}";
-  fi
+  echo "${ID}:${VM_NAME}:${OS_IMAGE}:${HOST_ONLY_IP}:${RAM}:${CPU}" >> "${DB}";
 }
 
 func_delete() {
-  if [[ "${VAGRANTFILE_TYPE}" == "default" ]]; then
-    sed -i "/${HOST_ONLY_IP}/d" "${DB}";
-  else 
-    sed -i "/${HOST_ONLY_IP}/d" "${CDB}";
-  fi
+  sed -i "/${VM_NAME}/d" "${DB}";
 }
-
-
 
 # func_hashtablegen is creating an comma 
 # seperated string with the given 
@@ -876,7 +859,7 @@ func_validateappcfg() {
 # a word and so on
 func_validaterequiredvmargs() {
   local config_name=$(basename "${VM_CONFIG}")
-  func_getid ${VM_NAME}
+  local isexisting=$(func_isvmexisting ${VM_NAME})
   info "Validating required arguments values of ${config_name}..."
   if ! [[ "${CPU}" =~ ^[0-9]+$ && "${CPU}" -ge 1 && "${CPU}" -le 100 ]]; then
     error "CPU may only contain numbers and shall be bigger than 1";
@@ -894,14 +877,16 @@ func_validaterequiredvmargs() {
     fi
   fi
 
-  if ! [[ "${SUPPORTED_OS_TYPES[@]}" =~ "${OS_TYPE}" ]]; then
-    error "os is not currently supported: ${OS_TYPE}"
-    exit 1
-  elif ! [[ "${VM_NAME}" =~ ^([A-Za-z0-9_-]+)$ ]]; then
+  if ! [[ "${VM_NAME}" =~ ^([A-Za-z0-9_-]+)$ ]]; then
     error "VM_NAME may only contain letters numbres hypens and underscores: ${VM_NAME}"
     exit 1
-  elif ! [[ "${ID}" == "nil" || -z "${ID}" ]] && [[ "${FORCE_REPLACE}" == "false" ]]; then
+  elif [[ ${isexisting} -eq 0 ]]; then
     error "VM_NAME is duplicated: ${VM_NAME}"
+    exit 1
+  fi 
+
+  if ! [[ "${SUPPORTED_OS_TYPES[@]}" =~ "${OS_TYPE}" ]]; then
+    error "os is not currently supported: ${OS_TYPE}"
     exit 1
   elif ! func_validateip; then
     exit 1
@@ -1124,6 +1109,7 @@ func_gup() {
   for CFG in ${GROUP}/*.cfg; 
   do
     VM_CONFIG="${CFG}"
+    func_newline "${VM_CONFIG}"
     func_validatevmcfg
   done
 
@@ -1272,11 +1258,7 @@ func_list() {
     exit 1
   fi
   
-  if [[ "${VAGRANTFILE_TYPE}" == "default" ]]; then
-    column ${DB} -t -s ":" 
-  else
-    column ${CDB} -t -s ":" 
-  fi
+  column ${DB} -t -s ":" 
 }
 
 # func_vmexport is exporting a single virtual-machine
@@ -1412,6 +1394,8 @@ func_validateposixgroup() {
   if [[ "${#CHECK_FILE[@]}" -eq $(( ${#FILE_GROUP[@]} -1 )) && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq 0 && "${#CHECK_GROUPUP[@]}" -eq 0 && "${VAGRANT_CMD}" == "up" ]]; then
     infobold "Running ${VAGRANT_CMD} on ${VM_CONFIG}"
     VM_CONFIG=${CONFIG_DIR}/${VM_CONFIG}
+    SINGLE_CFG_NAME=$(basename ${VM_CONFIG})
+    func_newline "${VM_CONFIG}"
   elif [[ "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq $(( ${#VAGRANT_GROUP[@]} -1 )) && "${#CHECK_LIST[@]}" -eq 0 && "${#CHECK_GROUPUP[@]}" -eq 0 && ! "${VAGRANT_CMD}" =~  g[a-z]+ ]]; then
     infobold "Running \"${VAGRANT_CMD}\" on ${ID}..."
   elif [[ "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq ${#LIST_GROUP[@]} && -z "${VAGRANT_CMD}" && "${#CHECK_GROUPUP[@]}" -eq 0 ]]; then

@@ -1,2 +1,0 @@
-ID:Name:OS:Memory:CPU
-b85401066e:single:ubuntu/trusty64:1048:2
