@@ -189,7 +189,7 @@ SPECIAL-VARIABLES:
 
 `VAGRANTFILE: .govm/vagrantfiles/linux` <br/>
 Vagrantfile that should be used for the virtual-machine. It has to be 
-relative to the `govm.VAGRANTFILE_DIR`. If no `VAGRANTFILE_DIR` is set 
+relative to the `govm.FILE_DIR`. If no `FILE_DIR` is set 
 the options is optional otherwise it is required.
 
 ## govm.cfg
@@ -217,7 +217,7 @@ e.g. ("first network" "second network") <br/>
 Location wehere the logging is made. The value has to be a
 directory.
 
-`VAGRANTFILE_DIR: .govm/vagrantfiles -opt` <br/>
+`FILE_DIR: .govm/vagrantfiles -opt` <br/>
 Location of all your custome vagrantfiles. For creating your custome `Vagrantfiles` you have to follow some [rules](#custome-vagrantfile).
 
 `CONFIG_DIR: govm/config -opt` <br/>
@@ -229,7 +229,7 @@ Directory with all your provisions-scripts. <br/>
 
 In `govm.cfg` are also some globally defined default values for the 
 virtual-machine `cfg` files which are required to be present. 
-These are `CPU` `RAM` `OS_IMAGE` `SCRIPT` `OS_TYPE` `CUSTOME_VARIABLES`. 
+These are `CPU` `RAM` `OS_IMAGE` `SCRIPT` `OS_TYPE` `CUSTOME_VARIABLES` `VAGRANTFILE`. 
 There are already some defaults set for you in the present [govm.cfg](.govm/govm.cfg) 
 but feel free to change them. 
 
@@ -282,7 +282,12 @@ After the first part of the name is calculated a versioning will be calculated. 
 
 ## Custome Vagrantfile
 
-With `govm` you can also provide your own custome `Vagrantfile` that should be used instead of the [default](.govm/vagrantfiles/) vagrantfiles. If you would like to use a custome Vagrantfile there are some rules that you have to follow for a proper integration of your custome `Vagrantfile`. 
+With `govm` you can also provide your own custome `Vagrantfile` that should be used instead of the [default](.govm/vagrantfiles/) vagrantfiles. If you would like to use a custome Vagrantfile there are some rules that you have to follow for a proper integration of your custome `Vagrantfile`. Beside the rules that will be explained in the following sections there are some specialties when choosing a custome Vagrantfile. If you change the `FILE_DIR` to `govm/vagrantfiles` govm will automatically make some adjustmenst and will remove some validation that were needed for the default Vagrantfiles. Still there are some validations made which are:
+1. vm.cfg and govm.cfg Syntax-Check
+2. vm.cfg and govm.cfg Value-Check of `VM_NAME` and any further optiosn given beside `HOST_ONLY_IP`.
+3. Duplicate naming of virtual-machines
+
+What we try to say is that you have to be careful using you own Vagrantfiles because not all of you given config options in the vagrantfile will be validated by govm.
 
 ### govm variables
 There are some variables which will be exported into the current shell-session via the `export` keyword by govm. These variables can be accesses in your `Vagrantfile` by using `ENV["VARIABLE_NAME"]`. The variables which are accessible are all config parameters which you can set in the [vm.cfg](#vmcfg).
@@ -303,7 +308,7 @@ end
 Afterwards every defined custome variables of your vm.cfg is also accesible by using `hash["KEY"]`. There is already a [template](./vagrantfiles/linux) for creating proper custome `Vagrantfiles`. That template should be used as a base for every `Vagrantfile` that you want to create.
 
 ### Gotchas
-Changing the `VAGRANTFILE_DIR` will change the behavior of the [single-screation](#single-creation) of the `default.cfg` This is because if you choose to have a custome `Vagrantfile` every variable defined in [vm.cfg](#vmcfg) will be optional and one new argument will be required: `VAGRANTFILE` which is not set in the [default.cfg](.govm/default.cfg). But you can set a `VAGRANTFILE` for [default.cfg](.govm/default.cfg) then it will work properly. which one? Thats on you but it has to be relative to the `VAGRANTFILE_DIR`.
+Changing the `FILE_DIR` will change the behavior of the [single-screation](#single-creation) of the `default.cfg` This is because if you choose to have a custome `Vagrantfile` every variable defined in [vm.cfg](#vmcfg) will be optional and one new argument will be required: `VAGRANTFILE` which is not set in the [default.cfg](.govm/default.cfg). But you can set a `VAGRANTFILE` for [default.cfg](.govm/default.cfg) then it will work properly. which one? Thats on you but it has to be relative to the `FILE_DIR`.
 
 ## Testing
 The first valid command that you will run will trigger an `integrationtest` which is assuring that every functionality is working properly. If the testing was successfull an empty file named `tested` will be created, which is informing `govm` that the `integrationtest` was already ran successfully. Don't worry you will see some error messages that are intentionally or known issues that will not influence any functionalities.
@@ -346,7 +351,7 @@ the directory name will be used as the [filename](#how-is-the-ova-filename-gener
 Every provision script or other types of provision should be located here. The structure of the directory is up to you. If you are using an other provision directory other than the default one be sure to set it as `PROVISION_DIR` in `govm.cfg`. All `SCRIPT` values in any `vm.cfg` file should be releative to `PROVISION_DIR`.
 
 `vagrantfiles` <br/>
-If you would like to use a custome made [vagrantfile](#custome-vagrantfile) then these should be located here. The directory structure is not important to govm but be sure to set the corret `VAGRANTFILE_DIR`.
+If you would like to use a custome made [vagrantfile](#custome-vagrantfile) then these should be located here. The directory structure is not important to govm but be sure to set the corret `FILE_DIR`.
 
 ## Naming
 Because the names of your directories in the `configs` direcroty and virtual-machine names [matter](#how-is-the-ova-filename-generated) it is a good idea to choose the names that they represent the purpose of the virtual-machine or the group like you can see in the example tree-structure above.

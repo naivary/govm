@@ -109,7 +109,7 @@ OPTIONAL_CONFIG_PARAMS_VM=(
 
 VALID_CONFIG_PARAMS_APP=(
   "VMSTORE"
-  "VAGRANTFILE_DIR"
+  "FILE_DIR"
   "PROVISION_DIR"
   "CONFIG_DIR"
   "APPLIANCESTORE"
@@ -121,15 +121,17 @@ VALID_CONFIG_PARAMS_APP=(
   "SCRIPT"
   "OS_TYPE"
   "CUSTOME_VARIABLES"
+  "VAGRANTFILE"
 )
 
 OPTIONAL_CONFIG_PARAMS_APP=(
   "VMSTORE"
-  "VAGRANTFILE_DIR"
+  "FILE_DIR"
   "PROVISION_DIR"
   "CONFIG_DIR"
   "APPLIANCESTORE"
   "LOG_DIR"
+  "VAGRANTFILE"
 )
 
 SUPPORTED_FILE_SYSTEMS=(
@@ -215,7 +217,7 @@ func_predefault() {
   GOVM_NAME="$(basename ${GOVM_CONFIG})"
   PROVISION_DIR=${PROVISION_DIR:-"${BASEDIR}/${PROVISION_DIR_NAME}"}
   CONFIG_DIR=${CONFIG_DIR:-"${BASEDIR}/configs"}
-  VAGRANTFILE_DIR=${VAGRANTFILE_DIR:-${BASEDIR}/${GOVM}/vagrantfiles}
+  FILE_DIR=${FILE_DIR:-${BASEDIR}/${GOVM}/vagrantfiles}
   VAGRANTFILE=${VAGRANTFILE:-linux}
   VMSTORE=${VMSTORE:-${HOME}/${GOVM}}
   APPLIANCESTORE=${APPLIANCESTORE:-${HOME}/"${GOVM}_appliance"}
@@ -226,14 +228,14 @@ func_predefault() {
   # vm.cfg
   GROUP=${GROUP:-""}
   VM_CONFIG=${VM_CONFIG:-"${BASEDIR}/${GOVM}/${DEFAULT_VM}"}
+  VM_NAME=${VM_NAME:-"govm"}
   SCRIPT_VAGRANT=${PROVISON_DIR_NAME}/${SCRIPT_NAME}
   OS_TYPE=${OS_TYPE:-linux}
   SYNC_USER=${SYNC_USER:-"vagrant"}
-  func_getid 192.168.56.2
-  func_getvmname 192.168.56.2
+  func_getid "${VM_NAME}"
+  func_getvmname "${VM_NAME}"
   HOST_ONLY_IP=${HOST_ONLY_IP:-""}
   SYNC_DIR=${SYNC_DIR:-""}
-  VM_NAME=${VM_NAME:-""}
   DISK_SIZE_SECOND=${DISK_SIZE_SECOND:-""}
   DISK_SIZE_PRIMARY=${DISK_SIZE_PRIMARY:-""}
   MOUNTING_POINT=${MOUNTING_POINT:-"nil"}
@@ -251,6 +253,7 @@ func_postdefault() {
   DEFAULT_SCRIPT=${SCRIPT}
   DEFAULT_OS_TYPE=${OS_TYPE}
   DEFAULT_CUSTOME_VARIABLES=${CUSTOME_VARIABLES}
+  DEFAULT_VAGRANTFILE=${VAGRANTFILE}
 }
 
 # func_osdefault is checking ig the current
@@ -272,6 +275,7 @@ func_osdefault() {
 func_vagrantfilevm() {
   if [[ "${VAGRANTFILE_TYPE}" == "custome" ]]; then
     OPTIONAL_CONFIG_PARAMS_VM+=("HOST_ONLY_IP")
+    OPTIONAL_CONFIG_PARAMS_VM+=("VAGRANTFILE")
     REQUIRED_PARAMS_CONFIG_VM=$(( ${#VALID_CONFIG_PARAMS_VM[@]} - ${#OPTIONAL_CONFIG_PARAMS_VM[@]} ))
   else 
     OPTIONAL_CONFIG_PARAMS_VM+=("VAGRANTFILE")
@@ -285,15 +289,15 @@ func_vagrantfilevm() {
 # optional which will lead to an error if its handled after the govm.cfg
 # is getting sourced.
 func_vagrantfileapp() {
-  local dir=$(grep -w "VAGRANTFILE_DIR=" .govm/govm.cfg | cut -d "=" -f 2)
-  local iscommented=$(grep -w "VAGRANTFILE_DIR=" .govm/govm.cfg | grep -o "^#")
+  local dir=$(grep -w "FILE_DIR=" .govm/govm.cfg | cut -d "=" -f 2)
+  local iscommented=$(grep -w "FILE_DIR=" .govm/govm.cfg | grep -o "^#")
 
   if [[ "${iscommented}" == "#" ]]; then
     return
   fi
 
   if ! [[ -d "${dir}" ]]; then
-    error "VAGRANTFILE_DIR is not directory: ${dir}"
+    error "FILE_DIR is not directory: ${dir}"
     exit 1
   fi
 
@@ -679,7 +683,7 @@ func_resetvenv() {
 # be used for the 
 func_setvfile() {
   if [[ "${OS_TYPE}" == "windows" && "${VAGRANTFILE_TYPE}" == "default" ]]; then
-    VAGRANTFILE=${BASEDIR}/${GOVM}/vagrantfile/windows
+    VAGRANTFILE=${FILE_DIR}/windows
   fi
 }
 
@@ -733,7 +737,7 @@ func_prepvenv() {
 func_postvenv() {
   func_setvenv;
   func_setvfile
-  cp "${VAGRANTFILE_DIR}/${VAGRANTFILE}" "${GOVM_PATH}/Vagrantfile"
+  cp "${FILE_DIR}/${VAGRANTFILE}" "${GOVM_PATH}/Vagrantfile"
   DIR_NAME=$(dirname ${SCRIPT})
   func_makedir ${GOVM_PATH}/${DIR_NAME}
   cp "${PROVISION_DIR}/${SCRIPT}" "${GOVM_PATH}/${SCRIPT}"
@@ -835,7 +839,7 @@ func_validateappcfg() {
         exit 1
       else
         NAME="${BASH_REMATCH[1]}"
-       if [[ "${GIVEN_PARAMS_REQUIRED[*]}" =~ "${NAME}" || "${GIVEN_PARAMS_OPTIONAL[*]}" =~ "${NAME}" ]]; then
+        if [[ "${GIVEN_PARAMS_REQUIRED[*]}" =~ "${NAME}" || "${GIVEN_PARAMS_OPTIONAL[*]}" =~ "${NAME}" ]]; then
           error "Key duplicated ${NAME}"
           exit 1
         elif ! [[ "${VALID_CONFIG_PARAMS_APP[*]}" =~ "${NAME}" ]]; then
@@ -854,7 +858,7 @@ func_validateappcfg() {
     else 
       error "Not Enough Arguments"
       error "Expected: ${VALID_CONFIG_PARAMS_APP[*]}"
-      infobold "Be sure that if you are using the default VAGRANTFILE_DIR"
+      infobold "Be sure that if you are using the default FILE_DIR"
       infobold "that the BRIDGE_OPTIONS has to be set. Here are the possible options:"
       func_vmlistbridgedlifs
       exit 1
@@ -932,8 +936,11 @@ func_validateoptionalvmargs() {
     fi
   fi
 
-  if ! [[ -f "${VAGRANTFILE_DIR}/${VAGRANTFILE}" && -s "${VAGRANTFILE_DIR}/${VAGRANTFILE}" ]]; then
+  if ! [[ -f "${FILE_DIR}/${VAGRANTFILE}" && -s "${FILE_DIR}/${VAGRANTFILE}" ]]; then
     error "VAGRANTFILE is empty or not found: ${VAGRANTFILE}"
+    exit 1
+  elif ! [[ "${VAGRANTFILE}" =~ ^([A-Za-z0-9_-]+)$ ]]; then
+    error "VAGRANTFILE may only have letters numbers _ and -"
     exit 1
   fi
 
@@ -954,8 +961,11 @@ func_validateappargs() {
     func_makedir "${CONFIG_DIR}"
   elif ! [[ -d ${PROVISION_DIR} ]]; then
     func_makedir "${PROVISION_DIR}"
-  elif ! [[ -d ${VAGRANTFILE_DIR} ]]; then
-    error "VAGRANTFILE_DIR does not exist: ${VAGRANTFILE_DIR}"
+  elif ! [[ -d ${FILE_DIR} ]]; then
+    error "FILE_DIR does not exist: ${FILE_DIR}"
+    exit 1
+  elif ! [[ "${VAGRANTFILE}" =~ ^([A-Za-z0-9_-]+)$ ]]; then
+    error "VAGRANTFILE may only have letters numbers _ and -"
     exit 1
   else
     success "Valid GOVM-Values!"
@@ -1333,7 +1343,7 @@ func_vmlistbridgedlifs() {
 func_integrationtest() {
   if ! [[ -f ${BASEDIR}/${GOVM}/tested ]]; then
     PROVISION_DIR="${BASEDIR}/${GOVM}/provision"
-    VAGRANTFILE_DIR="${BASEDIR}/${GOVM}/vagrantfiles"
+    FILE_DIR="${BASEDIR}/${GOVM}/vagrantfiles"
     GROUP="${BASEDIR}/${GOVM}/configs/ubuntu"
     APPSTORE=${APPLIANCESTORE}
     infobold "Running some tests to asure that everything works as planned."
