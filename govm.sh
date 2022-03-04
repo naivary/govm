@@ -1090,11 +1090,25 @@ func_halt() {
 func_ssh() {
   info "SSH into ${ID}"
   func_createvenv;
+  local isrunning=$(func_isvmrunning ${VM_NAME})
+
+  if [[ ${isrunning} -eq 1 ]]; then
+    infobold "VM is not running currently. Start the vm with govm -v start" 
+    exit 0
+  fi
+
   vagrant ssh;
 }
 
 # alias to vagrant func_start
 func_start() {
+  local isrunning=$(func_isvmrunning ${VM_NAME})
+
+  if [[ ${isrunning} -eq 0 ]]; then
+    infobold "VM is already up and running!"
+    exit 0
+  fi
+
   info "Starting ${ID}. This may take some time..."
   func_createvenv;
   vagrant up &> ${LOG_PATH}/"${TIMESTAMP}_start.log"
