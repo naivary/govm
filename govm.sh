@@ -244,7 +244,14 @@ func_predefault() {
 # func_postdefault is setting all
 # defaults that have a dependencie 
 # on govm.cfg values
-# func_postdefault() {}
+func_postdefault() {
+  DEFAULT_CPU=${CPU}
+  DEFAULT_RAM=${RAM}
+  DEFAULT_OS_IMAGE=${OS_IMAGE}
+  DEFAULT_SCRIPT=${SCRIPT}
+  DEFAULT_OS_TYPE=${OS_TYPE}
+  DEFAULT_CUSTOME_VARIABLES=${CUSTOME_VARIABLES}
+}
 
 # func_osdefault is checking ig the current
 # used system is an wsl system or native linux
@@ -297,14 +304,21 @@ func_vagrantfileapp() {
   fi
 }
 
-# func_clearoptionalargs is setting
+# func_resetvariables is setting
 # some optional arguments
 # to empty strings
-func_clearoptionalargs() {
+func_resetvariables() {
   DISK_SIZE_SECOND=""
   DISK_SIZE_PRIMARY=""
   SYNC_DIR=""
   VM_NAME=""
+  CPU=${DEFAULT_CPU}
+  RAM=${DEFAULT_RAM}
+  OS_IMAGE=${DEFAULT_OS_IMAGE}
+  SCRIPT=${DEFAULT_SCRIPT}
+  OS_TYPE=${DEFAULT_OS_TYPE}
+  CUSTOME_VARIABLES=${DEFAULT_CUSTOME_VARIABLES}
+
 }
 
 # func_rmgovm is removing
@@ -352,6 +366,7 @@ func_rightcut() {
   RIGHTSIDE="$(cut -d ':' -f 2 <<< ${1})"
 }
 
+# func_getid 
 func_getid() {
   local id
   id="$(grep -w ${1} ${DB} | cut -d ':' -f 1)"
@@ -1117,7 +1132,7 @@ func_gup() {
   # checking for duplication of ip or names in the given group
   for CFG in ${GROUP}/*.cfg;
   do
-    func_clearoptionalargs
+    func_resetvariables
     func_sourcefile "${CFG}"
 
     if [[ "${IP_ADRESSES[*]}" =~ "${HOST_ONLY_IP}" ]]; then
@@ -1138,7 +1153,7 @@ func_gup() {
   for CFG in ${GROUP}/*.cfg; 
   do
     VM_CONFIG=${CFG}
-    func_clearoptionalargs
+    func_resetvariables
     cd "${BASEDIR}"
     func_sourcefile "${CFG}"
     func_validaterequiredvmargs 
@@ -1151,7 +1166,7 @@ func_gup() {
   for CFG in ${GROUP}/*.cfg; 
   do
     cd "${BASEDIR}"
-    func_clearoptionalargs
+    func_resetvariables
     VM_CONFIG=${CFG}
     func_sourcefile "${CFG}";
     func_resetvenv;
@@ -1424,6 +1439,7 @@ main() {
   func_validateappcfg;
   func_sourcefile ${GOVM_CONFIG};
   func_validateappargs;
+  func_postdefault;
   func_vagrantfilevm;
   func_validateposixgroup "$@"
   func_integrationtest
