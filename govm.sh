@@ -576,9 +576,8 @@ func_delete() {
 # given value into .bashrc
 func_persist() {
   local BASHFILE="${HOME}/.bashrc"
-  # func_newline "${BASHFILE}"
-
   if ! grep -w -q "export ${1}=\"${2}\"" ${BASHFILE}; then
+    func_newline "${BASHFILE}"
     echo "# CREATED BY GOVM. DO NOT EDIT" >> ${BASHFILE}
     echo "# BEGIN" >> ${BASHFILE}
     echo "export ${1}=\"${2}\"" >> "${BASHFILE}"
@@ -984,7 +983,6 @@ func_validateappargs() {
     error "VAGRANTFILE may only have letters numbers _ and -"
     exit 1
   else
-    func_persist "APPLIANCESTORE" "${APPLIANCESTORE}" 
     success "Valid GOVM-Values!"
   fi
  
