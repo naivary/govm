@@ -575,8 +575,6 @@ func_delete() {
 # func_persist is inserting the
 # given value into .bashrc
 func_persist() {
-  #! dupliaceed is not fixed
-  
   local BASHFILE="${HOME}/.bashrc"
   # func_newline "${BASHFILE}"
 
