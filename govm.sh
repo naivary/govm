@@ -1058,8 +1058,8 @@ func_createvenv() {
 # virtual machine using vagrant up 
 func_createvm() {
   infobold "Creating Virtual-Machine ${ID}. This may take a while..."
-  # vagrant up &> ${LOG_PATH}/"${TIMESTAMP}_up.log" 
-  vagrant up
+  vagrant up &> ${LOG_PATH}/"${TIMESTAMP}_up.log" 
+  # vagrant up
 }
 
 # func_up is creating a virtual-machine with vagrant up. 
