@@ -572,6 +572,23 @@ func_delete() {
   sed -i "/${VM_NAME}/d" "${DB}";
 }
 
+# func_persist is inserting the
+# given value into .bashrc
+func_persist() {
+  #! dupliaceed is not fixed
+  
+  local BASHFILE="${HOME}/.bashrc"
+  # func_newline "${BASHFILE}"
+
+  if ! grep -w -q "export ${1}=\"${2}\"" ${BASHFILE}; then
+    echo "# CREATED BY GOVM. DO NOT EDIT" >> ${BASHFILE}
+    echo "# BEGIN" >> ${BASHFILE}
+    echo "export ${1}=\"${2}\"" >> "${BASHFILE}"
+    echo "# END" >> ${BASHFILE}
+    func_newline "${BASHFILE}"
+  fi
+}
+
 # func_hashtablegen is creating an comma 
 # seperated string with the given 
 # key:value pairs which will be used by
@@ -969,6 +986,7 @@ func_validateappargs() {
     error "VAGRANTFILE may only have letters numbers _ and -"
     exit 1
   else
+    func_persist "APPLIANCESTORE" "${APPLIANCESTORE}" 
     success "Valid GOVM-Values!"
   fi
  
@@ -1103,10 +1121,16 @@ func_ssh() {
 # alias to vagrant func_start
 func_start() {
   local isrunning=$(func_isvmrunning ${VM_NAME})
+  local isexisting=$(func_isvmexisting ${VM_NAME})
 
   if [[ ${isrunning} -eq 0 ]]; then
     infobold "VM is already up and running!"
     exit 0
+  fi
+
+  if [[ ${isexisting} -eq 1 ]]; then
+    error "VM does not exist!"
+    exit 1
   fi
 
   info "Starting ${ID}. This may take some time..."
