@@ -36,7 +36,7 @@ func_usage() {
   echo "For a detailed documentation visit: https://github.com/No1Lik3U/vagrant-wrapper#documentation"
 }
 
-while getopts "f:g:v:m:lrid" OPT; do
+while getopts "f:g:v:m:lri" OPT; do
   case "${OPT}" in
     f)
       VM_CONFIG=${OPTARG}
@@ -52,9 +52,6 @@ while getopts "f:g:v:m:lrid" OPT; do
       ;;
     r)
       FORCE_REPLACE="true"
-      ;;
-    d)
-      DETACH_MODE="true"
       ;;
     g)
       GROUP=${OPTARG}
@@ -1135,6 +1132,20 @@ func_start() {
   success "${ID} up and running!"
 }
 
+func_reload() {
+  local isexisting=$(func_isvmexisting ${VM_NAME})
+
+  if [[ ${isexisting} -eq 1 ]]; then
+    infobold "VM does not exist"
+    exit 1
+  fi
+
+  info "Reloading ${ID}. This may take some time..."
+  func_createvenv
+  vagrant reload &> ${LOG_PATH}/"${TIMESTAMP}_start.log"
+  success "${ID} reloaded and ready to go!"
+}
+
 # create an appliance
 # of the given virtual-machine
 func_export() {
@@ -1300,6 +1311,24 @@ func_gstart() {
   done
 }
 
+func_greload() {
+  local exists
+  for CFG in ${GROUP}/*.cfg; 
+  do
+    VM_CONFIG=${CFG}
+    cd "${BASEDIR}"
+    func_resetvenv
+    func_sourcefile "${CFG}";
+    exists=$(func_isvmexisting ${VM_NAME})
+    if [[ ${exists} -ne 0 ]]; then
+      error "Machine ${VM_NAME} does not exists"
+      exit 1
+    fi
+    func_getid "${VM_NAME}"
+    func_reload
+  done
+}
+
 # alias to vboxmanage.exe export <machines>
 func_gexport() {
   local basename
@@ -1457,13 +1486,18 @@ func_validateposixgroup() {
     VM_CONFIG=${CONFIG_DIR}/${VM_CONFIG}
     SINGLE_CFG_NAME=$(basename ${VM_CONFIG})
     func_newline "${VM_CONFIG}"
+    ID=""
+    HOST_ONLY_IP=""
   elif [[ "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq $(( ${#VAGRANT_GROUP[@]} -1 )) && "${#CHECK_LIST[@]}" -eq 0 && "${#CHECK_GROUPUP[@]}" -eq 0 && ! "${VAGRANT_CMD}" =~  g[a-z]+ ]]; then
     infobold "Running \"${VAGRANT_CMD}\" on ${ID}..."
+    HOST_ONLY_IP=""
   elif [[ "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq ${#LIST_GROUP[@]} && -z "${VAGRANT_CMD}" && "${#CHECK_GROUPUP[@]}" -eq 0 ]]; then
     infobold "Listing all virtual-machines..."
   elif [[ "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq 0 && "${#CHECK_GROUPUP[@]}" -eq  $(( ${#GROUPCMD_GROUP[@]} -1 )) && "${VAGRANT_CMD}" =~ g[a-z]+ ]]; then
     infobold "Running \"${VAGRANT_CMD}\" on group: $(basename ${GROUP})"
     GROUP=${CONFIG_DIR}/${GROUP}
+    ID=""
+    HOST_ONLY_IP=""
   elif [[ "${#CHECK_FILE[@]}" -eq 0 && "${#CHECK_VAGRANT[@]}" -eq 0 && "${#CHECK_LIST[@]}" -eq 0 && "${#CHECK_GROUPUP[@]}" -eq 0 && "${VAGRANT_CMD}" =~ [a-z]+ ]]; then
     infobold "Running command \"${VAGRANT_CMD}\" on default-machine..."
   else
@@ -1503,6 +1537,8 @@ main() {
     func_ghalt
   elif [[ "${VAGRANT_CMD}" == "gexport" && -d "${GROUP}" ]]; then
     func_gexport
+  elif [[ "${VAGRANT_CMD}" == "greload" && -d "${GROUP}" ]]; then
+    func_greload
   elif [[ "${LIST_DATA}" ]]; then
     func_list
   elif [[ "${VAGRANT_CMD}" == "destroy" && "${ID}" ]]; then 
@@ -1513,6 +1549,8 @@ main() {
     func_start
   elif [[ "${VAGRANT_CMD}" == "up" ]]; then
     func_up
+  elif [[ "${VAGRANT_CMD}" == "reload" && "${ID}" ]]; then 
+    func_reload
   else 
     error "Posix-Arguments did not match!"
     func_usage
