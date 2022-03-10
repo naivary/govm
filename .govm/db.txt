@@ -1,1 +1,2 @@
 ID:Name:OS:IP:Memory:CPU
+380c9a6b2e:govm:generic/ubuntu2004:192.168.56.2:1048:2
