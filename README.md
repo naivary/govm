@@ -313,7 +313,13 @@ After the first part of the name is calculated a versioning will be calculated. 
 
 ## Import
 
-For importing
+If you would like to import an `.ova` from your `APPLIANCESTORE` you can you use the import.sh script. Before using the import script there have to be 2 env-variables that has to be set:
+
+1. `CURRENT_LESSON` which has to set to the .ova group that you would like to import
+2. `APPLIANCESTORE` the appliancestore from which you would like to import the `CURRENT_LESSON`
+
+After all env-variables are set you can run the import.sh without any arguments and it will autmatically import the latest version of the given `CURRENT_LESSON` from the `APPLIANCESTORE`.
+
 ## Custome Vagrantfile
 
 With `govm` you can also provide your own custome `Vagrantfile` that should be used instead of the [default](.govm/vagrantfiles/) vagrantfiles. If you would like to use a custome Vagrantfile there are some rules that you have to follow for a proper integration of your custome `Vagrantfile`. Beside the rules that will be explained in the following sections there are some specialties when choosing a custome Vagrantfile. If you change the `FILE_DIR` to `govm/vagrantfiles` govm will automatically make some adjustmenst and will remove some validation that were needed for the default Vagrantfiles. Still there are some validations made which are:
