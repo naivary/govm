@@ -325,7 +325,7 @@ After all env-variables are set you can run the import.sh without any arguments 
 With `govm` you can also provide your own custome `Vagrantfile` that should be used instead of the [default](.govm/vagrantfiles/) vagrantfiles. If you would like to use a custome Vagrantfile there are some rules that you have to follow for a proper integration of your custome `Vagrantfile`. Beside the rules that will be explained in the following sections there are some specialties when choosing a custome Vagrantfile. If you change the `FILE_DIR` to `govm/vagrantfiles` govm will automatically make some adjustmenst and will remove some validation that were needed for the default Vagrantfiles. Still there are some validations made which are:
 
 1. vm.cfg and govm.cfg Syntax-Check
-2. vm.cfg and govm.cfg Value-Check of `VM_NAME` and any further optiosn given beside `HOST_ONLY_IP`.
+2. vm.cfg and govm.cfg Value-Check of `VM_NAME` and any further options given beside `HOST_ONLY_IP`.
 3. Duplicate naming of virtual-machines
 
 What we try to say is that you have to be careful using you own Vagrantfiles because not all of you given config options in the vagrantfile will be validated by govm.
