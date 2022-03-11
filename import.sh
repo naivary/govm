@@ -64,6 +64,7 @@ func_validateenvvar() {
 func_import() {
   func_osdefault
   if [[ ${CURRENT_OS} == "microsoft" ]]; then
+    SELECTED_OVA=${APPLIANCESTORE}/${APPLIANCE_NAME}/${LATEST}
     vboxmanage.exe import "${SELECTED_OVA}";
   else
     vboxmanage import "${SELECTED_OVA}";

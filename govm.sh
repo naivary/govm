@@ -1417,62 +1417,6 @@ func_vmlistbridgedlifs() {
   fi
 }
 
-# integreationtest will test all functionalities in the app
-# by simulating an example func_usage of an end-user
-# for this the default.cfg and
-# an example group located at .govm/configs
-func_integrationtest() {
-  if ! [[ -f ${BASEDIR}/${GOVM}/tested ]]; then
-    PROVISION_DIR="${BASEDIR}/${GOVM}/provision"
-    FILE_DIR="${BASEDIR}/${GOVM}/vagrantfiles"
-    GROUP="${BASEDIR}/${GOVM}/configs/ubuntu"
-    APPSTORE=${APPLIANCESTORE}
-    infobold "Running some tests to asure that everything works as planned."
-    infobold "This will take some time. Get a coffee... :)"
-    func_up
-    func_halt
-    func_start
-    func_reload
-    func_export
-    APPLIANCESTORE=${APPSTORE}
-    func_export
-    APPLIANCESTORE=${APPSTORE}
-    MAIN_OVA="true"
-    func_export 
-    APPLIANCESTORE=${APPSTORE}
-    func_destroy
-    success "Single-functions are working!"
-    infobold "Testing group functions..."
-    sleep 10
-    ID=""
-    MAIN_OVA="false"
-    func_gup
-    func_ghalt
-    func_gstart
-    func_greload
-    func_gexport
-    APPLIANCESTORE=${APPSTORE}
-    MAIN_OVA="true"
-    func_gexport
-    APPLIANCESTORE=${APPSTORE}
-    func_gdestroy
-    success "Group-functions are working!"
-    infobold "Testing edge cases..."
-    VM_CONFIG="${BASEDIR}/${GOVM}/default.cfg"
-    ID=""
-    func_up
-    FORCE_REPLACE="true" 
-    func_up
-    func_destroy
-    func_rmdirrf "${APPLIANCESTORE}"
-    func_rmdirrf "${VMSTORE}"
-    func_rmdirrf "${GOVM}/configs"
-    touch "${BASEDIR}/${GOVM}/tested"
-    success "Finished testing! Everthing working!"
-    exit 0
-  fi
-}
-
 # func_validateposixgroup is validatin
 # all given flags but not the values
 # of the given flags. These are validated in
@@ -1540,7 +1484,6 @@ main() {
   func_postdefault;
   func_vagrantfilevm;
   func_validateposixgroup "$@"
-  func_integrationtest
 
   if [[ "${VAGRANT_CMD}" == "ssh" && "${ID}" ]]; then
     func_ssh
