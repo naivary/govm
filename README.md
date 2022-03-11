@@ -38,7 +38,7 @@ For more information about govm read the [documentation](#documentation).
 
 # Requirements
 
-The requirements were holeded as some as possible:
+The requirements were kept as small as possible:
 
 1. [HashiCorp Vagrant](https://www.vagrantup.com/)
 2. [Oracle VirtualBox](https://www.virtualbox.org/)
@@ -47,13 +47,12 @@ The requirements were holeded as some as possible:
 Because we don't want to waste your time, there are some pre-written **init-scripts** for [wsl](init/wsl.sh) and [ubuntu](init/linux.sh) which will
 install all requirements and make some adjustements needed for `govm` to work properply. If you decide to run one of the init scripts be sure to reboot your local machine and then start using govm.
 
-IMPORTANT: do not use govm directly after using the init script! There may occur an error which is discussed in [this](#init) section. It might also occur even though you did not use govm directly afterwards.
+IMPORTANT: Do not use govm directly after using the init script! There may occur an error which is discussed in [this](#init) section. It might also occur even though you did not use govm directly afterwards.
 
 ## init: wsl
 
 The init script wsl.sh will install `Chocolatey`, `Oracle VirtualBox` and `HashiCorp Vagrant`.
-It will also try to create a `Host-Only Ethernt Adapter` with the `IPv4: 192.168.56.1/24` but it may fail because a reboot is needed before using VirtualBox-API `vboxmanage`. Because of this it may occur an error which can be [solved](#init). This is only the windows part. For HashiCorp Vagrant to run properly using wsl there are some `env-variables`
-needed.
+It will also try to create a `Host-Only Ethernt Adapter` with the `IPv4: 192.168.56.1/24` but it may fail because a reboot is needed before using VirtualBox-API `vboxmanage`. Because of this it may occur an error which can be [solved](#init). For HashiCorp Vagrant to run properly using wsl there are some `env-variables` needed:
 
 1. `export VAGRANT_WSL_ENABLE_WINDOWS_ACCESS="1"`
 2. `export PATH="$PATH:/mnt/c/Program Files/Oracle/VirtualBox"`
