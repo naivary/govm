@@ -1243,6 +1243,11 @@ func_gdestroy() {
     func_resetvenv
     func_sourcefile "${CFG}";
     func_getid "${VM_NAME}"
+
+    if [[ ${ID} == "nil" ]]; then
+      infobold "Machine does not exist. Continueing..."
+      continue
+    fi
     func_destroy
   done
 }
@@ -1281,8 +1286,7 @@ func_ghalt() {
       cd ${GOVM_PATH}
       func_halt
     else
-      error "Did not find the machines! Do they even run?"
-      exit 2
+      infobold "Did not find the machine. Continueing with the next one..."
     fi
   done
 }
@@ -1296,17 +1300,24 @@ func_gstart() {
     cd "${BASEDIR}"
     func_resetvenv
     func_sourcefile "${CFG}";
+    func_getid "${VM_NAME}"
+
+    if [[ ${ID} ==  "nil" ]]; then
+      infobold "Machine does not exist. Continuein with next one..." 
+      continue
+    fi
+
     exists=$(func_isvmexisting ${VM_NAME})
     if [[ ${exists} -ne 0 ]]; then
       error "Machine ${VM_NAME} does not exists"
       exit 1
     fi
+
     isrunning=$(func_isvmrunning ${VM_NAME})
     if [[ ${isrunning} -eq 0 ]]; then
       infobold "Machine ${VM_NAME} is already up and running. Continuening with next..."
       continue
     fi
-    func_getid "${VM_NAME}"
     func_start
   done
 }
@@ -1319,12 +1330,18 @@ func_greload() {
     cd "${BASEDIR}"
     func_resetvenv
     func_sourcefile "${CFG}";
+    func_getid "${VM_NAME}"
+
+    if [[ ${ID} == "nil" ]]; then
+      infobold "Machine does not exist. Continueing with next..."
+      continue
+    fi
+
     exists=$(func_isvmexisting ${VM_NAME})
     if [[ ${exists} -ne 0 ]]; then
       error "Machine ${VM_NAME} does not exists"
       exit 1
     fi
-    func_getid "${VM_NAME}"
     func_reload
   done
 }
@@ -1415,6 +1432,7 @@ func_integrationtest() {
     func_up
     func_halt
     func_start
+    func_reload
     func_export
     APPLIANCESTORE=${APPSTORE}
     func_export
@@ -1431,6 +1449,7 @@ func_integrationtest() {
     func_gup
     func_ghalt
     func_gstart
+    func_greload
     func_gexport
     APPLIANCESTORE=${APPSTORE}
     MAIN_OVA="true"

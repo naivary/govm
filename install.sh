@@ -64,7 +64,7 @@ func_clean() {
   rm -rf ./.govm/init
   rm README.md
   rm LICENSE
-  rm -rf ./.govm/pkg
+  rm -rf ./.govm/pkg/windows.ps1
   rm .gitignore
   rm -rf .git
   rm ./configs/.gitignore

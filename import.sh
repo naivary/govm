@@ -42,11 +42,21 @@ func_validateenvvar() {
 
   if ! [[ -d "${APPLIANCESTORE}/${APPLIANCE_NAME}" ]]; then
     error "Appliance-group does not exist!"
+    infobold "Exporting main.ova..."
+
+    if [[ -s ${APPLIANCESTORE}/main.ova ]]; then
+      func_import
+    else 
+      error "main.ova does not exist. Exiting..."
+      exit 1
+    fi
+
     exit 1
   fi
 
   LATEST=$(ls ${APPLIANCESTORE}/${APPLIANCE_NAME} | sort -V | tail -n 1)
   success "Appliance exists. Importing newest version..."
+  SELECTED_OVA=${APPLIANCESTORE}/${APPLIANCE_NAME}/${LATEST}
   func_import
 
 }
@@ -54,9 +64,9 @@ func_validateenvvar() {
 func_import() {
   func_osdefault
   if [[ ${CURRENT_OS} == "microsoft" ]]; then
-    vboxmanage.exe import "${APPLIANCESTORE}/${APPLIANCE_NAME}/${LATEST}";
+    vboxmanage.exe import "${SELECTED_OVA}";
   else
-    vboxmanage import "${APPLIANCESTORE}/${APPLIANCE_NAME}/${LATEST}";
+    vboxmanage import "${SELECTED_OVA}";
   fi
 
   success "Imported and ready to go!"
@@ -65,6 +75,7 @@ func_import() {
 
 main() {
   CURRENT_OS=$(uname -r | sed -n 's/.*\( *Microsoft *\).*/\1/ip')
+  SELECTED_OVA=${APPLIANCESTORE}/main.ova
   func_init
   func_validateenvvar
 
