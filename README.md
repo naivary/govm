@@ -319,6 +319,8 @@ If you would like to import an `.ova` from your `APPLIANCESTORE` you can you use
 
 After all env-variables are set you can run the import.sh without any arguments and it will autmatically import the latest version of the given `CURRENT_LESSON` from the `APPLIANCESTORE`.
 
+For windows-user there is an `login.bat` which you use for an login-init-script for automatically setting the `APPLIANCESTORE` and `CURRENT_LESSON`
+
 ## Custome Vagrantfile
 
 With `govm` you can also provide your own custome `Vagrantfile` that should be used instead of the [default](.govm/vagrantfiles/) vagrantfiles. If you would like to use a custome Vagrantfile there are some rules that you have to follow for a proper integration of your custome `Vagrantfile`. Beside the rules that will be explained in the following sections there are some specialties when choosing a custome Vagrantfile. If you change the `FILE_DIR` to `govm/vagrantfiles` govm will automatically make some adjustmenst and will remove some validation that were needed for the default Vagrantfiles. Still there are some validations made which are:
