@@ -36,7 +36,7 @@ func_usage() {
   echo "For a detailed documentation visit: https://github.com/No1Lik3U/vagrant-wrapper#documentation"
 }
 
-while getopts "f:g:v:m:lri" OPT; do
+while getopts "f:g:v:m:lrih" OPT; do
   case "${OPT}" in
     f)
       VM_CONFIG=${OPTARG}
@@ -58,6 +58,10 @@ while getopts "f:g:v:m:lri" OPT; do
       ;;
     i)
       MAIN_OVA="true"
+      ;;
+    h)
+      func_usage
+      exit 0
       ;;
     ?)
       func_usage
@@ -487,7 +491,9 @@ func_appliancesemver() {
     done
     APPLIANCE_NAME="${APPLIANCE_NAME}-v${VERSION}.0.ova"
   else
-    sudo rm ${APPLIANCESTORE}/main.ova || true 2> /dev/null
+    if [[ -s "${APPLIANCESTORE}/main.ova" ]]; then
+      sudo rm ${APPLIANCESTORE}/main.ova
+    fi
     APPLIANCE_NAME="main.ova"
   fi
   
@@ -1051,8 +1057,8 @@ func_createvenv() {
 # virtual machine using vagrant up 
 func_createvm() {
   infobold "Creating Virtual-Machine ${ID}. This may take a while..."
-  # vagrant up &> ${LOG_PATH}/"${TIMESTAMP}_up.log";
-  vagrant up
+  vagrant up &> ${LOG_PATH}/"${TIMESTAMP}_up.log";
+  # vagrant up
 }
 
 # func_up is creating a virtual-machine with vagrant up. 
